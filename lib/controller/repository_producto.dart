@@ -30,4 +30,21 @@ class ProductoRepository {
     final db = await dbHelper.database;
     return await db.delete('productos', where: 'id = ?', whereArgs: [id]);
   }
+
+  Future<int> addInventario(String id, int cantidad) async {
+    final db = await dbHelper.database;
+    return await db.rawUpdate(
+      'update productos set stock = stock + $cantidad where id = $id',
+    );
+  }
+
+  Future<int> editInventario(String id, int cantidad) async {
+    final db = await dbHelper.database;
+    return await db.update(
+      'productos',
+      {'stock': cantidad},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
 }

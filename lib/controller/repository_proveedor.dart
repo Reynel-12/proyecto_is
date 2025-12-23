@@ -35,4 +35,15 @@ class ProveedorRepository {
     final db = await dbHelper.database;
     return await db.delete('proveedores', where: 'id = ?', whereArgs: [id]);
   }
+
+  Future<List<Proveedor>> getProveedorById(int id) async {
+    final db = await dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'proveedores',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    return maps.map((map) => Proveedor.fromMap(map)).toList();
+  }
 }

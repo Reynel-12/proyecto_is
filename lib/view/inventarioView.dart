@@ -425,6 +425,8 @@ class _InventarioState extends State<Inventario> {
           producto.unidadMedida!,
           producto.stock,
           producto.precio,
+          producto.costo,
+          producto.proveedorId!,
           elevation,
         );
       },
@@ -457,6 +459,8 @@ class _InventarioState extends State<Inventario> {
           producto.unidadMedida!,
           producto.stock,
           producto.precio,
+          producto.costo,
+          producto.proveedorId!,
           elevation,
         );
       },
@@ -469,6 +473,8 @@ class _InventarioState extends State<Inventario> {
     String tipo,
     int stock,
     double precio,
+    double costos,
+    int proveedor,
     double elevation,
   ) {
     // Obtenemos el tamaño de la pantalla
@@ -503,7 +509,17 @@ class _InventarioState extends State<Inventario> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => PerfilProducto(docID: id)),
+          MaterialPageRoute(
+            builder: (_) => PerfilProducto(
+              docID: id,
+              nombre: nombre,
+              unidad: tipo,
+              precio: precio,
+              costos: costos,
+              idProveedor: proveedor,
+              inventario: stock,
+            ),
+          ),
         ).then((value) {
           if (value == true) {
             setState(() {});

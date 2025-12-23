@@ -12,23 +12,35 @@ import 'dart:io' show Platform;
 // ignore: must_be_immutable
 class Nuevoproducto extends StatefulWidget {
   bool isEdit;
-  bool isEditCodigo;
   bool isEditNombre;
   bool isEditUnidad;
   bool isEditPrecio;
   bool isEditCosto;
   bool isEditProveedor;
   String codigo;
+  int inventario;
+  String nombre;
+  double precio;
+  double costo;
+  String unidadMedida;
+  int stock;
+  int proveedorId;
   Nuevoproducto({
     super.key,
     this.isEdit = false,
-    this.isEditCodigo = false,
     this.isEditNombre = false,
     this.isEditPrecio = false,
     this.isEditUnidad = false,
     this.isEditCosto = false,
     this.isEditProveedor = false,
     this.codigo = '',
+    this.inventario = 0,
+    this.nombre = '',
+    this.precio = 0,
+    this.costo = 0,
+    this.unidadMedida = '',
+    this.stock = 0,
+    this.proveedorId = 0,
   });
 
   @override
@@ -48,11 +60,6 @@ class _NuevoproductoState extends State<Nuevoproducto> {
   final ProductoRepository _productoRepository = ProductoRepository();
   final ProveedorRepository _proveedorRepository = ProveedorRepository();
 
-  String nombre = '';
-  String codigo = '';
-  int precio = 0;
-  int inventario = 0;
-
   Proveedor? _selectedItem;
   List<Proveedor> items = [];
 
@@ -64,7 +71,21 @@ class _NuevoproductoState extends State<Nuevoproducto> {
   @override
   void initState() {
     super.initState();
-    !widget.isEdit ? cargarProveedores() : null;
+    cargarProveedores();
+    if (widget.isEdit) {
+      _codigo.text = widget.codigo;
+      _nombre.text = widget.nombre;
+      _tipo.text = widget.unidadMedida;
+      _inventario.text = widget.inventario.toString();
+      _precio.text = widget.precio.toString();
+      _costo.text = widget.costo.toString();
+      if (items.isNotEmpty) {
+        _selectedItem = items.firstWhere(
+          (item) => item.id == widget.proveedorId,
+          orElse: () => items.first,
+        );
+      }
+    }
   }
 
   void _mostrarMensaje(String titulo, String mensaje, ContentType type) {
@@ -91,45 +112,30 @@ class _NuevoproductoState extends State<Nuevoproducto> {
     String codigo = _codigo.text;
     String nombre = _nombre.text;
     String tipo = _tipo.text;
-    int precio = int.tryParse(_precio.text) ?? 0;
+    double precio = double.tryParse(_precio.text) ?? 0.0;
+    double costo = double.tryParse(_costo.text) ?? 0.0;
 
-    // Actualizar nombre
-    if (widget.isEditNombre && nombre.isNotEmpty) {
+    try {
+      final producto = Producto(
+        id: codigo,
+        nombre: nombre,
+        precio: precio,
+        costo: costo,
+        unidadMedida: tipo,
+        stock: int.tryParse(_inventario.text) ?? 0,
+        fechaActualizacion: DateTime.now().toString(),
+        proveedorId: _selectedItem?.id ?? 0,
+      );
+      await _productoRepository.updateProducto(producto);
       _mostrarMensaje(
         'Éxito',
         'Producto actualizado correctamente',
         ContentType.success,
       );
       Navigator.pop(context, true);
-    }
-
-    // Actualizar tipo
-    if (widget.isEditUnidad && tipo.isNotEmpty) {
-      _mostrarMensaje(
-        'Éxito',
-        'Producto actualizado correctamente',
-        ContentType.success,
-      );
-      Navigator.pop(context, true);
-    }
-
-    // Actualizar precio
-    if (widget.isEditPrecio && precio > 0) {
-      _mostrarMensaje(
-        'Éxito',
-        'Producto actualizado correctamente',
-        ContentType.success,
-      );
-      Navigator.pop(context, true);
-    }
-
-    // Actualizar código
-    if (widget.isEditCodigo && codigo.isNotEmpty && widget.codigo != codigo) {
-      _mostrarMensaje(
-        'Éxito',
-        'Producto actualizado correctamente',
-        ContentType.success,
-      );
+    } catch (e) {
+      _mostrarMensaje('Error', 'Error inesperado', ContentType.failure);
+      print("Error inesperado: $e");
       Navigator.pop(context, true);
     }
   }
@@ -308,7 +314,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
           child: Column(
             children: [
               // Código
-              if ((widget.isEdit && widget.isEditCodigo) || !widget.isEdit)
+              if (!widget.isEdit)
                 _buildTextField(_codigo, 'Código', code: true),
 
               // Nombre

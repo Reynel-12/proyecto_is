@@ -2,6 +2,8 @@ import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:proyecto_is/controller/repository_producto.dart';
+import 'package:proyecto_is/controller/repository_proveedor.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/view/productoForm.dart';
 import 'package:provider/provider.dart';
@@ -9,21 +11,49 @@ import 'package:provider/provider.dart';
 // ignore: must_be_immutable
 class PerfilProducto extends StatefulWidget {
   String docID;
-  PerfilProducto({super.key, required this.docID});
+  String nombre;
+  String unidad;
+  double precio;
+  double costos;
+  int idProveedor;
+  int inventario;
+  PerfilProducto({
+    super.key,
+    required this.docID,
+    required this.nombre,
+    required this.unidad,
+    required this.precio,
+    required this.costos,
+    required this.idProveedor,
+    required this.inventario,
+  });
 
   @override
   State<PerfilProducto> createState() => _PerfilProductoState();
 }
 
 class _PerfilProductoState extends State<PerfilProducto> {
+  final repositoryProveedor = ProveedorRepository();
+  final repositoryProducto = ProductoRepository();
   final TextEditingController _cantidad = TextEditingController();
   final TextEditingController _inventarioController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String nombre = 'Coca-Cola';
-  String unidad = '365 Ml';
-  String codigo = '123';
-  int precio = 0;
-  int inventario = 0;
+  String nombreProveedor = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _getProveedor();
+  }
+
+  Future<void> _getProveedor() async {
+    final proveedor = await repositoryProveedor.getProveedorById(
+      widget.idProveedor,
+    );
+    setState(() {
+      nombreProveedor = proveedor[0].nombre;
+    });
+  }
 
   void _mostrarMensaje(String titulo, String mensaje, ContentType type) {
     final snackBar = SnackBar(
@@ -49,11 +79,11 @@ class _PerfilProductoState extends State<PerfilProducto> {
   void _navigateToEdit(
     BuildContext context,
     bool isEdit,
-    bool isEditCodigo,
     bool isEditNombre,
     bool isEditUnidad,
     bool isEditPrecio,
     bool isEditProveedor,
+    bool isEditCosto,
   ) {
     Navigator.push(
       context,
@@ -61,11 +91,18 @@ class _PerfilProductoState extends State<PerfilProducto> {
         builder: (context) => Nuevoproducto(
           isEdit: isEdit,
           codigo: widget.docID,
-          isEditCodigo: isEditCodigo,
           isEditNombre: isEditNombre,
           isEditUnidad: isEditUnidad,
           isEditPrecio: isEditPrecio,
           isEditProveedor: isEditProveedor,
+          isEditCosto: isEditCosto,
+          inventario: widget.inventario,
+          nombre: widget.nombre,
+          precio: widget.precio,
+          costo: widget.costos,
+          unidadMedida: widget.unidad,
+          stock: widget.inventario,
+          proveedorId: widget.idProveedor,
         ),
       ),
     ).then((value) {
@@ -76,6 +113,10 @@ class _PerfilProductoState extends State<PerfilProducto> {
   }
 
   void addInventory() async {
+    await repositoryProducto.addInventario(
+      widget.docID,
+      int.parse(_cantidad.text),
+    );
     _mostrarMensaje(
       'Éxito',
       'Se actualizó correctamente el inventario',
@@ -86,6 +127,10 @@ class _PerfilProductoState extends State<PerfilProducto> {
   }
 
   void _editInventory() async {
+    await repositoryProducto.editInventario(
+      widget.docID,
+      int.parse(_inventarioController.text),
+    );
     _mostrarMensaje(
       'Éxito',
       'Inventario actualizado correctamente',
@@ -95,6 +140,8 @@ class _PerfilProductoState extends State<PerfilProducto> {
   }
 
   void _eliminarProducto() async {
+    await repositoryProducto.deleteProducto(widget.docID);
+    Navigator.pop(context, true);
     _mostrarMensaje(
       'Éxito',
       'Producto eliminado correctamente',
@@ -158,31 +205,15 @@ class _PerfilProductoState extends State<PerfilProducto> {
               size: isMobile ? 22.0 : 24.0,
             ),
             itemBuilder: (context) => [
-              _buildPopupMenuItem('editar_codigo', Icons.edit, 'Editar código'),
               _buildPopupMenuItem(
-                'editar_nombre',
-                Icons.text_fields,
-                'Editar nombre',
-              ),
-              _buildPopupMenuItem(
-                'editar_unidad',
-                Icons.assignment,
-                'Editar unidad',
-              ),
-              _buildPopupMenuItem(
-                'editar_precio',
-                Icons.price_change,
-                'Editar precio',
+                'editar_producto',
+                Icons.edit,
+                'Editar producto',
               ),
               _buildPopupMenuItem(
                 'editar_inventario',
                 Icons.inventory_2,
                 'Editar inventario',
-              ),
-              _buildPopupMenuItem(
-                'editar_proveedor',
-                Icons.person,
-                'Editar proveedor',
               ),
               _buildPopupMenuItem(
                 'eliminar_producto',
@@ -192,63 +223,11 @@ class _PerfilProductoState extends State<PerfilProducto> {
             ],
             onSelected: (value) async {
               switch (value) {
-                case 'editar_codigo':
-                  _navigateToEdit(
-                    context,
-                    true,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                  );
-                  break;
-                case 'editar_nombre':
-                  _navigateToEdit(
-                    context,
-                    true,
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                  );
-                  break;
-                case 'editar_unidad':
-                  _navigateToEdit(
-                    context,
-                    true,
-                    false,
-                    false,
-                    true,
-                    false,
-                    false,
-                  );
-                  break;
-                case 'editar_precio':
-                  _navigateToEdit(
-                    context,
-                    true,
-                    false,
-                    false,
-                    false,
-                    true,
-                    false,
-                  );
+                case 'editar_producto':
+                  _navigateToEdit(context, true, true, true, true, true, true);
                   break;
                 case 'editar_inventario':
                   _showEditInventory();
-                  break;
-                case 'editar_proveedor':
-                  _navigateToEdit(
-                    context,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
-                  );
                   break;
                 case 'eliminar_producto':
                   AwesomeDialog(
@@ -457,7 +436,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
                         _buildStatRow('Última venta', 'N/A'),
                         _buildStatRow(
                           'Valor en inventario',
-                          'L. ${inventario * precio}',
+                          'L. ${widget.inventario * widget.precio}',
                         ),
                       ],
                     ),
@@ -565,7 +544,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    nombre,
+                    widget.nombre,
                     style: TextStyle(
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.bold,
@@ -580,10 +559,17 @@ class _PerfilProductoState extends State<PerfilProducto> {
               ],
             ),
             SizedBox(height: isMobile ? 12.0 : 16.0),
-            _infoRow('Código', codigo, infoFontSize),
-            _infoRow('Unidad', unidad, infoFontSize),
-            _infoRow('Inventario', inventario.toString(), infoFontSize),
-            _infoRow('Precio', 'L. $precio', infoFontSize),
+            _infoRow('Código', widget.docID, infoFontSize),
+            _infoRow('Unidad', widget.unidad, infoFontSize),
+            _infoRow('Stock', widget.inventario.toString(), infoFontSize),
+            _infoRow('Precio', 'L. ${widget.precio}', infoFontSize),
+            _infoRow('Costo', 'L. ${widget.costos}', infoFontSize),
+            _infoRow(
+              'Porcentaje de ganancia',
+              '${((widget.precio - widget.costos) / widget.costos * 100).toStringAsFixed(2)} %',
+              infoFontSize,
+            ),
+            _infoRow('Proveedor', nombreProveedor, infoFontSize),
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/controller/repository_proveedor.dart';
 import 'package:proyecto_is/controller/repository_compra.dart';
@@ -55,48 +56,77 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Agregar ${producto.nombre}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: cantidadController,
-              decoration: const InputDecoration(labelText: 'Cantidad'),
-              keyboardType: TextInputType.number,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
+              ? const Color.fromRGBO(30, 30, 30, 1)
+              : Colors.white,
+          title: Text(
+            'Agregar ${producto.nombre}',
+            style: TextStyle(
+              color: Provider.of<TemaProveedor>(context).esModoOscuro
+                  ? Colors.white
+                  : Colors.black,
+              fontWeight: FontWeight.bold,
             ),
-            TextField(
-              controller: costoController,
-              decoration: const InputDecoration(labelText: 'Costo Unitario'),
-              keyboardType: TextInputType.number,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildTextField(cantidadController, 'Cantidad', isNumber: true),
+              const SizedBox(height: 16),
+              _buildTextField(
+                costoController,
+                'Costo Unitario',
+                isNumber: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancelar',
+                style: TextStyle(
+                  color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      ? Colors.white70
+                      : Colors.black54,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                int cant = int.tryParse(cantidadController.text) ?? 0;
+                double costo = double.tryParse(costoController.text) ?? 0.0;
+                if (cant > 0 && costo > 0) {
+                  setState(() {
+                    _carritoCompra.add({
+                      'producto': producto,
+                      'cantidad': cant,
+                      'costo': costo,
+                      'subtotal': cant * costo,
+                    });
+                  });
+                  Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'Agregar',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              int cant = int.tryParse(cantidadController.text) ?? 0;
-              double costo = double.tryParse(costoController.text) ?? 0.0;
-              if (cant > 0 && costo > 0) {
-                setState(() {
-                  _carritoCompra.add({
-                    'producto': producto,
-                    'cantidad': cant,
-                    'costo': costo,
-                    'subtotal': cant * costo,
-                  });
-                });
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Agregar'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -176,144 +206,504 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+    final bool isDesktop = screenSize.width >= 900;
+
     final esModoOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
     final colorTexto = esModoOscuro ? Colors.white : Colors.black;
 
     return Scaffold(
-      backgroundColor: esModoOscuro ? Colors.black : Colors.grey[100],
+      backgroundColor: esModoOscuro
+          ? Colors.black
+          : const Color.fromRGBO(244, 243, 243, 1),
       appBar: AppBar(
-        title: const Text('Nueva Adquisición'),
-        backgroundColor: esModoOscuro ? Colors.black : Colors.white,
-        foregroundColor: colorTexto,
+        title: Text(
+          'Nueva Adquisición',
+          style: TextStyle(
+            color: colorTexto,
+            fontWeight: FontWeight.bold,
+            fontSize: isMobile ? 18 : 22,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: esModoOscuro
+            ? Colors.black
+            : const Color.fromRGBO(244, 243, 243, 1),
+        iconTheme: IconThemeData(color: colorTexto),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
+          : isDesktop
+          ? _buildDesktopLayout()
+          : _buildMobileLayout(),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProveedorSelector(),
+          const SizedBox(height: 16),
+          _buildItemsListHeader(),
+          Expanded(child: _buildItemsList()),
+          _buildSummary(),
+          _buildActions(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    return Center(
+      child: Container(
+        width: 1000,
+        padding: const EdgeInsets.all(24.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Panel izquierdo: Selector de proveedor y resumen
+            Expanded(
+              flex: 2,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Selección de Proveedor
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<Proveedor>(
-                          isExpanded: true,
-                          hint: const Text('Seleccionar Proveedor'),
-                          value: _proveedorSeleccionado,
-                          items: _proveedores
-                              .map(
-                                (p) => DropdownMenuItem(
-                                  value: p,
-                                  child: Text(p.nombre),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (val) =>
-                              setState(() => _proveedorSeleccionado = val),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Productos en esta adquisición:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: colorTexto,
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: _carritoCompra.length,
-                      itemBuilder: (context, index) {
-                        final item = _carritoCompra[index];
-                        final producto = item['producto'] as Producto;
-                        return ListTile(
-                          title: Text(producto.nombre),
-                          subtitle: Text(
-                            'Cant: ${item['cantidad']} x L. ${item['costo']}',
-                          ),
-                          trailing: Text(
-                            'L. ${item['subtotal']}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          onLongPress: () =>
-                              setState(() => _carritoCompra.removeAt(index)),
-                        );
-                      },
-                    ),
-                  ),
-                  const Divider(),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'TOTAL:',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: colorTexto,
-                          ),
-                        ),
-                        Text(
-                          'L. $_totalCompra',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blueAccent,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            showModalBottomSheet(
-                              context: context,
-                              builder: (context) => ListView.builder(
-                                itemCount: _productos.length,
-                                itemBuilder: (context, index) => ListTile(
-                                  title: Text(_productos[index].nombre),
-                                  subtitle: Text(
-                                    'Stock actual: ${_productos[index].stock}',
-                                  ),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    _agregarAlCarrito(_productos[index]);
-                                  },
-                                ),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.add),
-                          label: const Text('Agregar Producto'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _finalizarCompra,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                          ),
-                          child: const Text(
-                            'Finalizar Adquisición',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildProveedorSelector(),
+                  const SizedBox(height: 24),
+                  _buildSummaryCard(),
+                  const SizedBox(height: 24),
+                  _buildActions(),
                 ],
               ),
             ),
+            const SizedBox(width: 24),
+            // Panel derecho: Lista de productos
+            Expanded(
+              flex: 3,
+              child: Card(
+                color: Provider.of<TemaProveedor>(context).esModoOscuro
+                    ? const Color.fromRGBO(30, 30, 30, 1)
+                    : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Productos en esta adquisición',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              Provider.of<TemaProveedor>(context).esModoOscuro
+                              ? Colors.white
+                              : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(child: _buildItemsList()),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProveedorSelector() {
+    return _buildDropdown(
+      value: _proveedorSeleccionado,
+      items: _proveedores,
+      label: 'Seleccionar Proveedor',
+      icon: Icons.person,
+      onChanged: (val) => setState(() => _proveedorSeleccionado = val),
+    );
+  }
+
+  Widget _buildItemsListHeader() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        'Productos en esta adquisición:',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Provider.of<TemaProveedor>(context).esModoOscuro
+              ? Colors.white
+              : Colors.black,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemsList() {
+    final esModoOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
+    if (_carritoCompra.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.shopping_cart_outlined,
+              size: 64,
+              color: esModoOscuro ? Colors.white24 : Colors.black26,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No hay productos agregados',
+              style: TextStyle(
+                color: esModoOscuro ? Colors.white54 : Colors.black54,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      itemCount: _carritoCompra.length,
+      itemBuilder: (context, index) {
+        final item = _carritoCompra[index];
+        final producto = item['producto'] as Producto;
+        return Card(
+          color: esModoOscuro
+              ? const Color.fromRGBO(40, 40, 40, 1)
+              : Colors.white,
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Colors.blueAccent,
+              child: Icon(Icons.inventory_2, color: Colors.white, size: 20),
+            ),
+            title: Text(
+              producto.nombre,
+              style: TextStyle(
+                color: esModoOscuro ? Colors.white : Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Text(
+              'Cant: ${item['cantidad']} x L. ${item['costo']}',
+              style: TextStyle(
+                color: esModoOscuro ? Colors.white70 : Colors.black54,
+              ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'L. ${item['subtotal']}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueAccent,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.redAccent,
+                  ),
+                  onPressed: () =>
+                      setState(() => _carritoCompra.removeAt(index)),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSummary() {
+    final colorTexto = Provider.of<TemaProveedor>(context).esModoOscuro
+        ? Colors.white
+        : Colors.black;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'TOTAL:',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: colorTexto,
+            ),
+          ),
+          Text(
+            'L. $_totalCompra',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.blueAccent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard() {
+    final esModoOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
+    return Card(
+      color: esModoOscuro ? const Color.fromRGBO(30, 30, 30, 1) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            Text(
+              'Resumen de Adquisición',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: esModoOscuro ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Items:',
+                  style: TextStyle(
+                    color: esModoOscuro ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+                Text(
+                  '${_carritoCompra.length}',
+                  style: TextStyle(
+                    color: esModoOscuro ? Colors.white : Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'TOTAL:',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: esModoOscuro ? Colors.white : Colors.black,
+                  ),
+                ),
+                Text(
+                  'L. $_totalCompra',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueAccent,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _showProductPicker,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              minimumSize: const Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: const Text(
+              'Agregar Producto',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _finalizarCompra,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              minimumSize: const Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Finalizar',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showProductPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: Provider.of<TemaProveedor>(context).esModoOscuro
+              ? const Color.fromRGBO(30, 30, 30, 1)
+              : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Seleccionar Producto',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      ? Colors.white
+                      : Colors.black,
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _productos.length,
+                itemBuilder: (context, index) {
+                  final p = _productos[index];
+                  return ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: Colors.blueAccent,
+                      child: Icon(
+                        Icons.shopping_bag,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      p.nombre,
+                      style: TextStyle(
+                        color: Provider.of<TemaProveedor>(context).esModoOscuro
+                            ? Colors.white
+                            : Colors.black,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Stock actual: ${p.stock}',
+                      style: TextStyle(
+                        color: Provider.of<TemaProveedor>(context).esModoOscuro
+                            ? Colors.white70
+                            : Colors.black54,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _agregarAlCarrito(p);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label, {
+    bool isNumber = false,
+  }) {
+    final temaOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
+    return TextFormField(
+      controller: controller,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      inputFormatters: isNumber
+          ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
+          : null,
+      style: TextStyle(color: temaOscuro ? Colors.white : Colors.black),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          color: temaOscuro ? Colors.white70 : Colors.black54,
+        ),
+        filled: true,
+        fillColor: temaOscuro
+            ? const Color.fromRGBO(45, 45, 45, 1)
+            : Colors.grey[200],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required Proveedor? value,
+    required List<Proveedor> items,
+    required String label,
+    required IconData icon,
+    required Function(Proveedor?) onChanged,
+  }) {
+    final temaOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
+    return DropdownButtonFormField<Proveedor>(
+      dropdownColor: temaOscuro
+          ? const Color.fromRGBO(30, 30, 30, 1)
+          : Colors.white,
+      value: value,
+      items: items
+          .map((p) => DropdownMenuItem(value: p, child: Text(p.nombre)))
+          .toList(),
+      onChanged: onChanged,
+      style: TextStyle(color: temaOscuro ? Colors.white : Colors.black),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(
+          icon,
+          color: temaOscuro ? Colors.white70 : Colors.black54,
+        ),
+        filled: true,
+        fillColor: temaOscuro
+            ? const Color.fromRGBO(30, 30, 30, 1)
+            : Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 }

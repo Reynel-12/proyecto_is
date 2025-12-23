@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:proyecto_is/view/adquisicionForm.dart';
 import 'dart:io' show Platform;
 
 // ignore: must_be_immutable
@@ -662,7 +663,12 @@ class _MiFABState extends State<MiFAB> {
           labelBackgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
               ? Color.fromRGBO(60, 60, 60, 1)
               : Color.fromRGBO(220, 220, 220, 1),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AdquisicionForm()),
+            );
+          },
         ),
       ],
     );
