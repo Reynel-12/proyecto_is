@@ -59,4 +59,57 @@ class VentaRepository {
       return ventaId;
     });
   }
+
+  Future<List<Map<String, dynamic>>> getHistorialVentasDetallado() async {
+    final db = await dbHelper.database; // Tu instancia de sqflite
+
+    return await db.rawQuery('''
+    SELECT 
+      v.id AS venta_id,
+      v.fecha,
+      v.total AS venta_total,
+      v.estado,
+      dv.cantidad,
+      dv.precio_unitario,
+      dv.subtotal,
+      p.nombre AS producto_nombre,
+      p.unidad_medida
+    FROM ventas v
+    INNER JOIN detalle_ventas dv ON v.id = dv.venta_id
+    INNER JOIN productos p ON dv.producto_id = p.id
+    ORDER BY v.fecha DESC
+  ''');
+  }
+
+  Future<List<VentaCompleta>> getVentasAgrupadas() async {
+    final res = await getHistorialVentasDetallado();
+
+    // Usamos un Map para agrupar detalles por ID de venta
+    Map<int, VentaCompleta> ventasMap = {};
+
+    for (var row in res) {
+      int idVenta = row['venta_id'];
+
+      if (!ventasMap.containsKey(idVenta)) {
+        ventasMap[idVenta] = VentaCompleta(
+          id: idVenta,
+          fecha: row['fecha'],
+          total: row['venta_total'],
+          estado: row['estado'],
+          detalles: [],
+        );
+      }
+
+      ventasMap[idVenta]!.detalles.add(
+        DetalleItem(
+          producto: row['producto_nombre'],
+          cantidad: row['cantidad'],
+          precio: row['precio_unitario'],
+          subtotal: row['subtotal'],
+        ),
+      );
+    }
+
+    return ventasMap.values.toList();
+  }
 }

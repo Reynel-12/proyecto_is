@@ -39,3 +39,33 @@ class Venta {
     };
   }
 }
+
+class VentaCompleta {
+  final int id;
+  final String fecha;
+  final double total;
+  final String estado;
+  final List<DetalleItem> detalles;
+
+  VentaCompleta({
+    required this.id,
+    required this.fecha,
+    required this.total,
+    required this.estado,
+    required this.detalles,
+  });
+}
+
+class DetalleItem {
+  final String producto;
+  final int cantidad;
+  final double precio;
+  final double subtotal;
+
+  DetalleItem({
+    required this.producto,
+    required this.cantidad,
+    required this.precio,
+    required this.subtotal,
+  });
+}

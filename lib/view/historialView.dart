@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:proyecto_is/controller/repository_venta.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:proyecto_is/model/venta.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class Historial extends StatefulWidget {
@@ -14,6 +16,23 @@ class Historial extends StatefulWidget {
 
 class _HistorialState extends State<Historial> {
   DateTime hoy = DateTime.now();
+  List<VentaCompleta> ventas = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarVentas();
+  }
+
+  void _cargarVentas() async {
+    final ventas = await Provider.of<VentaRepository>(
+      context,
+      listen: false,
+    ).getVentasAgrupadas();
+    setState(() {
+      this.ventas = ventas;
+    });
+  }
 
   // ignore: non_constant_identifier_names
   void _DiaSeleccionado(DateTime selectedDay, DateTime focusedDay) {
@@ -547,7 +566,7 @@ class _HistorialState extends State<Historial> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Recibo: L. ${total + 50.0}',
+                    'Recibido: L. ${total + 50.0}',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: subtitleFontSize + 1,
@@ -565,6 +584,31 @@ class _HistorialState extends State<Historial> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                left: cardPadding,
+                right: cardPadding,
+                bottom: cardPadding,
+              ),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton.icon(
+                  onPressed: () async {},
+                  icon: Icon(Icons.receipt_long),
+                  label: Text(
+                    'Generar factura',
+                    style: TextStyle(fontSize: subtitleFontSize + 1),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
