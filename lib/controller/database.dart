@@ -5,12 +5,14 @@ class DBHelper {
   static Database? _database;
 
   // Nombres de tablas centralizados
+  static const String cajaTable = 'caja';
   static const String proveedoresTable = 'proveedores';
   static const String productosTable = 'productos';
   static const String ventasTable = 'ventas';
   static const String detalleVentasTable = 'detalle_ventas';
   static const String comprasTable = 'compras';
   static const String detalleComprasTable = 'detalle_compras';
+  static const String movimientosCajaTable = 'movimientos_caja';
 
   // Getter con manejo de errores
   Future<Database> get database async {
@@ -53,7 +55,7 @@ class DBHelper {
   Future<void> _createTables(Database db) async {
     await db.execute('''
     CREATE TABLE $proveedoresTable (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id_proveedor INTEGER PRIMARY KEY AUTOINCREMENT,
       nombre TEXT NOT NULL,
       direccion TEXT,
       telefono TEXT,
@@ -64,7 +66,7 @@ class DBHelper {
 
     await db.execute('''
     CREATE TABLE $productosTable (
-      id TEXT PRIMARY KEY,
+      id_producto TEXT PRIMARY KEY,
       nombre TEXT NOT NULL,
       proveedor_id INTEGER,
       unidad_medida TEXT,
@@ -81,8 +83,9 @@ class DBHelper {
 
     await db.execute('''
     CREATE TABLE $ventasTable (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id_venta INTEGER PRIMARY KEY AUTOINCREMENT,
       fecha TEXT NOT NULL,
+      numero_factura TEXT,
       total REAL NOT NULL,
       monto_pagado REAL,
       cambio REAL,
@@ -92,7 +95,7 @@ class DBHelper {
 
     await db.execute('''
     CREATE TABLE $detalleVentasTable (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id_detalle_venta INTEGER PRIMARY KEY AUTOINCREMENT,
       venta_id INTEGER NOT NULL,
       producto_id TEXT NOT NULL,
       cantidad INTEGER NOT NULL,
@@ -110,7 +113,7 @@ class DBHelper {
 
     await db.execute('''
     CREATE TABLE $comprasTable (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id_compra INTEGER PRIMARY KEY AUTOINCREMENT,
       proveedor_id INTEGER NOT NULL,
       fecha TEXT NOT NULL,
       total REAL NOT NULL,
@@ -122,7 +125,7 @@ class DBHelper {
 
     await db.execute('''
     CREATE TABLE $detalleComprasTable (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id_detalle_compra INTEGER PRIMARY KEY AUTOINCREMENT,
       compra_id INTEGER NOT NULL,
       producto_id TEXT NOT NULL,
       cantidad INTEGER NOT NULL,
@@ -136,6 +139,41 @@ class DBHelper {
           ON DELETE RESTRICT
     );
   ''');
+
+    await db.execute('''
+      CREATE TABLE $cajaTable (
+        id_caja INTEGER PRIMARY KEY AUTOINCREMENT,
+        fecha_apertura TEXT,
+        monto_apertura REAL,
+        fecha_cierre TEXT,
+        monto_cierre REAL,
+        total_ventas REAL,
+        total_efectivo REAL,
+        ingresos REAL,
+        egresos REAL,
+        diferencia REAL,
+        estado TEXT
+      );
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $movimientosCajaTable (
+        id_movimiento INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_caja INTEGER,
+        id_venta INTEGER,
+        tipo TEXT,
+        concepto TEXT,
+        monto REAL,
+        metodo_pago TEXT,
+        fecha TEXT,
+        FOREIGN KEY (id_caja)
+          REFERENCES $cajaTable(id_caja)
+          ON DELETE CASCADE,
+        FOREIGN KEY (id_venta)
+          REFERENCES $ventasTable(id_venta)
+          ON DELETE SET NULL
+      );
+    ''');
   }
 
   Future<void> _runMigrations(

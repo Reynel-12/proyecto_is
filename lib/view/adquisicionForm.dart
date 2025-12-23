@@ -25,6 +25,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
 
   List<Proveedor> _proveedores = [];
   List<Producto> _productos = [];
+  List<Producto> _productosFiltrados = [];
   Proveedor? _proveedorSeleccionado;
 
   // Lista de items en la compra actual
@@ -44,6 +45,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
     setState(() {
       _proveedores = proveedores;
       _productos = productos;
+      _productosFiltrados = productos;
       _isLoading = false;
     });
   }
@@ -323,9 +325,16 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
     return _buildDropdown(
       value: _proveedorSeleccionado,
       items: _proveedores,
-      label: 'Seleccionar Proveedor',
+      label: 'Seleccionar proveedor',
       icon: Icons.person,
-      onChanged: (val) => setState(() => _proveedorSeleccionado = val),
+      onChanged: (val) {
+        setState(() {
+          _proveedorSeleccionado = val;
+          _productosFiltrados = _productos
+              .where((p) => p.proveedorId == val?.id)
+              .toList();
+        });
+      },
     );
   }
 
@@ -602,9 +611,9 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
             ),
             Expanded(
               child: ListView.builder(
-                itemCount: _productos.length,
+                itemCount: _productosFiltrados.length,
                 itemBuilder: (context, index) {
-                  final p = _productos[index];
+                  final p = _productosFiltrados[index];
                   return ListTile(
                     leading: const CircleAvatar(
                       backgroundColor: Colors.blueAccent,

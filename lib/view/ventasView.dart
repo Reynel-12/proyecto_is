@@ -3,10 +3,8 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'dart:io' show Platform;
-
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/controller/repository_venta.dart';
 import 'package:proyecto_is/model/detalle_venta.dart';
@@ -136,6 +134,7 @@ class _VentasState extends State<Ventas> {
     try {
       final venta = Venta(
         fecha: DateTime.now().toIso8601String(),
+        numeroFactura: '',
         total: double.parse(_totalController.text),
         montoPagado: double.parse(cliente),
         cambio: double.parse(cambio),
@@ -182,14 +181,17 @@ class _VentasState extends State<Ventas> {
   }
 
   InvoiceData _crearInvoiceData(List<DetalleVenta> productos, Venta venta) {
-    final fecha = DateFormat('dd/MM/yyyy').format(DateTime.now());
-    final hora = DateFormat('HH:mm:ss').format(DateTime.now());
+    DateTime fechaVenta = DateTime.parse(venta.fecha);
+    String fecha =
+        "${fechaVenta.day.toString().padLeft(2, '0')}/${fechaVenta.month.toString().padLeft(2, '0')}/${fechaVenta.year}";
+    String hora =
+        "${fechaVenta.hour.toString().padLeft(2, '0')}:${fechaVenta.minute.toString().padLeft(2, '0')}";
     return InvoiceData(
       typeOrder: 'Venta',
       businessName: 'Tienda',
       businessAddress: 'Calle 123',
       businessPhone: '12345678',
-      invoiceNumber: '1',
+      invoiceNumber: venta.numeroFactura,
       date: fecha,
       hora: hora,
       cashier: 'Principal',

@@ -5,6 +5,7 @@ import 'package:proyecto_is/controller/repository_venta.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/model/venta.dart';
+import 'package:proyecto_is/view/widgets/thermal_invoice_printer.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class Historial extends StatefulWidget {
@@ -25,20 +26,23 @@ class _HistorialState extends State<Historial> {
   }
 
   void _cargarVentas() async {
-    final ventas = await Provider.of<VentaRepository>(
-      context,
-      listen: false,
-    ).getVentasAgrupadas();
+    final ventas = await VentaRepository().getVentasAgrupadas();
     setState(() {
       this.ventas = ventas;
     });
   }
 
-  // ignore: non_constant_identifier_names
   void _DiaSeleccionado(DateTime selectedDay, DateTime focusedDay) {
     setState(() {
       hoy = selectedDay;
     });
+  }
+
+  List<VentaCompleta> get _ventasDelDia {
+    return ventas.where((venta) {
+      DateTime fechaVenta = DateTime.parse(venta.fecha);
+      return isSameDay(fechaVenta, hoy);
+    }).toList();
   }
 
   StreamSubscription? _ventasSubscription;
@@ -297,6 +301,12 @@ class _HistorialState extends State<Historial> {
         firstDay: DateTime.utc(2010, 10, 16),
         lastDay: DateTime.utc(2030, 3, 14),
         onDaySelected: _DiaSeleccionado,
+        eventLoader: (day) {
+          return ventas.where((venta) {
+            DateTime fechaVenta = DateTime.parse(venta.fecha);
+            return isSameDay(fechaVenta, day);
+          }).toList();
+        },
       ),
     );
   }
@@ -312,7 +322,11 @@ class _HistorialState extends State<Historial> {
     final double fontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
     final double iconSize = isMobile ? 20.0 : (isTablet ? 22.0 : 24.0);
 
-    double totalDelDia = 0.0;
+    final ventasHoy = _ventasDelDia;
+    double totalDelDia = ventasHoy.fold(0.0, (sum, item) => sum + item.total);
+    double promedioVenta = ventasHoy.isEmpty
+        ? 0.0
+        : totalDelDia / ventasHoy.length;
 
     return Container(
       padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
@@ -352,7 +366,7 @@ class _HistorialState extends State<Historial> {
           SizedBox(height: 16),
           _buildResumenItem(
             'Total de ventas',
-            '100',
+            '${ventasHoy.length}',
             fontSize,
             iconSize,
             Icons.receipt_long,
@@ -368,7 +382,7 @@ class _HistorialState extends State<Historial> {
           SizedBox(height: isMobile ? 8.0 : 12.0),
           _buildResumenItem(
             'Promedio por venta',
-            'L. 50.00',
+            'L. ${promedioVenta.toStringAsFixed(2)}',
             fontSize,
             iconSize,
             Icons.trending_up,
@@ -436,27 +450,55 @@ class _HistorialState extends State<Historial> {
     final double iconSize = isMobile ? 20.0 : (isTablet ? 22.0 : 24.0);
     final double cardPadding = isMobile ? 10.0 : (isTablet ? 12.0 : 16.0);
 
-    // Generamos ventas de ejemplo para demostración
-    List<Widget> ventasWidgets = List.generate(
-      5,
-      (index) => _buildVentaCard(
-        index + 1,
-        100.0 * (index + 1),
-        5,
-        '${10 + index}:30 AM',
-        titleFontSize,
-        subtitleFontSize,
-        iconSize,
-        cardPadding,
-        elevation,
-      ),
-    );
+    final ventasHoy = _ventasDelDia;
+
+    if (ventasHoy.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Text(
+            'No hay ventas registradas para este día.',
+            style: TextStyle(
+              fontSize: subtitleFontSize,
+              color: Provider.of<TemaProveedor>(context).esModoOscuro
+                  ? Colors.white70
+                  : Colors.black54,
+            ),
+          ),
+        ),
+      );
+    }
 
     // Si hay ventas, mostrar las tarjetas de ventas
-    return ListView(
+    return ListView.builder(
       shrinkWrap: true,
       physics: isDesktop ? null : const NeverScrollableScrollPhysics(),
-      children: ventasWidgets,
+      itemCount: ventasHoy.length,
+      itemBuilder: (context, index) {
+        final venta = ventasHoy[index];
+        DateTime fechaVenta = DateTime.parse(venta.fecha);
+        String fecha =
+            "${fechaVenta.day.toString().padLeft(2, '0')}/${fechaVenta.month.toString().padLeft(2, '0')}/${fechaVenta.year}";
+        String hora =
+            "${fechaVenta.hour.toString().padLeft(2, '0')}:${fechaVenta.minute.toString().padLeft(2, '0')}";
+
+        return _buildVentaCard(
+          venta.id,
+          venta.total,
+          venta.montoPagado,
+          venta.cambio,
+          venta.detalles.length,
+          fecha,
+          hora,
+          titleFontSize,
+          subtitleFontSize,
+          iconSize,
+          cardPadding,
+          elevation,
+          venta.numeroFactura,
+          venta.detalles,
+        );
+      },
     );
   }
 
@@ -464,13 +506,18 @@ class _HistorialState extends State<Historial> {
   Widget _buildVentaCard(
     int ventaId,
     double total,
+    double montoPagado,
+    double cambio,
     int elementos,
+    String fecha,
     String hora,
     double titleFontSize,
     double subtitleFontSize,
     double iconSize,
     double cardPadding,
     double elevation,
+    String numeroFactura,
+    List<DetalleItem> detalles,
   ) {
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = screenSize.width >= 900;
@@ -501,7 +548,7 @@ class _HistorialState extends State<Historial> {
             ),
           ),
           title: Text(
-            'Venta #$ventaId',
+            '#$numeroFactura',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: titleFontSize,
@@ -547,18 +594,17 @@ class _HistorialState extends State<Historial> {
                   : Color.fromRGBO(60, 60, 60, 1).withOpacity(0.2),
             ),
             Column(
-              children: List.generate(
-                3, // Número de productos por venta
-                (index) => _buildProductoItem(
-                  'Producto ${index + 1}',
-                  index + 1,
-                  20.0 * (index + 1),
-                  20.0 * (index + 1) * (index + 1),
+              children: detalles.map((detalle) {
+                return _buildProductoItem(
+                  detalle.producto,
+                  detalle.cantidad,
+                  detalle.precio,
+                  detalle.subtotal,
                   subtitleFontSize,
                   iconSize,
                   cardPadding,
-                ),
-              ),
+                );
+              }).toList(),
             ),
             Padding(
               padding: EdgeInsets.all(cardPadding),
@@ -566,7 +612,7 @@ class _HistorialState extends State<Historial> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Recibido: L. ${total + 50.0}',
+                    'Recibido: L. $montoPagado',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: subtitleFontSize + 1,
@@ -576,7 +622,7 @@ class _HistorialState extends State<Historial> {
                     ),
                   ),
                   Text(
-                    'Cambio: L. 50.00',
+                    'Cambio: L. $cambio',
                     style: TextStyle(
                       color: Colors.redAccent,
                       fontWeight: FontWeight.bold,
@@ -595,7 +641,36 @@ class _HistorialState extends State<Historial> {
               child: Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton.icon(
-                  onPressed: () async {},
+                  onPressed: () async {
+                    final data = InvoiceData(
+                      typeOrder: 'Venta',
+                      businessName: 'Tienda',
+                      businessAddress: 'Calle 123',
+                      businessPhone: '12345678',
+                      invoiceNumber: numeroFactura,
+                      date: fecha,
+                      hora: hora,
+                      cashier: 'Principal',
+                      customerName: 'Cliente',
+                      items: detalles.map((detalle) {
+                        return InvoiceItem(
+                          description: detalle.producto,
+                          quantity: detalle.cantidad,
+                          unitPrice: detalle.precio,
+                        );
+                      }).toList(),
+                      total: total,
+                      recibido: montoPagado,
+                      metodoPago: 'Efectivo',
+                      notes: '¡Gracias por su compra!',
+                    );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ThermalInvoicePreview(data: data),
+                      ),
+                    );
+                  },
                   icon: Icon(Icons.receipt_long),
                   label: Text(
                     'Generar factura',

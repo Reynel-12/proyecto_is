@@ -1,6 +1,7 @@
 class Venta {
   final int? id; // null antes de insertarse
   final String fecha;
+  String numeroFactura;
   final double total;
   final double? montoPagado;
   final double? cambio;
@@ -9,6 +10,7 @@ class Venta {
   Venta({
     this.id,
     required this.fecha,
+    required this.numeroFactura,
     required this.total,
     this.montoPagado,
     this.cambio,
@@ -20,6 +22,7 @@ class Venta {
     return Venta(
       id: map['id'],
       fecha: map['fecha'],
+      numeroFactura: map['numero_factura'],
       total: map['total'],
       montoPagado: map['monto_pagado'],
       cambio: map['cambio'],
@@ -32,6 +35,7 @@ class Venta {
     return {
       'id': id,
       'fecha': fecha,
+      'numero_factura': numeroFactura,
       'total': total,
       'monto_pagado': montoPagado,
       'cambio': cambio,
@@ -45,6 +49,9 @@ class VentaCompleta {
   final String fecha;
   final double total;
   final String estado;
+  final double montoPagado;
+  final double cambio;
+  final String numeroFactura;
   final List<DetalleItem> detalles;
 
   VentaCompleta({
@@ -53,6 +60,9 @@ class VentaCompleta {
     required this.total,
     required this.estado,
     required this.detalles,
+    required this.montoPagado,
+    required this.cambio,
+    required this.numeroFactura,
   });
 }
 

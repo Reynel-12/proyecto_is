@@ -342,7 +342,7 @@ class ThermalInvoicePrinter {
               maxWidth * 0.6,
             ),
             _totalRow(
-              "VUELTO:",
+              "CAMBIO:",
               currency.format(data.recibido - data.total),
               maxWidth * 0.6,
             ),
