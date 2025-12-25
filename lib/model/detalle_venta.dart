@@ -22,7 +22,7 @@ class DetalleVenta {
   // Map → DetalleVenta
   factory DetalleVenta.fromMap(Map<String, dynamic> map) {
     return DetalleVenta(
-      id: map['id'],
+      id: map['id_detalle_venta'],
       ventaId: map['venta_id'],
       productoId: map['producto_id'],
       cantidad: map['cantidad'],
@@ -35,7 +35,7 @@ class DetalleVenta {
   // DetalleVenta → Map
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'id_detalle_venta': id,
       'venta_id': ventaId,
       'producto_id': productoId,
       'cantidad': cantidad,

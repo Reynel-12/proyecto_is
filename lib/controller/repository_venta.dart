@@ -17,7 +17,7 @@ class VentaRepository {
       SELECT numero_factura 
       FROM ${DBHelper.ventasTable}
       WHERE numero_factura LIKE 'FAC-$datePart-%'
-      ORDER BY id DESC
+      ORDER BY id_venta DESC
       LIMIT 1
     ''';
 
@@ -58,7 +58,7 @@ class VentaRepository {
       for (final detalle in detalles) {
         final result = await txn.rawQuery(
           '''
-        SELECT stock FROM productos WHERE id = ?
+        SELECT stock FROM productos WHERE id_producto = ?
         ''',
           [detalle.productoId],
         );
@@ -96,9 +96,49 @@ class VentaRepository {
           '''
         UPDATE productos
         SET stock = stock - ?
-        WHERE id = ?
+        WHERE id_producto = ?
         ''',
           [detalle.cantidad, detalle.productoId],
+        );
+      }
+
+      // 4. Actualizar Caja si existe una abierta
+      final cajaAbierta = await txn.query(
+        DBHelper.cajaTable,
+        where: 'estado = ?',
+        whereArgs: ['Abierta'],
+        orderBy: 'id_caja DESC',
+        limit: 1,
+      );
+
+      if (cajaAbierta.isNotEmpty) {
+        final caja = cajaAbierta.first;
+        final int cajaId = caja['id_caja'] as int;
+        final double currentTotalVentas = (caja['total_ventas'] as num)
+            .toDouble();
+        final double currentTotalEfectivo = (caja['total_efectivo'] as num)
+            .toDouble();
+
+        // Insertar movimiento
+        await txn.insert(DBHelper.movimientosCajaTable, {
+          'id_caja': cajaId,
+          'id_venta': ventaId,
+          'tipo': 'Venta',
+          'concepto': 'Venta #$numeroFactura',
+          'monto': venta.total,
+          'metodo_pago': 'Efectivo', // Asumimos efectivo por ahora
+          'fecha': DateTime.now().toIso8601String(),
+        });
+
+        // Actualizar totales caja
+        await txn.update(
+          DBHelper.cajaTable,
+          {
+            'total_ventas': currentTotalVentas + venta.total,
+            'total_efectivo': currentTotalEfectivo + venta.total,
+          },
+          where: 'id_caja = ?',
+          whereArgs: [cajaId],
         );
       }
 
@@ -111,7 +151,7 @@ class VentaRepository {
 
     return await db.rawQuery('''
     SELECT 
-      v.id AS venta_id,
+      v.id_venta AS venta_id,
       v.fecha,
       v.total AS venta_total,
       v.estado,
@@ -124,8 +164,8 @@ class VentaRepository {
       p.nombre AS producto_nombre,
       p.unidad_medida
     FROM ventas v
-    INNER JOIN detalle_ventas dv ON v.id = dv.venta_id
-    INNER JOIN productos p ON dv.producto_id = p.id
+    INNER JOIN detalle_ventas dv ON v.id_venta = dv.venta_id
+    INNER JOIN productos p ON dv.producto_id = p.id_producto
     ORDER BY v.fecha DESC
   ''');
   }

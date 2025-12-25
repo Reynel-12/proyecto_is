@@ -31,7 +31,7 @@ class CompraRepository {
           '''
           UPDATE ${DBHelper.productosTable}
           SET stock = stock + ?
-          WHERE id = ?
+          WHERE id_producto = ?
         ''',
           [detalle.cantidad, detalle.productoId],
         );

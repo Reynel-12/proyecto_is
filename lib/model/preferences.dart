@@ -58,12 +58,12 @@ class MisTemas {
     brightness: Brightness.light,
     scaffoldBackgroundColor: Colors.white,
     appBarTheme: const AppBarTheme(
-      backgroundColor: Color.fromARGB(255, 244, 128, 40),
+      backgroundColor: Colors.white,
       foregroundColor: Colors.black,
     ),
     textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: Colors.black),
-      bodyMedium: TextStyle(color: Colors.black),
+      bodyLarge: TextStyle(color: Colors.white),
+      bodyMedium: TextStyle(color: Colors.white),
     ),
   );
 
@@ -72,7 +72,7 @@ class MisTemas {
     brightness: Brightness.dark,
     scaffoldBackgroundColor: Colors.black,
     appBarTheme: const AppBarTheme(
-      backgroundColor: Color.fromARGB(255, 244, 128, 40),
+      backgroundColor: Colors.black,
       foregroundColor: Colors.white,
     ),
     textTheme: const TextTheme(

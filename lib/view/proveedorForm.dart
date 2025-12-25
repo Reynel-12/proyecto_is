@@ -87,6 +87,7 @@ class _ProveedorFormState extends State<ProveedorForm> {
         'Error al guardar el proveedor',
         ContentType.warning,
       );
+      print(e);
       Navigator.pop(context, false);
     }
   }

@@ -18,7 +18,7 @@ class Proveedor {
   // Convertir Map → Objeto
   factory Proveedor.fromMap(Map<String, dynamic> map) {
     return Proveedor(
-      id: map['id'],
+      id: map['id_proveedor'],
       nombre: map['nombre'],
       direccion: map['direccion'],
       telefono: map['telefono'],
@@ -30,7 +30,7 @@ class Proveedor {
   // Convertir Objeto → Map
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'id_proveedor': id,
       'nombre': nombre,
       'direccion': direccion,
       'telefono': telefono,

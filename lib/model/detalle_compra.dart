@@ -17,7 +17,7 @@ class DetalleCompra {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'id_detalle_compra': id,
       'compra_id': compraId,
       'producto_id': productoId,
       'cantidad': cantidad,
@@ -28,7 +28,7 @@ class DetalleCompra {
 
   factory DetalleCompra.fromMap(Map<String, dynamic> map) {
     return DetalleCompra(
-      id: map['id'],
+      id: map['id_detalle_compra'],
       compraId: map['compra_id'],
       productoId: map['producto_id'],
       cantidad: map['cantidad'],

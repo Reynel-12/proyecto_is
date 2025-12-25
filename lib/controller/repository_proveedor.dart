@@ -1,17 +1,12 @@
 import 'package:proyecto_is/controller/database.dart';
 import 'package:proyecto_is/model/proveedor.dart';
-import 'package:sqflite/sqflite.dart';
 
 class ProveedorRepository {
   final dbHelper = DBHelper();
 
   Future<int> insertProveedor(Proveedor proveedor) async {
     final db = await dbHelper.database;
-    return await db.insert(
-      'proveedores',
-      proveedor.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    return await db.insert('proveedores', proveedor.toMap());
   }
 
   Future<List<Proveedor>> getProveedores() async {
@@ -26,21 +21,25 @@ class ProveedorRepository {
     return await db.update(
       'proveedores',
       proveedor.toMap(),
-      where: 'id = ?',
+      where: 'id_proveedor = ?',
       whereArgs: [proveedor.id],
     );
   }
 
   Future<int> deleteProveedor(int id) async {
     final db = await dbHelper.database;
-    return await db.delete('proveedores', where: 'id = ?', whereArgs: [id]);
+    return await db.delete(
+      'proveedores',
+      where: 'id_proveedor = ?',
+      whereArgs: [id],
+    );
   }
 
   Future<List<Proveedor>> getProveedorById(int id) async {
     final db = await dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'proveedores',
-      where: 'id = ?',
+      where: 'id_proveedor = ?',
       whereArgs: [id],
     );
 

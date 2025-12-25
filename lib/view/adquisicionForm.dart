@@ -184,9 +184,10 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
     } catch (e) {
       _mostrarMensaje(
         'Error',
-        'No se pudo registrar la compra: $e',
+        'No se pudo registrar la compra',
         ContentType.failure,
       );
+      print(e);
     } finally {
       setState(() => _isLoading = false);
     }

@@ -75,7 +75,7 @@ class DBHelper {
       stock INTEGER NOT NULL DEFAULT 0,
       fecha_creacion TEXT,
       fecha_actualizacion TEXT,
-      FOREIGN KEY (proveedor_id) REFERENCES $proveedoresTable(id)
+      FOREIGN KEY (proveedor_id) REFERENCES $proveedoresTable(id_proveedor)
           ON UPDATE CASCADE
           ON DELETE SET NULL
     );
@@ -102,10 +102,10 @@ class DBHelper {
       precio_unitario REAL NOT NULL,
       subtotal REAL NOT NULL,
       descuento REAL DEFAULT 0,
-      FOREIGN KEY (venta_id) REFERENCES $ventasTable(id)
+      FOREIGN KEY (venta_id) REFERENCES $ventasTable(id_venta)
           ON UPDATE CASCADE
           ON DELETE CASCADE,
-      FOREIGN KEY (producto_id) REFERENCES $productosTable(id)
+      FOREIGN KEY (producto_id) REFERENCES $productosTable(id_producto)
           ON UPDATE CASCADE
           ON DELETE RESTRICT
     );
@@ -117,7 +117,7 @@ class DBHelper {
       proveedor_id INTEGER NOT NULL,
       fecha TEXT NOT NULL,
       total REAL NOT NULL,
-      FOREIGN KEY (proveedor_id) REFERENCES $proveedoresTable(id)
+      FOREIGN KEY (proveedor_id) REFERENCES $proveedoresTable(id_proveedor)
           ON UPDATE CASCADE
           ON DELETE RESTRICT
     );
@@ -131,10 +131,10 @@ class DBHelper {
       cantidad INTEGER NOT NULL,
       costo_unitario REAL NOT NULL,
       subtotal REAL NOT NULL,
-      FOREIGN KEY (compra_id) REFERENCES $comprasTable(id)
+      FOREIGN KEY (compra_id) REFERENCES $comprasTable(id_compra)
           ON UPDATE CASCADE
           ON DELETE CASCADE,
-      FOREIGN KEY (producto_id) REFERENCES $productosTable(id)
+      FOREIGN KEY (producto_id) REFERENCES $productosTable(id_producto)
           ON UPDATE CASCADE
           ON DELETE RESTRICT
     );

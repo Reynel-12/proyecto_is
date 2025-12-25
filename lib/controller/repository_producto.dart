@@ -21,20 +21,24 @@ class ProductoRepository {
     return await db.update(
       'productos',
       producto.toMap(),
-      where: 'id = ?',
+      where: 'id_producto = ?',
       whereArgs: [producto.id],
     );
   }
 
   Future<int> deleteProducto(String id) async {
     final db = await dbHelper.database;
-    return await db.delete('productos', where: 'id = ?', whereArgs: [id]);
+    return await db.delete(
+      'productos',
+      where: 'id_producto = ?',
+      whereArgs: [id],
+    );
   }
 
   Future<int> addInventario(String id, int cantidad) async {
     final db = await dbHelper.database;
     return await db.rawUpdate(
-      'update productos set stock = stock + $cantidad where id = $id',
+      'update productos set stock = stock + $cantidad where id_producto = $id',
     );
   }
 
@@ -43,7 +47,7 @@ class ProductoRepository {
     return await db.update(
       'productos',
       {'stock': cantidad},
-      where: 'id = ?',
+      where: 'id_producto = ?',
       whereArgs: [id],
     );
   }

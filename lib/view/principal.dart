@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/view/adquisicionForm.dart';
+import 'package:proyecto_is/view/caja_screen.dart';
 import 'package:proyecto_is/view/dashBoardCard.dart';
 import 'package:proyecto_is/view/historialView.dart';
 import 'package:proyecto_is/view/inventarioView.dart';
@@ -30,6 +31,14 @@ class _MyHomePageState extends State<MyHomePage> {
     final double titleFontSize = isMobile ? 18.0 : (isTablet ? 20.0 : 22.0);
 
     final List<DashboardCardData> cards = [
+      DashboardCardData(
+        icon: Icons.inventory,
+        title: 'Caja',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CajaScreen()),
+        ),
+      ),
       DashboardCardData(
         icon: Icons.inventory,
         title: 'Inventario',
@@ -70,7 +79,6 @@ class _MyHomePageState extends State<MyHomePage> {
           MaterialPageRoute(builder: (context) => const AdquisicionForm()),
         ),
       ),
-
       DashboardCardData(
         icon: Icons.history,
         title: 'Historial de Ventas',

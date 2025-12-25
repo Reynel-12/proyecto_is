@@ -27,7 +27,7 @@ class Producto {
 
   factory Producto.fromMap(Map<String, dynamic> map) {
     return Producto(
-      id: map['id'],
+      id: map['id_producto'],
       nombre: map['nombre'],
       proveedorId: map['proveedor_id'],
       unidadMedida: map['unidad_medida'],
@@ -41,7 +41,7 @@ class Producto {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'id_producto': id,
       'nombre': nombre,
       'proveedor_id': proveedorId,
       'unidad_medida': unidadMedida,

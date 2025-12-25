@@ -20,7 +20,7 @@ class Venta {
   // Map → Venta
   factory Venta.fromMap(Map<String, dynamic> map) {
     return Venta(
-      id: map['id'],
+      id: map['id_venta'],
       fecha: map['fecha'],
       numeroFactura: map['numero_factura'],
       total: map['total'],
@@ -33,7 +33,7 @@ class Venta {
   // Venta → Map
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'id_venta': id,
       'fecha': fecha,
       'numero_factura': numeroFactura,
       'total': total,
