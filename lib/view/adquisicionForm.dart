@@ -30,6 +30,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
 
   // Lista de items en la compra actual
   List<Map<String, dynamic>> _carritoCompra = [];
+  final _formKey = GlobalKey<FormState>();
 
   bool _isLoading = true;
 
@@ -55,52 +56,112 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
     TextEditingController costoController = TextEditingController(
       text: producto.costo.toString(),
     );
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+    final bool isDesktop = screenSize.width >= 900;
+
+    // Calculamos el ancho del diálogo según el tamaño de pantalla
+    final double dialogWidth = isDesktop
+        ? screenSize.width * 0.3
+        : (isTablet ? screenSize.width * 0.5 : screenSize.width * 0.8);
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
+              ? Color.fromRGBO(60, 60, 60, 1)
+              : Color.fromRGBO(220, 220, 220, 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          backgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
-              ? const Color.fromRGBO(30, 30, 30, 1)
-              : Colors.white,
-          title: Text(
-            'Agregar ${producto.nombre}',
-            style: TextStyle(
+          titlePadding: EdgeInsets.zero,
+          contentPadding: EdgeInsets.all(isMobile ? 20.0 : 24.0),
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: isDesktop ? (screenSize.width - dialogWidth) / 2 : 24.0,
+            vertical: 24.0,
+          ),
+          title: Container(
+            padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
+            decoration: BoxDecoration(
               color: Provider.of<TemaProveedor>(context).esModoOscuro
-                  ? Colors.white
-                  : Colors.black,
-              fontWeight: FontWeight.bold,
+                  ? Color.fromRGBO(60, 60, 60, 1)
+                  : Color.fromRGBO(220, 220, 220, 1),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.add,
+                  size: isMobile ? 20.0 : 24.0,
+                  color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      ? Colors.white
+                      : Colors.black,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Agregar ${producto.nombre}',
+                  style: TextStyle(
+                    color: Provider.of<TemaProveedor>(context).esModoOscuro
+                        ? Colors.white
+                        : Colors.black,
+                    fontSize: isMobile ? 18.0 : 20.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTextField(cantidadController, 'Cantidad', isNumber: true),
-              const SizedBox(height: 16),
-              _buildTextField(
-                costoController,
-                'Costo Unitario',
-                isNumber: true,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancelar',
-                style: TextStyle(
-                  color: Provider.of<TemaProveedor>(context).esModoOscuro
-                      ? Colors.white70
-                      : Colors.black54,
+          content: Container(
+            width: dialogWidth,
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildTextField(
+                      cantidadController,
+                      'Cantidad',
+                      isNumber: true,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      costoController,
+                      'Costo Unitario',
+                      isNumber: true,
+                    ),
+                  ],
                 ),
               ),
             ),
+          ),
+          actionsPadding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 12.0 : 16.0,
+            vertical: isMobile ? 8.0 : 12.0,
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16.0 : 24.0,
+                  vertical: isMobile ? 8.0 : 12.0,
+                ),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancelar', style: TextStyle(color: Colors.white)),
+            ),
             ElevatedButton(
               onPressed: () {
+                if (!_formKey.currentState!.validate()) return;
                 int cant = int.tryParse(cantidadController.text) ?? 0;
                 double costo = double.tryParse(costoController.text) ?? 0.0;
                 if (cant > 0 && costo > 0) {
@@ -118,7 +179,11 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16.0 : 24.0,
+                  vertical: isMobile ? 8.0 : 12.0,
                 ),
               ),
               child: const Text(
@@ -659,28 +724,69 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
     String label, {
     bool isNumber = false,
   }) {
-    final temaOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+
     return TextFormField(
       controller: controller,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
       inputFormatters: isNumber
           ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
           : null,
-      style: TextStyle(color: temaOscuro ? Colors.white : Colors.black),
+      style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: temaOscuro ? Colors.white70 : Colors.black54,
+          color: Provider.of<TemaProveedor>(context).esModoOscuro
+              ? Colors.white
+              : Colors.black,
+          fontSize: isMobile ? 14.0 : 16.0,
         ),
+        hintText: 'Ingrese el $label',
         filled: true,
-        fillColor: temaOscuro
-            ? const Color.fromRGBO(45, 45, 45, 1)
-            : Colors.grey[200],
-        border: OutlineInputBorder(
+        fillColor: Provider.of<TemaProveedor>(context).esModoOscuro
+            ? const Color.fromRGBO(30, 30, 30, 1)
+            : const Color.fromRGBO(244, 243, 243, 1),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(
+            color: Provider.of<TemaProveedor>(context).esModoOscuro
+                ? Colors.white
+                : Colors.black,
+            width: 2,
+          ),
+        ),
+        prefixIcon: Icon(
+          Icons.description,
+          size: isMobile ? 20.0 : 22.0,
+          color: Provider.of<TemaProveedor>(context).esModoOscuro
+              ? Colors.white
+              : Colors.black,
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
+        ),
+        errorStyle: const TextStyle(
+          color: Colors.redAccent,
+          fontWeight: FontWeight.w500,
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          vertical: isMobile ? 12.0 : 16.0,
+          horizontal: isMobile ? 12.0 : 16.0,
         ),
       ),
+      validator: (value) {
+        if (value!.isEmpty) {
+          return 'Por favor, ingrese el $label';
+        }
+        return null;
+      },
     );
   }
 

@@ -62,8 +62,8 @@ class MisTemas {
       foregroundColor: Colors.black,
     ),
     textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: Colors.white),
-      bodyMedium: TextStyle(color: Colors.white),
+      bodyLarge: TextStyle(color: Colors.black),
+      bodyMedium: TextStyle(color: Colors.black),
     ),
   );
 
