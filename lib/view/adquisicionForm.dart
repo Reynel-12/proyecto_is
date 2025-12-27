@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:proyecto_is/controller/repository_caja.dart';
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/controller/repository_proveedor.dart';
 import 'package:proyecto_is/controller/repository_compra.dart';
+import 'package:proyecto_is/model/caja.dart';
+import 'package:proyecto_is/model/movimiento_caja.dart';
 import 'package:proyecto_is/model/producto.dart';
 import 'package:proyecto_is/model/proveedor.dart';
 import 'package:proyecto_is/model/compra.dart';
@@ -10,6 +13,7 @@ import 'package:proyecto_is/model/detalle_compra.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:proyecto_is/view/widgets/caja_cerrada.dart';
 
 class AdquisicionForm extends StatefulWidget {
   const AdquisicionForm({super.key});
@@ -22,11 +26,13 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
   final _productoRepo = ProductoRepository();
   final _proveedorRepo = ProveedorRepository();
   final _compraRepo = CompraRepository();
+  final _movimientoRepo = CajaRepository();
 
   List<Proveedor> _proveedores = [];
   List<Producto> _productos = [];
   List<Producto> _productosFiltrados = [];
   Proveedor? _proveedorSeleccionado;
+  Caja? _cajaSeleccionada;
 
   // Lista de items en la compra actual
   List<Map<String, dynamic>> _carritoCompra = [];
@@ -43,9 +49,11 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
   Future<void> _cargarDatos() async {
     final proveedores = await _proveedorRepo.getProveedores();
     final productos = await _productoRepo.getProductos();
+    final caja = await _movimientoRepo.obtenerCajaAbierta();
     setState(() {
       _proveedores = proveedores;
       _productos = productos;
+      _cajaSeleccionada = caja;
       _productosFiltrados = productos;
       _isLoading = false;
     });
@@ -221,9 +229,11 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
     setState(() => _isLoading = true);
 
     try {
+      final fecha = DateTime.now().toIso8601String();
+
       final compra = Compra(
         proveedorId: _proveedorSeleccionado!.id!,
-        fecha: DateTime.now().toString(),
+        fecha: fecha,
         total: _totalCompra,
       );
 
@@ -238,7 +248,17 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
           )
           .toList();
 
+      final movimiento = MovimientoCaja(
+        idCaja: _cajaSeleccionada!.id!,
+        tipo: 'Egreso',
+        concepto: 'Adquisición de ${_proveedorSeleccionado!.nombre}',
+        monto: _totalCompra,
+        metodoPago: 'Efectivo',
+        fecha: fecha,
+      );
+
       await _compraRepo.registrarCompra(compra, detalles);
+      await _movimientoRepo.registrarMovimiento(movimiento);
 
       _mostrarMensaje(
         'Éxito',
@@ -302,6 +322,8 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
+          : _cajaSeleccionada == null
+          ? CajaCerradaScreen()
           : isDesktop
           ? _buildDesktopLayout()
           : _buildMobileLayout(),

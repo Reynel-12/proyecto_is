@@ -4,13 +4,16 @@ import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:proyecto_is/controller/repository_caja.dart';
 import 'dart:io' show Platform;
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/controller/repository_venta.dart';
+import 'package:proyecto_is/model/caja.dart';
 import 'package:proyecto_is/model/detalle_venta.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/producto.dart';
 import 'package:proyecto_is/model/venta.dart';
+import 'package:proyecto_is/view/widgets/caja_cerrada.dart';
 import 'package:proyecto_is/view/widgets/inventario_vacio.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:proyecto_is/view/widgets/thermal_invoice_printer.dart';
@@ -34,6 +37,8 @@ class _VentasState extends State<Ventas> {
   List<Producto> _productosSeleccionados = [];
   List<Producto> _productosFiltrados = [];
   bool isLoading = true;
+  final _movimientoRepo = CajaRepository();
+  Caja? _cajaSeleccionada;
 
   double _total = 0.0;
 
@@ -55,6 +60,11 @@ class _VentasState extends State<Ventas> {
         _productos = productos;
         _productosFiltrados = productos;
         isLoading = false;
+      });
+    });
+    _movimientoRepo.obtenerCajaAbierta().then((caja) {
+      setState(() {
+        _cajaSeleccionada = caja;
       });
     });
   }
@@ -281,7 +291,9 @@ class _VentasState extends State<Ventas> {
                     : Colors.black,
               ),
             ),
-            body: isDesktop
+            body: _cajaSeleccionada == null
+                ? CajaCerradaScreen()
+                : isDesktop
                 ? _buildDesktopLayout(contentPadding)
                 : _buildMobileTabletLayout(contentPadding),
             // floatingActionButton: MiFAB(),
@@ -1314,7 +1326,7 @@ class _VentasState extends State<Ventas> {
       ),
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
       inputFormatters: isNumber
-          ? <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]
+          ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
           : null,
       style: TextStyle(
         fontSize: isMobile ? 14.0 : 16.0,

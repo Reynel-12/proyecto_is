@@ -32,7 +32,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     final List<DashboardCardData> cards = [
       DashboardCardData(
-        icon: Icons.inventory,
+        icon: Icons.point_of_sale,
         title: 'Caja',
         onTap: () => Navigator.push(
           context,

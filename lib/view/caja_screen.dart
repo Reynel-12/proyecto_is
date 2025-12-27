@@ -71,46 +71,167 @@ class _CajaScreenState extends State<CajaScreen>
 
   Future<void> _abrirCaja() async {
     final montoController = TextEditingController();
-    final isDark = Provider.of<TemaProveedor>(
-      context,
-      listen: false,
-    ).esModoOscuro;
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+    final bool isDesktop = screenSize.width >= 900;
+
+    // Calculamos el ancho del diálogo según el tamaño de pantalla
+    final double dialogWidth = isDesktop
+        ? screenSize.width * 0.3
+        : (isTablet ? screenSize.width * 0.5 : screenSize.width * 0.8);
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: isDark
-            ? const Color.fromRGBO(30, 30, 30, 1)
-            : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Abrir Caja',
-          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+        backgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
+            ? Color.fromRGBO(60, 60, 60, 1)
+            : Color.fromRGBO(220, 220, 220, 1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: EdgeInsets.zero,
+        contentPadding: EdgeInsets.all(isMobile ? 20.0 : 24.0),
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: isDesktop ? (screenSize.width - dialogWidth) / 2 : 24.0,
+          vertical: 24.0,
         ),
-        content: TextField(
-          controller: montoController,
-          keyboardType: TextInputType.number,
-          style: TextStyle(color: isDark ? Colors.white : Colors.black),
-          decoration: InputDecoration(
-            labelText: 'Monto Inicial',
-            labelStyle: TextStyle(
-              color: isDark ? Colors.white70 : Colors.black87,
+        title: Container(
+          padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
+          decoration: BoxDecoration(
+            color: Provider.of<TemaProveedor>(context).esModoOscuro
+                ? Color.fromRGBO(60, 60, 60, 1)
+                : Color.fromRGBO(220, 220, 220, 1),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
             ),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark ? Colors.white24 : Colors.black12,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.lock_open,
+                size: isMobile ? 20.0 : 24.0,
+                color: Provider.of<TemaProveedor>(context).esModoOscuro
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Abrir caja',
+                style: TextStyle(
+                  color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      ? Colors.white
+                      : Colors.black,
+                  fontSize: isMobile ? 18.0 : 20.0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        content: Container(
+          width: dialogWidth,
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: montoController,
+                    keyboardType: TextInputType.number,
+                    style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
+                    decoration: InputDecoration(
+                      labelText: 'Monto inicial',
+                      labelStyle: TextStyle(
+                        color: Provider.of<TemaProveedor>(context).esModoOscuro
+                            ? Colors.white
+                            : Colors.black,
+                        fontSize: isMobile ? 14.0 : 16.0,
+                      ),
+                      hintText: 'Ingrese el monto',
+                      filled: true,
+                      fillColor:
+                          Provider.of<TemaProveedor>(context).esModoOscuro
+                          ? const Color.fromRGBO(30, 30, 30, 1)
+                          : const Color.fromRGBO(244, 243, 243, 1),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color:
+                              Provider.of<TemaProveedor>(context).esModoOscuro
+                              ? Colors.white
+                              : Colors.black,
+                          width: 2,
+                        ),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.money,
+                        size: isMobile ? 20.0 : 22.0,
+                        color: Provider.of<TemaProveedor>(context).esModoOscuro
+                            ? Colors.white
+                            : Colors.black,
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.redAccent,
+                          width: 2.0,
+                        ),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.redAccent,
+                          width: 2.0,
+                        ),
+                      ),
+                      errorStyle: const TextStyle(
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: isMobile ? 12.0 : 16.0,
+                        horizontal: isMobile ? 12.0 : 16.0,
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value!.isEmpty) {
+                        return 'Por favor, ingrese el monto';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
               ),
             ),
           ),
         ),
+        actionsPadding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 12.0 : 16.0,
+          vertical: isMobile ? 8.0 : 12.0,
+        ),
         actions: [
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 16.0 : 24.0,
+                vertical: isMobile ? 8.0 : 12.0,
+              ),
+            ),
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
+              if (!_formKey.currentState!.validate()) return;
               final monto = double.tryParse(montoController.text);
               if (monto != null) {
                 await _cajaRepository.abrirCaja(monto);
@@ -121,7 +242,11 @@ class _CajaScreenState extends State<CajaScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blueAccent,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 16.0 : 24.0,
+                vertical: isMobile ? 8.0 : 12.0,
               ),
             ),
             child: const Text('Abrir', style: TextStyle(color: Colors.white)),
@@ -233,6 +358,11 @@ class _CajaScreenState extends State<CajaScreen>
                         TextFormField(
                           controller: montoRealController,
                           keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[0-9.]'),
+                            ),
+                          ],
                           style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
                           decoration: InputDecoration(
                             labelText: 'Monto real en caja',
@@ -585,8 +715,8 @@ class _CajaScreenState extends State<CajaScreen>
                         horizontal: isMobile ? 12.0 : 16.0,
                       ),
                     ),
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                     validator: (value) {
                       if (value!.isEmpty) {
@@ -1369,9 +1499,9 @@ class _CajaScreenState extends State<CajaScreen>
                   : Colors.blue.withOpacity(0.2),
               child: Icon(
                 mov.tipo == 'Ingreso'
-                    ? Icons.arrow_downward
-                    : mov.tipo == 'Egreso'
                     ? Icons.arrow_upward
+                    : mov.tipo == 'Egreso'
+                    ? Icons.arrow_downward
                     : Icons.shopping_cart,
                 color: mov.tipo == 'Ingreso'
                     ? Colors.green
@@ -1387,9 +1517,22 @@ class _CajaScreenState extends State<CajaScreen>
                 color: isDark ? Colors.white : Colors.black87,
               ),
             ),
-            subtitle: Text(
-              DateFormat('HH:mm').format(DateTime.parse(mov.fecha)),
-              style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
+            subtitle: Row(
+              children: [
+                Text(
+                  DateFormat('dd/MM/yyyy').format(DateTime.parse(mov.fecha)),
+                  style: TextStyle(
+                    color: isDark ? Colors.white60 : Colors.black54,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  DateFormat('HH:mm').format(DateTime.parse(mov.fecha)),
+                  style: TextStyle(
+                    color: isDark ? Colors.white60 : Colors.black54,
+                  ),
+                ),
+              ],
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,

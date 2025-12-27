@@ -2,8 +2,11 @@ import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:proyecto_is/controller/repository_caja.dart';
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/controller/repository_proveedor.dart';
+import 'package:proyecto_is/model/caja.dart';
+import 'package:proyecto_is/model/movimiento_caja.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/view/productoForm.dart';
 import 'package:provider/provider.dart';
@@ -39,6 +42,8 @@ class _PerfilProductoState extends State<PerfilProducto> {
   final TextEditingController _inventarioController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   String nombreProveedor = '';
+  final _movimientoRepo = CajaRepository();
+  Caja? _cajaSeleccionada;
 
   @override
   void initState() {
@@ -50,8 +55,10 @@ class _PerfilProductoState extends State<PerfilProducto> {
     final proveedor = await repositoryProveedor.getProveedorById(
       widget.idProveedor,
     );
+    final caja = await _movimientoRepo.obtenerCajaAbierta();
     setState(() {
       nombreProveedor = proveedor[0].nombre;
+      _cajaSeleccionada = caja;
     });
   }
 
@@ -113,10 +120,20 @@ class _PerfilProductoState extends State<PerfilProducto> {
   }
 
   void addInventory() async {
+    final fecha = DateTime.now().toIso8601String();
+    final movimiento = MovimientoCaja(
+      idCaja: _cajaSeleccionada!.id!,
+      tipo: 'Egreso',
+      concepto: 'Egreso de inventario',
+      monto: widget.precio * int.parse(_cantidad.text),
+      metodoPago: 'Efectivo',
+      fecha: fecha,
+    );
     await repositoryProducto.addInventario(
       widget.docID,
       int.parse(_cantidad.text),
     );
+    await _movimientoRepo.registrarMovimiento(movimiento);
     _mostrarMensaje(
       'Éxito',
       'Se actualizó correctamente el inventario',
@@ -127,10 +144,41 @@ class _PerfilProductoState extends State<PerfilProducto> {
   }
 
   void _editInventory() async {
-    await repositoryProducto.editInventario(
-      widget.docID,
-      int.parse(_inventarioController.text),
-    );
+    final fecha = DateTime.now().toIso8601String();
+    final inventario = int.parse(_inventarioController.text);
+    if (inventario == widget.inventario) {
+      _mostrarMensaje(
+        'Error',
+        'El inventario no ha cambiado',
+        ContentType.warning,
+      );
+      Navigator.pop(context);
+      return;
+    }
+    MovimientoCaja? movimiento;
+    if (inventario > widget.inventario) {
+      final diferencia = inventario - widget.inventario;
+      movimiento = MovimientoCaja(
+        idCaja: _cajaSeleccionada!.id!,
+        tipo: 'Egreso',
+        concepto: 'Egreso de inventario',
+        monto: widget.precio * diferencia,
+        metodoPago: 'Efectivo',
+        fecha: fecha,
+      );
+    } else if (inventario < widget.inventario) {
+      final diferencia = widget.inventario - inventario;
+      movimiento = MovimientoCaja(
+        idCaja: _cajaSeleccionada!.id!,
+        tipo: 'Ingreso',
+        concepto: 'Ingreso de inventario',
+        monto: widget.precio * diferencia,
+        metodoPago: 'Efectivo',
+        fecha: fecha,
+      );
+    }
+    await repositoryProducto.editInventario(widget.docID, inventario);
+    await _movimientoRepo.registrarMovimiento(movimiento!);
     _mostrarMensaje(
       'Éxito',
       'Inventario actualizado correctamente',
