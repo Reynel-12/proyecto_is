@@ -204,4 +204,43 @@ class VentaRepository {
 
     return ventasMap.values.toList();
   }
+
+  Future<double> getTotalVentasByProducto(String productoId) async {
+    final db = await dbHelper.database;
+    final result = await db.rawQuery(
+      '''
+      SELECT SUM(cantidad) as total
+      FROM ${DBHelper.detalleVentasTable}
+      WHERE producto_id = ?
+    ''',
+      [productoId],
+    );
+
+    if (result.isNotEmpty && result.first['total'] != null) {
+      return (result.first['total'] as num).toDouble();
+    }
+    return 0.0;
+  }
+
+  Future<List<Map<String, dynamic>>> getUltimasVentasByProducto(
+    String productoId, {
+    int limit = 5,
+  }) async {
+    final db = await dbHelper.database;
+    return await db.rawQuery(
+      '''
+      SELECT 
+        v.fecha,
+        dv.cantidad,
+        dv.precio_unitario,
+        dv.subtotal
+      FROM ${DBHelper.ventasTable} v
+      INNER JOIN ${DBHelper.detalleVentasTable} dv ON v.id_venta = dv.venta_id
+      WHERE dv.producto_id = ?
+      ORDER BY v.fecha DESC
+      LIMIT ?
+    ''',
+      [productoId, limit],
+    );
+  }
 }

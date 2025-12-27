@@ -8,8 +8,10 @@ import 'package:proyecto_is/controller/repository_proveedor.dart';
 import 'package:proyecto_is/model/caja.dart';
 import 'package:proyecto_is/model/movimiento_caja.dart';
 import 'package:proyecto_is/model/preferences.dart';
+import 'package:proyecto_is/controller/repository_venta.dart';
 import 'package:proyecto_is/view/productoForm.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 // ignore: must_be_immutable
 class PerfilProducto extends StatefulWidget {
@@ -43,7 +45,10 @@ class _PerfilProductoState extends State<PerfilProducto> {
   final _formKey = GlobalKey<FormState>();
   String nombreProveedor = '';
   final _movimientoRepo = CajaRepository();
+  final _ventaRepo = VentaRepository();
   Caja? _cajaSeleccionada;
+  double totalVentas = 0;
+  List<Map<String, dynamic>> ultimasVentas = [];
 
   @override
   void initState() {
@@ -56,9 +61,14 @@ class _PerfilProductoState extends State<PerfilProducto> {
       widget.idProveedor,
     );
     final caja = await _movimientoRepo.obtenerCajaAbierta();
+    final total = await _ventaRepo.getTotalVentasByProducto(widget.docID);
+    final ultimas = await _ventaRepo.getUltimasVentasByProducto(widget.docID);
+
     setState(() {
       nombreProveedor = proveedor[0].nombre;
       _cajaSeleccionada = caja;
+      totalVentas = total;
+      ultimasVentas = ultimas;
     });
   }
 
@@ -188,14 +198,24 @@ class _PerfilProductoState extends State<PerfilProducto> {
   }
 
   void _eliminarProducto() async {
-    await repositoryProducto.deleteProducto(widget.docID);
-    Navigator.pop(context, true);
-    _mostrarMensaje(
-      'Éxito',
-      'Producto eliminado correctamente',
-      ContentType.success,
-    );
-    Navigator.pop(context, true);
+    try {
+      await repositoryProducto.deleteProducto(widget.docID);
+      Navigator.pop(context, true);
+      _mostrarMensaje(
+        'Éxito',
+        'Producto eliminado correctamente',
+        ContentType.success,
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      _mostrarMensaje(
+        'Error',
+        'Error al eliminar el producto',
+        ContentType.warning,
+      );
+      Navigator.pop(context);
+      return;
+    }
   }
 
   @override
@@ -295,6 +315,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
                     title: 'Atención',
                     desc: '¿Está seguro que desea eliminar este producto?',
                     btnCancelText: 'Cancelar',
+                    btnOkText: 'Eliminar',
                     btnOkOnPress: () {
                       _eliminarProducto();
                     },
@@ -346,6 +367,8 @@ class _PerfilProductoState extends State<PerfilProducto> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildProductInfo(elevation),
+                SizedBox(height: padding),
+                _buildStatsCard(elevation, padding),
                 SizedBox(height: padding),
                 _buildActionButton(),
               ],
@@ -440,6 +463,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
                               desc:
                                   '¿Está seguro que desea eliminar este producto?',
                               btnCancelText: 'Cancelar',
+                              btnOkText: 'Eliminar',
                               btnOkOnPress: () {
                                 _eliminarProducto();
                               },
@@ -480,12 +504,77 @@ class _PerfilProductoState extends State<PerfilProducto> {
                           ),
                         ),
                         SizedBox(height: 16),
-                        _buildStatRow('Ventas totales', '0'),
-                        _buildStatRow('Última venta', 'N/A'),
+                        _buildStatRow(
+                          'Ventas totales',
+                          totalVentas.toStringAsFixed(0),
+                        ),
+                        _buildStatRow(
+                          'Última venta',
+                          ultimasVentas.isNotEmpty
+                              ? DateFormat('dd/MM/yyyy').format(
+                                  DateTime.parse(ultimasVentas[0]['fecha']),
+                                )
+                              : 'N/A',
+                        ),
                         _buildStatRow(
                           'Valor en inventario',
                           'L. ${widget.inventario * widget.precio}',
                         ),
+                        if (ultimasVentas.isNotEmpty) ...[
+                          SizedBox(height: 16),
+                          Text(
+                            'Últimas ventas',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  Provider.of<TemaProveedor>(
+                                    context,
+                                  ).esModoOscuro
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          ...ultimasVentas.map(
+                            (v) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    DateFormat(
+                                      'dd/MM HH:mm',
+                                    ).format(DateTime.parse(v['fecha'])),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color:
+                                          Provider.of<TemaProveedor>(
+                                            context,
+                                          ).esModoOscuro
+                                          ? Colors.white70
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${v['cantidad']} ${widget.unidad}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color:
+                                          Provider.of<TemaProveedor>(
+                                            context,
+                                          ).esModoOscuro
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -524,6 +613,95 @@ class _PerfilProductoState extends State<PerfilProducto> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsCard(double elevation, double padding) {
+    return Card(
+      color: Provider.of<TemaProveedor>(context).esModoOscuro
+          ? const Color.fromRGBO(30, 30, 30, 1)
+          : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: elevation,
+      child: Padding(
+        padding: EdgeInsets.all(padding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Estadísticas',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Provider.of<TemaProveedor>(context).esModoOscuro
+                    ? Colors.white
+                    : Colors.black,
+              ),
+            ),
+            SizedBox(height: 16),
+            _buildStatRow('Ventas totales', totalVentas.toStringAsFixed(0)),
+            _buildStatRow(
+              'Última venta',
+              ultimasVentas.isNotEmpty
+                  ? DateFormat(
+                      'dd/MM/yyyy',
+                    ).format(DateTime.parse(ultimasVentas[0]['fecha']))
+                  : 'N/A',
+            ),
+            _buildStatRow(
+              'Valor en inventario',
+              'L. ${widget.inventario * widget.precio}',
+            ),
+            if (ultimasVentas.isNotEmpty) ...[
+              SizedBox(height: 16),
+              Text(
+                'Últimas ventas',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      ? Colors.white
+                      : Colors.black,
+                ),
+              ),
+              SizedBox(height: 8),
+              ...ultimasVentas.map(
+                (v) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        DateFormat(
+                          'dd/MM HH:mm',
+                        ).format(DateTime.parse(v['fecha'])),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color:
+                              Provider.of<TemaProveedor>(context).esModoOscuro
+                              ? Colors.white70
+                              : Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        '${v['cantidad']} ${widget.unidad}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color:
+                              Provider.of<TemaProveedor>(context).esModoOscuro
+                              ? Colors.white
+                              : Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

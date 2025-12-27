@@ -315,6 +315,7 @@ class _ProveedoresViewState extends State<ProveedoresView> {
           MaterialPageRoute(
             builder: (_) => ProveedorForm(
               isEdit: true,
+              id: id,
               nombre: nombre,
               direccion: direccion,
               telefono: telefono,

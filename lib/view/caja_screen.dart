@@ -1550,7 +1550,7 @@ class _CajaScreenState extends State<CajaScreen>
                     onPressed: () => _editarMovimiento(mov),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.grey),
+                    icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () => _eliminarMovimiento(mov.id!),
                   ),
                 ],

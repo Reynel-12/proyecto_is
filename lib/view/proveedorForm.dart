@@ -1,3 +1,4 @@
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +10,7 @@ import 'package:provider/provider.dart';
 // ignore: must_be_immutable
 class ProveedorForm extends StatefulWidget {
   bool isEdit;
+  int? id;
   String nombre;
   String direccion;
   String telefono;
@@ -17,6 +19,7 @@ class ProveedorForm extends StatefulWidget {
   ProveedorForm({
     super.key,
     this.isEdit = false,
+    this.id,
     this.nombre = '',
     this.direccion = '',
     this.telefono = '',
@@ -66,20 +69,30 @@ class _ProveedorFormState extends State<ProveedorForm> {
 
   void _guardarProveedor() async {
     if (!_formKey.currentState!.validate()) return;
-    // Aquí iría la lógica para guardar en base de datos
     try {
       final proveedor = Proveedor(
+        id: widget.id,
         nombre: _nombre.text.trim(),
         direccion: _direccion.text.trim(),
         telefono: _telefono.text.trim(),
         correo: _correo.text.trim(),
       );
-      await _proveedorRepository.insertProveedor(proveedor);
-      _mostrarMensaje(
-        'Éxito',
-        'Proveedor creado correctamente',
-        ContentType.success,
-      );
+
+      if (widget.isEdit) {
+        await _proveedorRepository.updateProveedor(proveedor);
+        _mostrarMensaje(
+          'Éxito',
+          'Proveedor actualizado correctamente',
+          ContentType.success,
+        );
+      } else {
+        await _proveedorRepository.insertProveedor(proveedor);
+        _mostrarMensaje(
+          'Éxito',
+          'Proveedor creado correctamente',
+          ContentType.success,
+        );
+      }
       Navigator.pop(context, true);
     } catch (e) {
       _mostrarMensaje(
@@ -88,8 +101,48 @@ class _ProveedorFormState extends State<ProveedorForm> {
         ContentType.warning,
       );
       print(e);
-      Navigator.pop(context, false);
     }
+  }
+
+  void _eliminarProveedor() async {
+    // Obtenemos el tamaño de la pantalla
+    final screenSize = MediaQuery.of(context).size;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+    final bool isDesktop = screenSize.width >= 900;
+
+    // Calculamos el ancho del awesomeDialog según el tamaño de pantalla
+    final double dialogWidth = isDesktop
+        ? screenSize.width * 0.3
+        : (isTablet ? screenSize.width * 0.5 : screenSize.width * 0.8);
+    AwesomeDialog(
+      width: isDesktop ? (screenSize.width - dialogWidth) / 2 : null,
+      context: context,
+      dialogType: DialogType.warning,
+      animType: AnimType.bottomSlide,
+      title: 'Eliminar Proveedor',
+      desc: '¿Está seguro que desea eliminar a este proveedor?',
+      btnCancelText: 'Cancelar',
+      btnOkText: 'Eliminar',
+      btnCancelOnPress: () {},
+      btnOkOnPress: () async {
+        try {
+          await _proveedorRepository.deleteProveedor(widget.id!);
+          _mostrarMensaje(
+            'Éxito',
+            'Proveedor eliminado correctamente',
+            ContentType.success,
+          );
+          Navigator.pop(context, true);
+        } catch (e) {
+          _mostrarMensaje(
+            'Error',
+            'Error al eliminar el proveedor',
+            ContentType.warning,
+          );
+          print(e);
+        }
+      },
+    ).show();
   }
 
   @override
@@ -127,6 +180,14 @@ class _ProveedorFormState extends State<ProveedorForm> {
               ? Colors.white
               : Colors.black,
         ),
+        actions: [
+          if (widget.isEdit)
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.redAccent),
+              onPressed: _eliminarProveedor,
+              tooltip: 'Eliminar Proveedor',
+            ),
+        ],
       ),
       body: isDesktop ? _buildDesktopLayout() : Stack(children: [formulario()]),
     );
