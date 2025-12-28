@@ -47,6 +47,7 @@ dependencies:
   awesome_snackbar_content: ^0.1.8
   diacritic: ^0.1.6
   sqflite_common_ffi: ^2.4.0+1
+  mobile_scanner: ^7.1.2
 
 dev_dependencies:
   flutter_test:

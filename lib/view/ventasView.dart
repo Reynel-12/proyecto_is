@@ -13,6 +13,7 @@ import 'package:proyecto_is/model/detalle_venta.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/producto.dart';
 import 'package:proyecto_is/model/venta.dart';
+import 'package:proyecto_is/view/MiFAB.dart';
 import 'package:proyecto_is/view/widgets/caja_cerrada.dart';
 import 'package:proyecto_is/view/widgets/inventario_vacio.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
@@ -77,6 +78,243 @@ class _VentasState extends State<Ventas> {
         _productos = productos;
         _productosFiltrados = productos;
       });
+    });
+  }
+
+  void handleOnAddNewProduct(Producto value) {
+    setState(() {
+      _productosSeleccionados.add(value);
+    });
+  }
+
+  void searchProductByCode(String code) async {
+    // Obtenemos el tamaño de la pantalla
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+
+    // Ajustamos tamaños según el dispositivo
+    final double childIconSize = isMobile ? 24.0 : (isTablet ? 28.0 : 30.0);
+    final double dialogWidth = isMobile
+        ? screenSize.width * 0.9
+        : (isTablet ? screenSize.width * 0.7 : 500.0);
+    final double dialogPadding = isMobile ? 12.0 : (isTablet ? 16.0 : 20.0);
+    final double titleFontSize = isMobile ? 16.0 : (isTablet ? 18.0 : 20.0);
+    final double contentFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+
+    if (code == "-1") {
+      _mostrarMensaje('Atención', 'Escaneo cancelado', ContentType.warning);
+      return;
+    }
+
+    final productMatches = _productos
+        .where((product) => product.id == code)
+        .toList();
+
+    if (productMatches.isNotEmpty) {
+      // Si hay más de un producto con el mismo código, mostrar un diálogo de selección
+      final selectedProduct = productMatches.length >= 1
+          ? await showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  backgroundColor:
+                      Provider.of<TemaProveedor>(context).esModoOscuro
+                      ? Color.fromRGBO(60, 60, 60, 1)
+                      : Color.fromRGBO(220, 220, 220, 1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  titlePadding: const EdgeInsets.all(0),
+                  title: Container(
+                    padding: EdgeInsets.all(dialogPadding),
+                    decoration: const BoxDecoration(
+                      color: Colors.blueAccent,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.shopping_cart,
+                          color: Colors.white,
+                          size: childIconSize,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Seleccione el producto',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: titleFontSize,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  content: Container(
+                    width: dialogWidth,
+                    height: screenSize.height * 0.6,
+                    padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: productMatches.length,
+                            itemBuilder: (context, index) {
+                              final producto = productMatches[index];
+                              return Card(
+                                color:
+                                    Provider.of<TemaProveedor>(
+                                      context,
+                                    ).esModoOscuro
+                                    ? const Color.fromRGBO(30, 30, 30, 1)
+                                    : Colors.white,
+                                margin: EdgeInsets.symmetric(
+                                  vertical: isMobile ? 6.0 : 8.0,
+                                  horizontal: 0,
+                                ),
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: ListTile(
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: isMobile ? 6.0 : 8.0,
+                                    horizontal: isMobile ? 12.0 : 16.0,
+                                  ),
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.blueAccent,
+                                    radius: isMobile ? 20.0 : 24.0,
+                                    child: Text(
+                                      producto.nombre[0].toUpperCase(),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: isMobile ? 14.0 : 16.0,
+                                      ),
+                                    ),
+                                  ),
+                                  title: Text(
+                                    producto.nombre,
+                                    style: TextStyle(
+                                      fontSize: contentFontSize,
+                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          Provider.of<TemaProveedor>(
+                                            context,
+                                          ).esModoOscuro
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '${producto.unidadMedida}\nPrecio: ${producto.precio.toStringAsFixed(2)}\nInventario: ${producto.stock.toString()}',
+                                    style: TextStyle(
+                                      color:
+                                          Provider.of<TemaProveedor>(
+                                            context,
+                                          ).esModoOscuro
+                                          ? Colors.white
+                                          : Colors.black,
+                                      fontSize: contentFontSize - 2,
+                                    ),
+                                  ),
+                                  trailing: Icon(
+                                    Icons.add_circle_outline,
+                                    color: Colors.blueAccent,
+                                    size: childIconSize * 0.9,
+                                  ),
+                                  onTap: () {
+                                    Navigator.of(context).pop(producto);
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            )
+          : productMatches.first;
+
+      if (selectedProduct == null) {
+        return; // Si el usuario cerró el diálogo, no hacer nada
+      }
+
+      setState(() {
+        bool existe = false;
+        for (var p in _productosSeleccionados) {
+          if (p.id == selectedProduct.id) {
+            p.cantidad += 1;
+            existe = true;
+            break;
+          }
+        }
+
+        if (!existe) {
+          selectedProduct.cantidad = 1;
+          _productosSeleccionados.add(selectedProduct);
+        }
+      });
+
+      _mostrarMensaje(
+        'Éxito',
+        'Producto agregado: ${selectedProduct.nombre}',
+        ContentType.success,
+      );
+    } else {
+      _mostrarMensaje(
+        'Atención',
+        'Producto no encontrado: $code',
+        ContentType.warning,
+      );
+    }
+  }
+
+  void _agregarProductoByName(Producto producto) {
+    setState(() {
+      // Verificar si el producto ya existe en la lista
+      bool existe = false;
+
+      for (var p in _productosSeleccionados) {
+        if (p.id == producto.id) {
+          p.cantidad += 1; // Si existe, suma 1 a la cantidad
+          existe = true;
+          break;
+        }
+      }
+
+      if (!existe) {
+        // Si no existe, agregar el producto a la lista
+        _productosSeleccionados.add(producto);
+      }
+    });
+  }
+
+  void _agregarProductoByCode(Producto producto) {
+    setState(() {
+      // Verificar si el producto ya existe en la lista
+      bool existe = false;
+
+      for (var p in _productosSeleccionados) {
+        if (p.id == producto.id) {
+          p.cantidad += 1; // Si existe, suma 1 a la cantidad
+          existe = true;
+          break;
+        }
+      }
+
+      if (!existe) {
+        // Si no existe, agregar el producto a la lista
+        _productosSeleccionados.add(producto);
+      }
     });
   }
 
@@ -296,7 +534,15 @@ class _VentasState extends State<Ventas> {
                 : isDesktop
                 ? _buildDesktopLayout(contentPadding)
                 : _buildMobileTabletLayout(contentPadding),
-            // floatingActionButton: MiFAB(),
+            floatingActionButton: _cajaSeleccionada != null
+                ? MiFAB(
+                    onScan: searchProductByCode,
+                    productsList: _productos,
+                    onProductoSeleccionadoByNombre: _agregarProductoByName,
+                    onProductoSeleccionadoByCodigo: _agregarProductoByCode,
+                    addNewProduct: handleOnAddNewProduct,
+                  )
+                : null,
           );
   }
 

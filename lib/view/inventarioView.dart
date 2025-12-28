@@ -1,9 +1,11 @@
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/producto.dart';
+import 'package:proyecto_is/view/barcode_scanner_view.dart';
 import 'package:proyecto_is/view/perfilProductoView.dart';
 import 'package:proyecto_is/view/widgets/inventario_vacio.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
@@ -23,6 +25,7 @@ class _InventarioState extends State<Inventario> {
   List<Producto> _productos = [];
   List<Producto> _productosFiltrados = [];
   bool isLoading = false;
+  String scanResult = '';
 
   @override
   void dispose() {
@@ -85,6 +88,38 @@ class _InventarioState extends State<Inventario> {
         }
       }
     });
+  }
+
+  void _filterProductsByCode(String query) {
+    if (query == "-1") {
+      // El usuario canceló el escaneo
+      //_mostrarMensaje('Atención', 'Escaneo cancelado', SnackbarType.warning);
+      return; // No hace nada más si se cancela
+    }
+    if (query.isEmpty) {
+      setState(() {
+        _productosFiltrados = _productos; // Si no hay texto, mostrar todos
+      });
+    } else {
+      setState(() {
+        _productosFiltrados = _productos
+            .where(
+              (product) =>
+                  product.id.toLowerCase().contains(query.toLowerCase()),
+            )
+            .toList(); // Filtrar los productos según la búsqueda
+      });
+      if (_productosFiltrados.isEmpty) {
+        setState(() {
+          _productosFiltrados = _productos;
+        });
+        _mostrarMensaje(
+          'Atención',
+          'Producto con código: $query no encontrado',
+          ContentType.warning,
+        );
+      }
+    }
   }
 
   @override
@@ -336,8 +371,21 @@ class _InventarioState extends State<Inventario> {
                               ),
                               onPressed: () async {
                                 if (Platform.isAndroid || Platform.isIOS) {
-                                  //String scanResult = await _scan();
-                                  // Usar el resultado del escaneo
+                                  final scannedCode = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => BarcodeScannerView(),
+                                    ),
+                                  );
+
+                                  if (scannedCode != null) {
+                                    setState(() {
+                                      scanResult = scannedCode.toString();
+                                    });
+
+                                    // ✅ Usar directamente scannedCode en lugar de esperar al rebuild
+                                    _filterProductsByCode(scanResult);
+                                  }
                                 }
                               },
                             ),
@@ -652,5 +700,25 @@ class _InventarioState extends State<Inventario> {
         ),
       ),
     );
+  }
+
+  void _mostrarMensaje(String titulo, String mensaje, ContentType type) {
+    final snackBar = SnackBar(
+      /// need to set following properties for best effect of awesome_snackbar_content
+      elevation: 0,
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.transparent,
+      content: AwesomeSnackbarContent(
+        title: titulo,
+        message: mensaje,
+
+        /// change contentType to ContentType.success, ContentType.warning or ContentType.help for variants
+        contentType: type,
+      ),
+    );
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
   }
 }

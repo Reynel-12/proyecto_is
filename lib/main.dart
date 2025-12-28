@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -6,11 +8,14 @@ import 'package:proyecto_is/view/principal.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() async {
-  // Inicializa FFI para escritorio
-  sqfliteFfiInit();
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
 
-  // Usa la versión FFI como factory
-  databaseFactory = databaseFactoryFfi;
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const MyApp());
+
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }

@@ -81,7 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       DashboardCardData(
         icon: Icons.history,
-        title: 'Historial de Ventas',
+        title: 'Historial de ventas',
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const Historial()),

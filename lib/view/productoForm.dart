@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +9,8 @@ import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/producto.dart';
 import 'package:proyecto_is/model/proveedor.dart';
 import 'package:provider/provider.dart';
-import 'dart:io' show Platform;
+
+import 'package:proyecto_is/view/barcode_scanner_view.dart';
 
 // ignore: must_be_immutable
 class Nuevoproducto extends StatefulWidget {
@@ -544,7 +547,24 @@ class _NuevoproductoState extends State<Nuevoproducto> {
                   size: iconSize,
                 ),
                 onPressed: () async {
-                  if (Platform.isAndroid || Platform.isIOS) {}
+                  if (Platform.isAndroid || Platform.isIOS) {
+                    final scannedCode = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => BarcodeScannerView()),
+                    );
+
+                    if (scannedCode != null && widget.isEdit) {
+                      controller.text = widget.codigo;
+                    } else if (scannedCode == null) {
+                      _mostrarMensaje(
+                        'Atención',
+                        'Escaneo cancelado',
+                        ContentType.warning,
+                      );
+                    } else if (scannedCode != null) {
+                      controller.text = scannedCode;
+                    }
+                  }
                 },
               )
             : null,

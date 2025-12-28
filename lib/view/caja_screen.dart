@@ -138,6 +138,9 @@ class _CajaScreenState extends State<CajaScreen>
                     controller: montoController,
                     keyboardType: TextInputType.number,
                     style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                     decoration: InputDecoration(
                       labelText: 'Monto inicial',
                       labelStyle: TextStyle(
@@ -1474,6 +1477,8 @@ class _CajaScreenState extends State<CajaScreen>
   Widget _buildMovimientosList({bool scrollable = false}) {
     final currency = NumberFormat.currency(symbol: 'L. ');
     final isDark = Provider.of<TemaProveedor>(context).esModoOscuro;
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
 
     return ListView.builder(
       shrinkWrap: !scrollable,
@@ -1523,6 +1528,7 @@ class _CajaScreenState extends State<CajaScreen>
                   DateFormat('dd/MM/yyyy').format(DateTime.parse(mov.fecha)),
                   style: TextStyle(
                     color: isDark ? Colors.white60 : Colors.black54,
+                    fontSize: isMobile ? 12.0 : 14.0,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1530,6 +1536,7 @@ class _CajaScreenState extends State<CajaScreen>
                   DateFormat('HH:mm').format(DateTime.parse(mov.fecha)),
                   style: TextStyle(
                     color: isDark ? Colors.white60 : Colors.black54,
+                    fontSize: isMobile ? 12.0 : 14.0,
                   ),
                 ),
               ],

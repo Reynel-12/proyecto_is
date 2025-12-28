@@ -56,6 +56,9 @@ class VentaRepository {
     return await db.transaction<int>((txn) async {
       // 1. Verificar stock producto por producto
       for (final detalle in detalles) {
+        if (detalle.productoId == 'N/A') {
+          continue;
+        }
         final result = await txn.rawQuery(
           '''
         SELECT stock FROM productos WHERE id_producto = ?

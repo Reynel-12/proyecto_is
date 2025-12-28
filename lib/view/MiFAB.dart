@@ -1,14 +1,29 @@
+import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:proyecto_is/view/adquisicionForm.dart';
 import 'dart:io' show Platform;
+import 'package:proyecto_is/model/producto.dart';
+import 'package:proyecto_is/view/barcode_scanner_view.dart';
+import 'package:proyecto_is/view/widgets/inventario_vacio.dart';
 
 // ignore: must_be_immutable
 class MiFAB extends StatefulWidget {
-  const MiFAB({super.key});
+  final Function(String) onScan;
+  List<Producto> productsList = [];
+  Function(Producto) onProductoSeleccionadoByNombre;
+  Function(Producto) onProductoSeleccionadoByCodigo;
+  Function(Producto) addNewProduct;
+  MiFAB({
+    super.key,
+    required this.onScan,
+    required this.productsList,
+    required this.onProductoSeleccionadoByNombre,
+    required this.onProductoSeleccionadoByCodigo,
+    required this.addNewProduct,
+  });
 
   @override
   State<MiFAB> createState() => _MiFABState();
@@ -20,6 +35,72 @@ class _MiFABState extends State<MiFAB> {
   final TextEditingController _unidad = TextEditingController();
   final TextEditingController _precio = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  List<Producto> filteredProducts = [];
+  List<Producto> foundProduct = [];
+  List<Producto> newProduct = [];
+  String scanResult = "";
+
+  @override
+  void initState() {
+    super.initState();
+    filteredProducts = widget.productsList;
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose(); // Limpiar el controlador al cerrar el widget
+    _nombre.dispose();
+    _unidad.dispose();
+    _precio.dispose();
+    super.dispose();
+  }
+
+  // Función para eliminar acentos y caracteres especiales
+  String _normalizeString(String str) {
+    return removeDiacritics(str.trim().toLowerCase());
+  }
+
+  // Función mejorada para filtrar productos por nombre u otras propiedades
+  void _filterProducts(String query) {
+    String normalizedQuery = _normalizeString(query);
+
+    setState(() {
+      if (normalizedQuery.isEmpty) {
+        filteredProducts =
+            widget.productsList; // Mostrar todos si no hay búsqueda
+      } else {
+        // Si no, filtramos por nombre o coincidencias parciales
+        var productosPorNombre = widget.productsList.where((product) {
+          String productName = _normalizeString(product.nombre);
+          return productName.contains(
+            normalizedQuery,
+          ); // Coincidencia parcial por nombre
+        }).toList();
+        if (productosPorNombre.isNotEmpty) {
+          filteredProducts = productosPorNombre;
+        }
+      }
+    });
+  }
+
+  void _filterProductsByCode(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        filteredProducts =
+            widget.productsList; // Si no hay texto, mostrar todos
+      });
+    } else {
+      setState(() {
+        filteredProducts = widget.productsList
+            .where(
+              (product) =>
+                  product.id.toLowerCase().contains(query.toLowerCase()),
+            )
+            .toList(); // Filtrar los productos según la búsqueda
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +158,19 @@ class _MiFABState extends State<MiFAB> {
                     ? Color.fromRGBO(60, 60, 60, 1)
                     : Color.fromRGBO(220, 220, 220, 1),
                 onTap: () async {
-                  if (Platform.isAndroid || Platform.isIOS) {}
+                  final scannedCode = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => BarcodeScannerView()),
+                  );
+
+                  if (scannedCode != null) {
+                    setState(() {
+                      scanResult = scannedCode.toString();
+                    });
+
+                    // ✅ Usar directamente scannedCode en lugar de esperar al rebuild
+                    widget.onScan(scanResult);
+                  }
                 },
               )
             : SpeedDialChild(),
@@ -144,204 +237,243 @@ class _MiFABState extends State<MiFAB> {
                                 ],
                               ),
                             ),
-                            content: Container(
-                              width: dialogWidth,
-                              height: screenSize.height * 0.6,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Campo de búsqueda estilizado
-                                  TextField(
-                                    controller: searchController,
-                                    decoration: InputDecoration(
-                                      hintText:
-                                          'Ingrese el código del producto',
-                                      hintStyle: TextStyle(
-                                        fontSize: contentFontSize,
-                                      ),
-                                      labelStyle: TextStyle(
-                                        color:
-                                            Provider.of<TemaProveedor>(
-                                              context,
-                                            ).esModoOscuro
-                                            ? Colors.white
-                                            : Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: contentFontSize,
-                                      ),
-                                      prefixIcon: Icon(
-                                        Icons.search,
-                                        color:
-                                            Provider.of<TemaProveedor>(
-                                              context,
-                                            ).esModoOscuro
-                                            ? Colors.white
-                                            : Colors.black,
-                                        size: childIconSize * 0.8,
-                                      ),
-                                      filled: true,
-                                      fillColor:
-                                          Provider.of<TemaProveedor>(
-                                            context,
-                                          ).esModoOscuro
-                                          ? const Color.fromRGBO(30, 30, 30, 1)
-                                          : const Color.fromRGBO(
-                                              244,
-                                              243,
-                                              243,
-                                              1,
+                            content: widget.productsList.isEmpty
+                                ? InventarioVacio()
+                                : Container(
+                                    width: dialogWidth,
+                                    height: screenSize.height * 0.6,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // Campo de búsqueda estilizado
+                                        TextField(
+                                          controller: searchController,
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                'Ingrese el código del producto',
+                                            hintStyle: TextStyle(
+                                              fontSize: contentFontSize,
                                             ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color:
-                                              Provider.of<TemaProveedor>(
-                                                context,
-                                              ).esModoOscuro
-                                              ? Colors.white
-                                              : Colors.black,
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color:
-                                              Provider.of<TemaProveedor>(
-                                                context,
-                                              ).esModoOscuro
-                                              ? Colors.white
-                                              : Colors.black,
-                                          width: 2.0,
-                                        ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color:
-                                              Provider.of<TemaProveedor>(
-                                                context,
-                                              ).esModoOscuro
-                                              ? Colors.white
-                                              : Colors.black,
-                                          width: 1.0,
-                                        ),
-                                      ),
-                                      contentPadding: EdgeInsets.symmetric(
-                                        vertical: isMobile ? 12.0 : 16.0,
-                                        horizontal: isMobile ? 12.0 : 16.0,
-                                      ),
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: contentFontSize,
-                                      color:
-                                          Provider.of<TemaProveedor>(
-                                            context,
-                                          ).esModoOscuro
-                                          ? Colors.white
-                                          : Colors.black,
-                                    ),
-                                    onChanged: (value) {
-                                      setState(() {});
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  // Lista de productos con un diseño moderno
-                                  Expanded(
-                                    child: ListView.builder(
-                                      itemCount: 5,
-                                      itemBuilder: (context, index) {
-                                        return Card(
-                                          color:
-                                              Provider.of<TemaProveedor>(
-                                                context,
-                                              ).esModoOscuro
-                                              ? const Color.fromRGBO(
-                                                  30,
-                                                  30,
-                                                  30,
-                                                  1,
-                                                )
-                                              : Colors.white,
-                                          margin: EdgeInsets.symmetric(
-                                            vertical: isMobile ? 6.0 : 8.0,
-                                            horizontal: 0,
-                                          ),
-                                          elevation: 3,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
+                                            labelStyle: TextStyle(
+                                              color:
+                                                  Provider.of<TemaProveedor>(
+                                                    context,
+                                                  ).esModoOscuro
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: contentFontSize,
                                             ),
-                                          ),
-                                          child: ListTile(
+                                            prefixIcon: Icon(
+                                              Icons.search,
+                                              color:
+                                                  Provider.of<TemaProveedor>(
+                                                    context,
+                                                  ).esModoOscuro
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                              size: childIconSize * 0.8,
+                                            ),
+                                            filled: true,
+                                            fillColor:
+                                                Provider.of<TemaProveedor>(
+                                                  context,
+                                                ).esModoOscuro
+                                                ? const Color.fromRGBO(
+                                                    30,
+                                                    30,
+                                                    30,
+                                                    1,
+                                                  )
+                                                : const Color.fromRGBO(
+                                                    244,
+                                                    243,
+                                                    243,
+                                                    1,
+                                                  ),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: BorderSide(
+                                                color:
+                                                    Provider.of<TemaProveedor>(
+                                                      context,
+                                                    ).esModoOscuro
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: BorderSide(
+                                                color:
+                                                    Provider.of<TemaProveedor>(
+                                                      context,
+                                                    ).esModoOscuro
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                                width: 2.0,
+                                              ),
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: BorderSide(
+                                                color:
+                                                    Provider.of<TemaProveedor>(
+                                                      context,
+                                                    ).esModoOscuro
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                                width: 1.0,
+                                              ),
+                                            ),
                                             contentPadding:
                                                 EdgeInsets.symmetric(
                                                   vertical: isMobile
-                                                      ? 6.0
-                                                      : 8.0,
+                                                      ? 12.0
+                                                      : 16.0,
                                                   horizontal: isMobile
                                                       ? 12.0
                                                       : 16.0,
                                                 ),
-                                            leading: CircleAvatar(
-                                              backgroundColor:
-                                                  Colors.blueAccent,
-                                              radius: isMobile ? 20.0 : 24.0,
-                                              child: Text(
-                                                'A',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: isMobile
-                                                      ? 14.0
-                                                      : 16.0,
+                                          ),
+                                          style: TextStyle(
+                                            fontSize: contentFontSize,
+                                            color:
+                                                Provider.of<TemaProveedor>(
+                                                  context,
+                                                ).esModoOscuro
+                                                ? Colors.white
+                                                : Colors.black,
+                                          ),
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _filterProductsByCode(
+                                                value,
+                                              ); // Actualizar productos filtrados
+                                            });
+                                          },
+                                        ),
+                                        const SizedBox(height: 16),
+
+                                        // Lista de productos con un diseño moderno
+                                        Expanded(
+                                          child: ListView.builder(
+                                            itemCount: filteredProducts.length,
+                                            itemBuilder: (context, index) {
+                                              final producto =
+                                                  filteredProducts[index];
+                                              return Card(
+                                                color:
+                                                    Provider.of<TemaProveedor>(
+                                                      context,
+                                                    ).esModoOscuro
+                                                    ? const Color.fromRGBO(
+                                                        30,
+                                                        30,
+                                                        30,
+                                                        1,
+                                                      )
+                                                    : Colors.white,
+                                                margin: EdgeInsets.symmetric(
+                                                  vertical: isMobile
+                                                      ? 6.0
+                                                      : 8.0,
+                                                  horizontal: 0,
                                                 ),
-                                              ),
-                                            ),
-                                            title: Text(
-                                              'Producto',
-                                              style: TextStyle(
-                                                fontSize: contentFontSize,
-                                                fontWeight: FontWeight.w600,
-                                                color:
-                                                    Provider.of<TemaProveedor>(
-                                                      context,
-                                                    ).esModoOscuro
-                                                    ? Colors.white
-                                                    : Colors.black,
-                                              ),
-                                            ),
-                                            subtitle: Text(
-                                              'producto\nCódigo: 123\nInventario: 10',
-                                              style: TextStyle(
-                                                color:
-                                                    Provider.of<TemaProveedor>(
-                                                      context,
-                                                    ).esModoOscuro
-                                                    ? Colors.white
-                                                    : Colors.black,
-                                                fontSize: contentFontSize - 2,
-                                              ),
-                                            ),
-                                            trailing: Icon(
-                                              Icons.add_circle_outline,
-                                              color: Colors.teal,
-                                              size: childIconSize * 0.9,
-                                            ),
-                                            onTap: () {
-                                              setState(() {});
-                                              searchController.clear();
-                                              Navigator.of(context).pop();
+                                                elevation: 3,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: ListTile(
+                                                  contentPadding:
+                                                      EdgeInsets.symmetric(
+                                                        vertical: isMobile
+                                                            ? 6.0
+                                                            : 8.0,
+                                                        horizontal: isMobile
+                                                            ? 12.0
+                                                            : 16.0,
+                                                      ),
+                                                  leading: CircleAvatar(
+                                                    backgroundColor:
+                                                        Colors.blueAccent,
+                                                    radius: isMobile
+                                                        ? 20.0
+                                                        : 24.0,
+                                                    child: Text(
+                                                      producto.nombre[0]
+                                                          .toUpperCase(),
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: isMobile
+                                                            ? 14.0
+                                                            : 16.0,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  title: Text(
+                                                    producto.nombre,
+                                                    style: TextStyle(
+                                                      fontSize: contentFontSize,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          Provider.of<
+                                                                TemaProveedor
+                                                              >(context)
+                                                              .esModoOscuro
+                                                          ? Colors.white
+                                                          : Colors.black,
+                                                    ),
+                                                  ),
+                                                  subtitle: Text(
+                                                    '${producto.unidadMedida}\nCódigo: ${producto.id}\nPrecio: ${producto.precio.toStringAsFixed(2)}\nInventario: ${producto.stock.toString()}',
+                                                    style: TextStyle(
+                                                      color:
+                                                          Provider.of<
+                                                                TemaProveedor
+                                                              >(context)
+                                                              .esModoOscuro
+                                                          ? Colors.white
+                                                          : Colors.black,
+                                                      fontSize:
+                                                          contentFontSize - 2,
+                                                    ),
+                                                  ),
+                                                  trailing: Icon(
+                                                    Icons.add_circle_outline,
+                                                    color: Colors.teal,
+                                                    size: childIconSize * 0.9,
+                                                  ),
+                                                  onTap: () {
+                                                    setState(() {
+                                                      producto.cantidad = 1;
+                                                      foundProduct.add(
+                                                        producto,
+                                                      );
+                                                      widget
+                                                          .onProductoSeleccionadoByCodigo(
+                                                            producto,
+                                                          );
+                                                    });
+                                                    searchController.clear();
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                              );
                                             },
                                           ),
-                                        );
-                                      },
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
                           );
                         },
                       );
@@ -415,204 +547,243 @@ class _MiFABState extends State<MiFAB> {
                                 ],
                               ),
                             ),
-                            content: Container(
-                              width: dialogWidth,
-                              height: screenSize.height * 0.6,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Campo de búsqueda estilizado
-                                  TextField(
-                                    controller: searchController,
-                                    decoration: InputDecoration(
-                                      hintText:
-                                          'Ingrese el nombre del producto',
-                                      hintStyle: TextStyle(
-                                        fontSize: contentFontSize,
-                                      ),
-                                      labelStyle: TextStyle(
-                                        color:
-                                            Provider.of<TemaProveedor>(
-                                              context,
-                                            ).esModoOscuro
-                                            ? Colors.white
-                                            : Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: contentFontSize,
-                                      ),
-                                      prefixIcon: Icon(
-                                        Icons.search,
-                                        color:
-                                            Provider.of<TemaProveedor>(
-                                              context,
-                                            ).esModoOscuro
-                                            ? Colors.white
-                                            : Colors.black,
-                                        size: childIconSize * 0.8,
-                                      ),
-                                      filled: true,
-                                      fillColor:
-                                          Provider.of<TemaProveedor>(
-                                            context,
-                                          ).esModoOscuro
-                                          ? const Color.fromRGBO(30, 30, 30, 1)
-                                          : const Color.fromRGBO(
-                                              244,
-                                              243,
-                                              243,
-                                              1,
+                            content: widget.productsList.isEmpty
+                                ? InventarioVacio()
+                                : Container(
+                                    width: dialogWidth,
+                                    height: screenSize.height * 0.6,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // Campo de búsqueda estilizado
+                                        TextField(
+                                          controller: searchController,
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                'Ingrese el nombre del producto',
+                                            hintStyle: TextStyle(
+                                              fontSize: contentFontSize,
                                             ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color:
-                                              Provider.of<TemaProveedor>(
-                                                context,
-                                              ).esModoOscuro
-                                              ? Colors.white
-                                              : Colors.black,
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color:
-                                              Provider.of<TemaProveedor>(
-                                                context,
-                                              ).esModoOscuro
-                                              ? Colors.white
-                                              : Colors.black,
-                                          width: 2.0,
-                                        ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color:
-                                              Provider.of<TemaProveedor>(
-                                                context,
-                                              ).esModoOscuro
-                                              ? Colors.white
-                                              : Colors.black,
-                                          width: 1.0,
-                                        ),
-                                      ),
-                                      contentPadding: EdgeInsets.symmetric(
-                                        vertical: isMobile ? 12.0 : 16.0,
-                                        horizontal: isMobile ? 12.0 : 16.0,
-                                      ),
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: contentFontSize,
-                                      color:
-                                          Provider.of<TemaProveedor>(
-                                            context,
-                                          ).esModoOscuro
-                                          ? Colors.white
-                                          : Colors.black,
-                                    ),
-                                    onChanged: (value) {
-                                      setState(() {});
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  // Lista de productos con un diseño moderno
-                                  Expanded(
-                                    child: ListView.builder(
-                                      itemCount: 5,
-                                      itemBuilder: (context, index) {
-                                        return Card(
-                                          color:
-                                              Provider.of<TemaProveedor>(
-                                                context,
-                                              ).esModoOscuro
-                                              ? const Color.fromRGBO(
-                                                  30,
-                                                  30,
-                                                  30,
-                                                  1,
-                                                )
-                                              : Colors.white,
-                                          margin: EdgeInsets.symmetric(
-                                            vertical: isMobile ? 6.0 : 8.0,
-                                            horizontal: 0,
-                                          ),
-                                          elevation: 2,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
+                                            labelStyle: TextStyle(
+                                              color:
+                                                  Provider.of<TemaProveedor>(
+                                                    context,
+                                                  ).esModoOscuro
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: contentFontSize,
                                             ),
-                                          ),
-                                          child: ListTile(
+                                            prefixIcon: Icon(
+                                              Icons.search,
+                                              color:
+                                                  Provider.of<TemaProveedor>(
+                                                    context,
+                                                  ).esModoOscuro
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                              size: childIconSize * 0.8,
+                                            ),
+                                            filled: true,
+                                            fillColor:
+                                                Provider.of<TemaProveedor>(
+                                                  context,
+                                                ).esModoOscuro
+                                                ? const Color.fromRGBO(
+                                                    30,
+                                                    30,
+                                                    30,
+                                                    1,
+                                                  )
+                                                : const Color.fromRGBO(
+                                                    244,
+                                                    243,
+                                                    243,
+                                                    1,
+                                                  ),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: BorderSide(
+                                                color:
+                                                    Provider.of<TemaProveedor>(
+                                                      context,
+                                                    ).esModoOscuro
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: BorderSide(
+                                                color:
+                                                    Provider.of<TemaProveedor>(
+                                                      context,
+                                                    ).esModoOscuro
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                                width: 2.0,
+                                              ),
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: BorderSide(
+                                                color:
+                                                    Provider.of<TemaProveedor>(
+                                                      context,
+                                                    ).esModoOscuro
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                                width: 1.0,
+                                              ),
+                                            ),
                                             contentPadding:
                                                 EdgeInsets.symmetric(
                                                   vertical: isMobile
-                                                      ? 6.0
-                                                      : 8.0,
+                                                      ? 12.0
+                                                      : 16.0,
                                                   horizontal: isMobile
                                                       ? 12.0
                                                       : 16.0,
                                                 ),
-                                            leading: CircleAvatar(
-                                              backgroundColor:
-                                                  Colors.blueAccent,
-                                              radius: isMobile ? 20.0 : 24.0,
-                                              child: Text(
-                                                'A',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: isMobile
-                                                      ? 14.0
-                                                      : 16.0,
+                                          ),
+                                          style: TextStyle(
+                                            fontSize: contentFontSize,
+                                            color:
+                                                Provider.of<TemaProveedor>(
+                                                  context,
+                                                ).esModoOscuro
+                                                ? Colors.white
+                                                : Colors.black,
+                                          ),
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _filterProducts(
+                                                value,
+                                              ); // Actualizar productos filtrados
+                                            });
+                                          },
+                                        ),
+                                        const SizedBox(height: 16),
+
+                                        // Lista de productos con un diseño moderno
+                                        Expanded(
+                                          child: ListView.builder(
+                                            itemCount: filteredProducts.length,
+                                            itemBuilder: (context, index) {
+                                              final producto =
+                                                  filteredProducts[index];
+                                              return Card(
+                                                color:
+                                                    Provider.of<TemaProveedor>(
+                                                      context,
+                                                    ).esModoOscuro
+                                                    ? const Color.fromRGBO(
+                                                        30,
+                                                        30,
+                                                        30,
+                                                        1,
+                                                      )
+                                                    : Colors.white,
+                                                margin: EdgeInsets.symmetric(
+                                                  vertical: isMobile
+                                                      ? 6.0
+                                                      : 8.0,
+                                                  horizontal: 0,
                                                 ),
-                                              ),
-                                            ),
-                                            title: Text(
-                                              'Producto',
-                                              style: TextStyle(
-                                                fontSize: contentFontSize,
-                                                fontWeight: FontWeight.w600,
-                                                color:
-                                                    Provider.of<TemaProveedor>(
-                                                      context,
-                                                    ).esModoOscuro
-                                                    ? Colors.white
-                                                    : Colors.black,
-                                              ),
-                                            ),
-                                            subtitle: Text(
-                                              'producto\nInventario: 123',
-                                              style: TextStyle(
-                                                color:
-                                                    Provider.of<TemaProveedor>(
-                                                      context,
-                                                    ).esModoOscuro
-                                                    ? Colors.white
-                                                    : Colors.black,
-                                                fontSize: contentFontSize - 2,
-                                              ),
-                                            ),
-                                            trailing: Icon(
-                                              Icons.add_circle_outline,
-                                              color: Colors.blueAccent,
-                                              size: childIconSize * 0.9,
-                                            ),
-                                            onTap: () {
-                                              setState(() {});
-                                              searchController.clear();
-                                              Navigator.of(context).pop();
+                                                elevation: 2,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: ListTile(
+                                                  contentPadding:
+                                                      EdgeInsets.symmetric(
+                                                        vertical: isMobile
+                                                            ? 6.0
+                                                            : 8.0,
+                                                        horizontal: isMobile
+                                                            ? 12.0
+                                                            : 16.0,
+                                                      ),
+                                                  leading: CircleAvatar(
+                                                    backgroundColor:
+                                                        Colors.blueAccent,
+                                                    radius: isMobile
+                                                        ? 20.0
+                                                        : 24.0,
+                                                    child: Text(
+                                                      producto.nombre[0]
+                                                          .toUpperCase(),
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: isMobile
+                                                            ? 14.0
+                                                            : 16.0,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  title: Text(
+                                                    producto.nombre,
+                                                    style: TextStyle(
+                                                      fontSize: contentFontSize,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          Provider.of<
+                                                                TemaProveedor
+                                                              >(context)
+                                                              .esModoOscuro
+                                                          ? Colors.white
+                                                          : Colors.black,
+                                                    ),
+                                                  ),
+                                                  subtitle: Text(
+                                                    '${producto.unidadMedida}\nPrecio: ${producto.precio.toStringAsFixed(2)}\nInventario: ${producto.stock.toString()}',
+                                                    style: TextStyle(
+                                                      color:
+                                                          Provider.of<
+                                                                TemaProveedor
+                                                              >(context)
+                                                              .esModoOscuro
+                                                          ? Colors.white
+                                                          : Colors.black,
+                                                      fontSize:
+                                                          contentFontSize - 2,
+                                                    ),
+                                                  ),
+                                                  trailing: Icon(
+                                                    Icons.add_circle_outline,
+                                                    color: Colors.blueAccent,
+                                                    size: childIconSize * 0.9,
+                                                  ),
+                                                  onTap: () {
+                                                    setState(() {
+                                                      producto.cantidad = 1;
+                                                      foundProduct.add(
+                                                        producto,
+                                                      );
+                                                      widget
+                                                          .onProductoSeleccionadoByNombre(
+                                                            producto,
+                                                          );
+                                                    });
+                                                    searchController.clear();
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                              );
                                             },
                                           ),
-                                        );
-                                      },
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
                           );
                         },
                       );
@@ -623,53 +794,28 @@ class _MiFABState extends State<MiFAB> {
                 },
               )
             : SpeedDialChild(),
-        SpeedDialChild(
-          child: Icon(
-            Icons.add_shopping_cart,
-            size: childIconSize,
-            color: Colors.white,
-          ),
-          backgroundColor: Colors.blueAccent,
-          label: 'Agregar nuevo producto',
-          labelStyle: TextStyle(
-            fontSize: labelFontSize,
-            fontWeight: FontWeight.bold,
-            color: Provider.of<TemaProveedor>(context).esModoOscuro
-                ? Colors.white
-                : Colors.black,
-          ),
-          labelBackgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
-              ? Color.fromRGBO(60, 60, 60, 1)
-              : Color.fromRGBO(220, 220, 220, 1),
-          onTap: () {
-            fromularioNuevoProducto();
-          },
-        ),
-        SpeedDialChild(
-          child: Icon(
-            Icons.inventory_2,
-            size: childIconSize,
-            color: Colors.white,
-          ),
-          backgroundColor: Colors.green,
-          label: 'Nueva Adquisición',
-          labelStyle: TextStyle(
-            fontSize: labelFontSize,
-            fontWeight: FontWeight.bold,
-            color: Provider.of<TemaProveedor>(context).esModoOscuro
-                ? Colors.white
-                : Colors.black,
-          ),
-          labelBackgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
-              ? Color.fromRGBO(60, 60, 60, 1)
-              : Color.fromRGBO(220, 220, 220, 1),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AdquisicionForm()),
-            );
-          },
-        ),
+        // SpeedDialChild(
+        //   child: Icon(
+        //     Icons.add_shopping_cart,
+        //     size: childIconSize,
+        //     color: Colors.white,
+        //   ),
+        //   backgroundColor: Colors.blueAccent,
+        //   label: 'Agregar nuevo producto',
+        //   labelStyle: TextStyle(
+        //     fontSize: labelFontSize,
+        //     fontWeight: FontWeight.bold,
+        //     color: Provider.of<TemaProveedor>(context).esModoOscuro
+        //         ? Colors.white
+        //         : Colors.black,
+        //   ),
+        //   labelBackgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
+        //       ? Color.fromRGBO(60, 60, 60, 1)
+        //       : Color.fromRGBO(220, 220, 220, 1),
+        //   onTap: () {
+        //     fromularioNuevoProducto();
+        //   },
+        // ),
       ],
     );
   }
@@ -823,6 +969,17 @@ class _MiFABState extends State<MiFAB> {
                                 ),
                                 onPressed: () {
                                   if (_formKey.currentState!.validate()) {
+                                    widget.addNewProduct(
+                                      Producto(
+                                        nombre: _nombre.text,
+                                        precio:
+                                            double.tryParse(_precio.text) ?? 0,
+                                        unidadMedida: _unidad.text,
+                                        id: 'N/A',
+                                        costo: 0,
+                                        cantidad: 1,
+                                      ),
+                                    );
                                     Navigator.of(context).pop();
                                   }
                                 },
