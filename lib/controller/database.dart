@@ -13,6 +13,8 @@ class DBHelper {
   static const String comprasTable = 'compras';
   static const String detalleComprasTable = 'detalle_compras';
   static const String movimientosCajaTable = 'movimientos_caja';
+  static const String configuracionSarTable = 'configuracion_sar';
+  static const String empresaTable = 'empresa';
 
   // Getter con manejo de errores
   Future<Database> get database async {
@@ -83,13 +85,24 @@ class DBHelper {
 
     await db.execute('''
     CREATE TABLE $ventasTable (
-      id_venta INTEGER PRIMARY KEY AUTOINCREMENT,
-      fecha TEXT NOT NULL,
-      numero_factura TEXT,
-      total REAL NOT NULL,
-      monto_pagado REAL,
-      cambio REAL,
-      estado TEXT
+    id_venta INTEGER PRIMARY KEY AUTOINCREMENT,
+    fecha TEXT NOT NULL,
+    numero_factura TEXT NOT NULL UNIQUE,
+    tipo_documento TEXT NOT NULL DEFAULT 'FACTURA',
+    rtn_emisor TEXT NOT NULL,
+    razon_social_emisor TEXT NOT NULL,
+    rtn_cliente TEXT,
+    nombre_cliente TEXT,
+    subtotal REAL NOT NULL,
+    isv REAL NOT NULL,
+    total REAL NOT NULL,
+    cai TEXT NOT NULL,
+    rango_autorizado TEXT NOT NULL,
+    fecha_limite_cai TEXT NOT NULL,
+    moneda TEXT NOT NULL DEFAULT 'HNL',
+    monto_pagado REAL,
+    cambio REAL,
+    estado_fiscal TEXT NOT NULL DEFAULT 'EMITIDA'
     );
   ''');
 
@@ -98,16 +111,13 @@ class DBHelper {
       id_detalle_venta INTEGER PRIMARY KEY AUTOINCREMENT,
       venta_id INTEGER NOT NULL,
       producto_id TEXT NOT NULL,
+      descripcion TEXT NOT NULL,
       cantidad INTEGER NOT NULL,
       precio_unitario REAL NOT NULL,
       subtotal REAL NOT NULL,
+      isv REAL DEFAULT 0,
       descuento REAL DEFAULT 0,
       FOREIGN KEY (venta_id) REFERENCES $ventasTable(id_venta)
-          ON UPDATE CASCADE
-          ON DELETE CASCADE,
-      FOREIGN KEY (producto_id) REFERENCES $productosTable(id_producto)
-          ON UPDATE CASCADE
-          ON DELETE RESTRICT
     );
   ''');
 
@@ -174,6 +184,31 @@ class DBHelper {
           ON DELETE SET NULL
       );
     ''');
+    await db.execute('''
+      CREATE TABLE $configuracionSarTable (
+        id_config INTEGER PRIMARY KEY AUTOINCREMENT,
+        cai TEXT NOT NULL,
+        rango_inicial TEXT NOT NULL,
+        rango_final TEXT NOT NULL,
+        fecha_limite TEXT NOT NULL,
+        numero_actual INTEGER NOT NULL,
+        activo INTEGER DEFAULT 1
+      );
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $empresaTable (
+        id_empresa INTEGER PRIMARY KEY,
+        rtn TEXT NOT NULL UNIQUE,
+        razon_social TEXT NOT NULL,
+        nombre_comercial TEXT,
+        direccion TEXT,
+        telefono TEXT,
+        correo TEXT,
+        moneda_defecto TEXT DEFAULT 'HNL',
+        fecha_creacion TEXT
+      );
+    ''');
   }
 
   Future<void> _runMigrations(
@@ -195,9 +230,26 @@ class DBHelper {
   }
 
   // Future<void> _migrationV1toV2(Database db) async {
+  //   // Agregar nuevas columnas a la tabla ventas
+  //   await db.execute('ALTER TABLE $ventasTable ADD COLUMN cai TEXT');
+  //   await db.execute('ALTER TABLE $ventasTable ADD COLUMN rtn_cliente TEXT');
+  //   await db.execute('ALTER TABLE $ventasTable ADD COLUMN nombre_cliente TEXT');
+  //   await db.execute('ALTER TABLE $ventasTable ADD COLUMN isv REAL DEFAULT 0');
+  //   await db.execute(
+  //     'ALTER TABLE $ventasTable ADD COLUMN subtotal REAL DEFAULT 0',
+  //   );
+
+  //   // Crear tabla de configuración SAR
   //   await db.execute('''
-  //     ALTER TABLE $configuracionTable
-  //     ADD COLUMN email_tienda TEXT;
+  //     CREATE TABLE $configuracionSarTable (
+  //       id_config INTEGER PRIMARY KEY AUTOINCREMENT,
+  //       cai TEXT NOT NULL,
+  //       rango_inicial TEXT NOT NULL,
+  //       rango_final TEXT NOT NULL,
+  //       fecha_limite TEXT NOT NULL,
+  //       numero_actual INTEGER NOT NULL,
+  //       activo INTEGER DEFAULT 1
+  //     );
   //   ''');
   // }
 }

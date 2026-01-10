@@ -18,6 +18,8 @@ import 'package:proyecto_is/view/widgets/caja_cerrada.dart';
 import 'package:proyecto_is/view/widgets/inventario_vacio.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:proyecto_is/view/widgets/thermal_invoice_printer.dart';
+import 'package:proyecto_is/controller/sar_service.dart';
+import 'package:proyecto_is/model/sar_config.dart';
 
 class Ventas extends StatefulWidget {
   const Ventas({super.key});
@@ -29,7 +31,11 @@ class Ventas extends StatefulWidget {
 class _VentasState extends State<Ventas> {
   final TextEditingController _totalController = TextEditingController();
   final TextEditingController _clienteController = TextEditingController();
+
   final TextEditingController _cambioController = TextEditingController();
+  final TextEditingController _rtnController = TextEditingController();
+  final TextEditingController _nombreClienteController =
+      TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   final repositoryProducto = ProductoRepository();
@@ -39,7 +45,10 @@ class _VentasState extends State<Ventas> {
   List<Producto> _productosFiltrados = [];
   bool isLoading = true;
   final _movimientoRepo = CajaRepository();
+
   Caja? _cajaSeleccionada;
+  final _sarService = SarService();
+  SarConfig? _sarConfig;
 
   double _total = 0.0;
 
@@ -66,6 +75,11 @@ class _VentasState extends State<Ventas> {
     _movimientoRepo.obtenerCajaAbierta().then((caja) {
       setState(() {
         _cajaSeleccionada = caja;
+      });
+    });
+    _sarService.obtenerConfiguracionActiva().then((config) {
+      setState(() {
+        _sarConfig = config;
       });
     });
   }
@@ -378,15 +392,84 @@ class _VentasState extends State<Ventas> {
     }
   }
 
+  void _mostrarMensaje(String title, String message, ContentType contentType) {
+    final snackBar = SnackBar(
+      elevation: 0,
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.transparent,
+      content: AwesomeSnackbarContent(
+        title: title,
+        message: message,
+        contentType: contentType,
+      ),
+    );
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
+  }
+
   Future<void> finalizarVenta(String cambio, String cliente) async {
     try {
+      // Validaciones SAR
+      if (_sarConfig == null) {
+        _mostrarMensaje(
+          'Error',
+          'No hay configuración SAR activa',
+          ContentType.failure,
+        );
+        return;
+      }
+
+      final rtn = _rtnController.text.trim();
+      final nombre = _nombreClienteController.text.trim();
+      final totalVenta = double.parse(_totalController.text);
+
+      if (rtn.isNotEmpty && !_sarService.validarRTN(rtn)) {
+        _mostrarMensaje(
+          'Error',
+          'RTN inválido (debe tener 14 dígitos)',
+          ContentType.failure,
+        );
+        return;
+      }
+
+      if (_sarService.esRTNObligatorio(totalVenta) && rtn.isEmpty) {
+        _mostrarMensaje(
+          'Atención',
+          'El RTN es obligatorio para montos mayores a L. ${SarService.montoMaximoConsumidorFinal}',
+          ContentType.warning,
+        );
+        return;
+      }
+
+      final numeroFactura = await _sarService.generarSiguienteNumeroFactura();
+      if (numeroFactura == null) {
+        _mostrarMensaje(
+          'Error',
+          'No se pudo generar el número de factura. Verifique rangos SAR.',
+          ContentType.failure,
+        );
+        return;
+      }
+
+      final isv = _sarService.calcularISV(
+        totalVenta / (1 + SarService.tasaISV),
+      ); // Calculo inverso simple
+      final subtotal = totalVenta - isv;
+
       final venta = Venta(
         fecha: DateTime.now().toIso8601String(),
-        numeroFactura: '',
-        total: double.parse(_totalController.text),
+        numeroFactura: numeroFactura,
+        total: totalVenta,
         montoPagado: double.parse(cliente),
         cambio: double.parse(cambio),
         estado: 'COMPLETADA',
+        cai: _sarConfig!.cai,
+        rtnCliente: rtn,
+        nombreCliente: nombre,
+        isv: isv,
+        subtotal: subtotal,
       );
       final detalleVenta = _productosSeleccionados.map((producto) {
         return DetalleVenta(
@@ -399,6 +482,8 @@ class _VentasState extends State<Ventas> {
         );
       }).toList();
       await repositoryVenta.registrarVentaConDetalles(venta, detalleVenta);
+      await _sarService.actualizarCorrelativo(); // Actualizar correlativo SAR
+
       final data = _crearInvoiceData(detalleVenta, venta);
       Navigator.push(
         context,
@@ -411,7 +496,8 @@ class _VentasState extends State<Ventas> {
         _productosSeleccionados.clear();
         _totalController.clear();
         _clienteController.clear();
-        _cambioController.clear();
+        _rtnController.clear();
+        _nombreClienteController.clear();
       });
       _mostrarMensaje(
         'Éxito',
@@ -436,6 +522,7 @@ class _VentasState extends State<Ventas> {
         "${fechaVenta.hour.toString().padLeft(2, '0')}:${fechaVenta.minute.toString().padLeft(2, '0')}";
     return InvoiceData(
       typeOrder: 'Venta',
+      businessRtn: '0000000000000',
       businessName: 'Tienda',
       businessAddress: 'Calle 123',
       businessPhone: '12345678',
@@ -455,6 +542,13 @@ class _VentasState extends State<Ventas> {
       recibido: venta.montoPagado!,
       metodoPago: 'Efectivo',
       notes: '¡Gracias por su compra!',
+      cai: venta.cai ?? '',
+      rangoAutorizado:
+          "${_sarConfig?.rangoInicial ?? ''} a ${_sarConfig?.rangoFinal ?? ''}",
+      fechaLimite: _sarConfig?.fechaLimite ?? '',
+      rtnCliente: venta.rtnCliente ?? '',
+      isv: venta.isv,
+      subtotal: venta.subtotal,
     );
   }
 
@@ -470,25 +564,25 @@ class _VentasState extends State<Ventas> {
     });
   }
 
-  void _mostrarMensaje(String titulo, String mensaje, ContentType type) {
-    final snackBar = SnackBar(
-      /// need to set following properties for best effect of awesome_snackbar_content
-      elevation: 0,
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: Colors.transparent,
-      content: AwesomeSnackbarContent(
-        title: titulo,
-        message: mensaje,
+  // void _mostrarMensaje(String titulo, String mensaje, ContentType type) {
+  //   final snackBar = SnackBar(
+  //     /// need to set following properties for best effect of awesome_snackbar_content
+  //     elevation: 0,
+  //     behavior: SnackBarBehavior.floating,
+  //     backgroundColor: Colors.transparent,
+  //     content: AwesomeSnackbarContent(
+  //       title: titulo,
+  //       message: mensaje,
 
-        /// change contentType to ContentType.success, ContentType.warning or ContentType.help for variants
-        contentType: type,
-      ),
-    );
+  //       /// change contentType to ContentType.success, ContentType.warning or ContentType.help for variants
+  //       contentType: type,
+  //     ),
+  //   );
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(snackBar);
-  }
+  //   ScaffoldMessenger.of(context)
+  //     ..hideCurrentSnackBar()
+  //     ..showSnackBar(snackBar);
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -1384,6 +1478,23 @@ class _VentasState extends State<Ventas> {
                         ),
                         SizedBox(height: isMobile ? 12.0 : 16.0),
 
+                        // Campo Nombre Cliente
+                        _buildDialogTextField(
+                          _nombreClienteController,
+                          'Nombre Cliente (Opcional)',
+                          Icons.person,
+                        ),
+                        SizedBox(height: isMobile ? 12.0 : 16.0),
+
+                        // Campo RTN
+                        _buildDialogTextField(
+                          _rtnController,
+                          'RTN (Opcional)',
+                          Icons.badge,
+                          isNumber: true,
+                        ),
+                        SizedBox(height: isMobile ? 12.0 : 16.0),
+
                         // Campo Cliente
                         _buildDialogTextField(
                           _clienteController,
@@ -1460,6 +1571,9 @@ class _VentasState extends State<Ventas> {
                         ),
                         onPressed: () {
                           _clienteController.clear();
+                          _clienteController.clear();
+                          _rtnController.clear();
+                          _nombreClienteController.clear();
                           Navigator.of(context).pop();
                         },
                       ),
@@ -1492,6 +1606,8 @@ class _VentasState extends State<Ventas> {
                             );
                             _clienteController.clear();
                             _cambioController.clear();
+                            _rtnController.clear();
+                            _nombreClienteController.clear();
                           }
                         },
                       ),
@@ -1506,6 +1622,8 @@ class _VentasState extends State<Ventas> {
     ).then((_) {
       _clienteController.clear();
       _cambioController.clear();
+      _rtnController.clear();
+      _nombreClienteController.clear();
     });
   }
 

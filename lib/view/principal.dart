@@ -9,6 +9,7 @@ import 'package:proyecto_is/view/inventarioView.dart';
 import 'package:proyecto_is/view/productoForm.dart';
 import 'package:proyecto_is/view/proveedoresView.dart';
 import 'package:proyecto_is/view/ventasView.dart';
+import 'package:proyecto_is/view/configuracion_sar_view.dart';
 import 'package:provider/provider.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -85,6 +86,14 @@ class _MyHomePageState extends State<MyHomePage> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const Historial()),
+        ),
+      ),
+      DashboardCardData(
+        icon: Icons.settings,
+        title: 'Configuración SAR',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ConfiguracionSarView()),
         ),
       ),
     ];

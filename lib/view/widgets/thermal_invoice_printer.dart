@@ -8,26 +8,22 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class ThermalInvoicePrinter {
-  // Configuración de márgenes y espaciado (en puntos)
   static const double _marginLeft = 4.0;
   static const double _marginRight = 4.0;
   static const double _lineSpacing = 1.5;
   static const double _sectionSpacing = 6.0;
+
   final InvoiceData data;
 
   ThermalInvoicePrinter({required this.data});
 
-  /// Genera el PDF adaptado al ancho del papel
   Future<Uint8List> generatePdf({required double paperWidthMm}) async {
     final pdf = pw.Document();
-
     final double paperWidthPt = paperWidthMm * 2.8346;
 
-    // --- Contenido (mismo de antes) ---
     final double contentWidth = paperWidthPt - _marginLeft - _marginRight;
     final content = _buildInvoiceContent(contentWidth);
 
-    // --- MultiPage: Altura DINÁMICA automática ---
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat(paperWidthPt, double.infinity, marginAll: 0),
@@ -49,62 +45,80 @@ class ThermalInvoicePrinter {
     return pdf.save();
   }
 
-  /// Construye el contenido de la factura
   List<pw.Widget> _buildInvoiceContent(double maxWidth) {
     final List<pw.Widget> children = [];
 
-    // --- ENCABEZADO ---
+    // === ENCABEZADO FISCAL ===
     children.add(_buildHeader(maxWidth));
 
-    // --- LÍNEA DIVISORIA ---
     children.add(pw.SizedBox(height: _sectionSpacing));
     children.add(_divider(maxWidth));
 
-    // --- DETALLES DE LA EMPRESA ---
-    children.add(_buildCompanyInfo(maxWidth));
-
-    // --- INFORMACIÓN DEL CLIENTE ---
+    // === INFORMACIÓN DEL CLIENTE ===
     if (data.customerName.isNotEmpty) {
       children.add(pw.SizedBox(height: _sectionSpacing));
       children.add(_buildCustomerInfo(maxWidth));
     }
 
-    // --- DETALLES DE LA FACTURA ---
+    // === DETALLES DE FACTURA ===
     children.add(pw.SizedBox(height: _sectionSpacing));
     children.add(_buildInvoiceDetails(maxWidth));
 
-    // --- LÍNEA DIVISORIA ---
+    // === INFORMACIÓN OPERATIVA (NO FISCAL) ===
+    if (data.typeOrder.isNotEmpty) {
+      children.add(pw.SizedBox(height: 4));
+      children.add(_regularText("Tipo de pedido: ${data.typeOrder}", maxWidth));
+    }
+
     children.add(pw.SizedBox(height: _sectionSpacing));
     children.add(_divider(maxWidth));
 
-    // --- ITEMS ---
+    // === ÍTEMS ===
     children.add(pw.SizedBox(height: _sectionSpacing));
     children.add(_buildItemsTable(maxWidth));
 
-    // --- TOTALES ---
+    // === TOTALES ===
     children.add(pw.SizedBox(height: _sectionSpacing));
     children.add(_buildTotals(maxWidth));
 
-    children.add(pw.SizedBox(height: _sectionSpacing));
-    children.add(_centerText(data.notes, maxWidth));
+    // === MONEDA ===
+    children.add(pw.SizedBox(height: 4));
+    children.add(_centerText("Moneda: Lempiras (HNL)", maxWidth));
 
-    // Corte de papel (opcional, depende de la impresora)
+    // === LEYENDA FISCAL ===
+    children.add(pw.SizedBox(height: 6));
+    children.add(
+      _centerText("Documento válido para efectos fiscales", maxWidth),
+    );
+
+    // === NOTAS ===
+    if (data.notes.isNotEmpty) {
+      children.add(pw.SizedBox(height: 4));
+      children.add(_centerText(data.notes, maxWidth));
+    }
+
     children.add(pw.SizedBox(height: 20));
-
     return children;
   }
 
-  /// Encabezado (logo opcional + nombre del negocio)
+  /// ENCABEZADO FISCAL
   pw.Widget _buildHeader(double maxWidth) {
     return pw.Center(
       child: pw.Column(
         children: [
           pw.SizedBox(height: 6),
           _boldText(
-            data.businessName,
+            "FACTURA",
             maxWidth,
             align: pw.TextAlign.center,
-            fontSize: 11,
+            fontSize: 12,
+          ),
+          pw.SizedBox(height: 4),
+          _boldText(data.businessName, maxWidth, align: pw.TextAlign.center),
+          _regularText(
+            "RTN: ${data.businessRtn}",
+            maxWidth,
+            align: pw.TextAlign.center,
           ),
           _regularText(
             data.businessAddress,
@@ -117,44 +131,56 @@ class ThermalInvoicePrinter {
               maxWidth,
               align: pw.TextAlign.center,
             ),
+
+          // === DATOS SAR ===
+          if (data.cai.isNotEmpty) ...[
+            pw.SizedBox(height: 4),
+            _boldText("CAI", maxWidth, align: pw.TextAlign.center),
+            _regularText(data.cai, maxWidth, align: pw.TextAlign.center),
+            _regularText(
+              "Rango autorizado",
+              maxWidth,
+              align: pw.TextAlign.center,
+            ),
+            _regularText(
+              data.rangoAutorizado,
+              maxWidth,
+              align: pw.TextAlign.center,
+            ),
+            _regularText(
+              "Fecha límite: ${data.fechaLimite}",
+              maxWidth,
+              align: pw.TextAlign.center,
+            ),
+          ],
         ],
       ),
     );
   }
 
-  /// Información de la empresa
-  pw.Widget _buildCompanyInfo(double maxWidth) {
-    return pw.Center(
-      child: pw.Column(
-        children: [
-          _boldText(
-            "Tipo pedido: ${data.typeOrder}",
-            maxWidth,
-            align: pw.TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Información del cliente
+  /// CLIENTE
   pw.Widget _buildCustomerInfo(double maxWidth) {
-    final bool isNarrow = maxWidth < 180;
-    final String name = data.customerName.length > 22
-        ? "${data.customerName.substring(0, 20)}.."
-        : data.customerName;
-
     return pw.Column(
-      crossAxisAlignment: isNarrow
-          ? pw.CrossAxisAlignment.center
-          : pw.CrossAxisAlignment.start,
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Row(
           children: [
             _boldText("Cliente: ", maxWidth),
-            _regularText(name, maxWidth),
+            _regularText(
+              data.customerName.isEmpty
+                  ? "Consumidor Final"
+                  : data.customerName,
+              maxWidth,
+            ),
           ],
         ),
+        if (data.rtnCliente.isNotEmpty)
+          pw.Row(
+            children: [
+              _boldText("RTN: ", maxWidth),
+              _regularText(data.rtnCliente, maxWidth),
+            ],
+          ),
         pw.Row(
           children: [
             _boldText("Método de pago: ", maxWidth),
@@ -165,47 +191,97 @@ class ThermalInvoicePrinter {
     );
   }
 
-  /// Detalles de la factura
+  /// DETALLES FACTURA
   pw.Widget _buildInvoiceDetails(double maxWidth) {
-    final bool isNarrow = maxWidth < 180;
-
-    final leftColumn = pw.Column(
+    return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _regularText("N°: ${data.invoiceNumber}", maxWidth),
+        _regularText("No. Factura: ${data.invoiceNumber}", maxWidth),
         _regularText("Fecha: ${data.date} ${data.hora}", maxWidth),
+        if (data.cashier.isNotEmpty)
+          _regularText("Cajero: ${data.cashier}", maxWidth),
       ],
     );
+  }
 
-    if (!isNarrow && data.cashier.isNotEmpty) {
-      return pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          leftColumn,
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              _regularText("Cajero:", maxWidth * 0.4),
-              _regularText(data.cashier, maxWidth * 0.4),
-            ],
-          ),
-        ],
-      );
-    } else {
-      // En 58mm: todo en columna
-      return pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          leftColumn,
-          if (data.cashier.isNotEmpty)
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(top: 2),
-              child: _regularText("Cajero: ${data.cashier}", maxWidth),
+  /// TOTALES
+  pw.Widget _buildTotals(double maxWidth) {
+    final currency = NumberFormat.currency(
+      symbol: data.currencySymbol,
+      decimalDigits: 2,
+    );
+
+    return pw.Align(
+      alignment: pw.Alignment.centerRight,
+      child: pw.Container(
+        width: maxWidth * 0.6,
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            _divider(maxWidth * 0.6),
+            _totalRow(
+              "Subtotal:",
+              currency.format(data.subtotal),
+              maxWidth * 0.6,
             ),
-        ],
-      );
-    }
+            _totalRow("ISV 15%:", currency.format(data.isv), maxWidth * 0.6),
+            _totalRow("TOTAL:", currency.format(data.total), maxWidth * 0.6),
+            _totalRow(
+              "Recibido:",
+              currency.format(data.recibido),
+              maxWidth * 0.6,
+            ),
+            _totalRow(
+              "Cambio:",
+              currency.format(data.recibido - data.total),
+              maxWidth * 0.6,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===== WIDGETS AUXILIARES =====
+
+  pw.Widget _regularText(
+    String text,
+    double maxWidth, {
+    pw.TextAlign align = pw.TextAlign.left,
+  }) {
+    return pw.Text(
+      text,
+      style: pw.TextStyle(fontSize: 9, lineSpacing: _lineSpacing),
+      textAlign: align,
+    );
+  }
+
+  pw.Widget _boldText(
+    String text,
+    double maxWidth, {
+    pw.TextAlign align = pw.TextAlign.left,
+    double? fontSize,
+  }) {
+    return pw.Text(
+      text,
+      style: pw.TextStyle(
+        fontSize: fontSize ?? 10,
+        fontWeight: pw.FontWeight.bold,
+        lineSpacing: _lineSpacing,
+      ),
+      textAlign: align,
+    );
+  }
+
+  pw.Widget _centerText(String text, double maxWidth) {
+    return pw.Align(
+      alignment: pw.Alignment.center,
+      child: _regularText(text, maxWidth, align: pw.TextAlign.center),
+    );
+  }
+
+  pw.Widget _divider(double width) {
+    return pw.Container(width: width, height: 1, color: PdfColors.grey800);
   }
 
   /// Tabla de ítems (adaptativa)
@@ -321,84 +397,6 @@ class ThermalInvoicePrinter {
     }
   }
 
-  /// Totales
-  pw.Widget _buildTotals(double maxWidth) {
-    final currency = NumberFormat.currency(
-      symbol: data.currencySymbol,
-      decimalDigits: 2,
-    );
-    return pw.Align(
-      alignment: pw.Alignment.centerRight,
-      child: pw.Container(
-        width: maxWidth * 0.6,
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-          children: [
-            _divider(maxWidth * 0.6),
-            _totalRow("TOTAL:", currency.format(data.total), maxWidth * 0.6),
-            _totalRow(
-              "RECIBIDO:",
-              currency.format(data.recibido),
-              maxWidth * 0.6,
-            ),
-            _totalRow(
-              "CAMBIO:",
-              currency.format(data.recibido - data.total),
-              maxWidth * 0.6,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- Widgets auxiliares ---
-  pw.Widget _regularText(
-    String text,
-    double maxWidth, {
-    pw.TextAlign align = pw.TextAlign.left,
-  }) {
-    return pw.Text(
-      text,
-      style: pw.TextStyle(
-        // font: _fontRegular,
-        fontSize: 9,
-        lineSpacing: _lineSpacing,
-      ),
-      textAlign: align,
-      maxLines: 10,
-      overflow: pw.TextOverflow.clip,
-    );
-  }
-
-  pw.Widget _boldText(
-    String text,
-    double maxWidth, {
-    pw.TextAlign align = pw.TextAlign.left,
-    double? fontSize,
-  }) {
-    return pw.Text(
-      text,
-      style: pw.TextStyle(
-        // font: _fontBold,
-        fontSize: fontSize ?? 10,
-        lineSpacing: _lineSpacing,
-      ),
-      textAlign: align,
-    );
-  }
-
-  pw.Widget _centerText(String text, double maxWidth) {
-    return pw.Align(
-      alignment: pw.Alignment.center,
-      child: _regularText(text, maxWidth, align: pw.TextAlign.center),
-    );
-  }
-
-  pw.Widget _divider(double width) {
-    return pw.Container(width: width, height: 1, color: PdfColors.grey800);
-  }
-
   pw.Widget _totalRow(String label, String value, double width) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -415,6 +413,7 @@ class ThermalInvoicePrinter {
 /// ---------------------------------------------------------------
 class InvoiceData {
   final String businessName;
+  final String businessRtn;
   final String businessAddress;
   final String businessPhone;
   final String typeOrder;
@@ -430,8 +429,17 @@ class InvoiceData {
   final String metodoPago;
   final String currencySymbol;
   final String notes;
+  // SAR Fields
+  final String cai;
+  final String rangoAutorizado;
+  final String fechaLimite;
+  final String rtnCliente;
+  final double isv;
+  final double subtotal;
+
   InvoiceData({
     required this.businessName,
+    required this.businessRtn,
     this.businessAddress = '',
     this.businessPhone = '',
     required this.typeOrder,
@@ -447,6 +455,12 @@ class InvoiceData {
     required this.metodoPago,
     this.currencySymbol = 'L. ',
     this.notes = '',
+    this.cai = '',
+    this.rangoAutorizado = '',
+    this.fechaLimite = '',
+    this.rtnCliente = '',
+    this.isv = 0.0,
+    this.subtotal = 0.0,
   });
 }
 

@@ -6,6 +6,12 @@ class Venta {
   final double? montoPagado;
   final double? cambio;
   final String? estado; // 'PENDIENTE', 'COMPLETADA', etc.
+  // Campos SAR
+  final String? cai;
+  final String? rtnCliente;
+  final String? nombreCliente;
+  final double isv;
+  final double subtotal;
 
   Venta({
     this.id,
@@ -15,6 +21,11 @@ class Venta {
     this.montoPagado,
     this.cambio,
     this.estado,
+    this.cai,
+    this.rtnCliente,
+    this.nombreCliente,
+    this.isv = 0.0,
+    this.subtotal = 0.0,
   });
 
   // Map → Venta
@@ -27,6 +38,11 @@ class Venta {
       montoPagado: map['monto_pagado'],
       cambio: map['cambio'],
       estado: map['estado'],
+      cai: map['cai'],
+      rtnCliente: map['rtn_cliente'],
+      nombreCliente: map['nombre_cliente'],
+      isv: map['isv'] ?? 0.0,
+      subtotal: map['subtotal'] ?? 0.0,
     );
   }
 
@@ -40,6 +56,11 @@ class Venta {
       'monto_pagado': montoPagado,
       'cambio': cambio,
       'estado': estado,
+      'cai': cai,
+      'rtn_cliente': rtnCliente,
+      'nombre_cliente': nombreCliente,
+      'isv': isv,
+      'subtotal': subtotal,
     };
   }
 }

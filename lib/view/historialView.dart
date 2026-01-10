@@ -645,6 +645,7 @@ class _HistorialState extends State<Historial> {
                     final data = InvoiceData(
                       typeOrder: 'Venta',
                       businessName: 'Tienda',
+                      businessRtn: '0000000000000',
                       businessAddress: 'Calle 123',
                       businessPhone: '12345678',
                       invoiceNumber: numeroFactura,
