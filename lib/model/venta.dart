@@ -12,6 +12,10 @@ class Venta {
   final String? nombreCliente;
   final double isv;
   final double subtotal;
+  final String rtnEmisor;
+  final String razonSocialEmisor;
+  final String rangoAutorizado;
+  final String fechaLimiteCai;
 
   Venta({
     this.id,
@@ -26,6 +30,10 @@ class Venta {
     this.nombreCliente,
     this.isv = 0.0,
     this.subtotal = 0.0,
+    required this.rtnEmisor,
+    required this.razonSocialEmisor,
+    required this.rangoAutorizado,
+    required this.fechaLimiteCai,
   });
 
   // Map → Venta
@@ -37,12 +45,16 @@ class Venta {
       total: map['total'],
       montoPagado: map['monto_pagado'],
       cambio: map['cambio'],
-      estado: map['estado'],
+      estado: map['estado_fiscal'],
       cai: map['cai'],
       rtnCliente: map['rtn_cliente'],
       nombreCliente: map['nombre_cliente'],
       isv: map['isv'] ?? 0.0,
       subtotal: map['subtotal'] ?? 0.0,
+      rtnEmisor: map['rtn_emisor'],
+      razonSocialEmisor: map['razon_social_emisor'],
+      rangoAutorizado: map['rango_autorizado'],
+      fechaLimiteCai: map['fecha_limite_cai'],
     );
   }
 
@@ -55,12 +67,16 @@ class Venta {
       'total': total,
       'monto_pagado': montoPagado,
       'cambio': cambio,
-      'estado': estado,
+      'estado_fiscal': estado,
       'cai': cai,
       'rtn_cliente': rtnCliente,
       'nombre_cliente': nombreCliente,
       'isv': isv,
       'subtotal': subtotal,
+      'rtn_emisor': rtnEmisor,
+      'razon_social_emisor': razonSocialEmisor,
+      'rango_autorizado': rangoAutorizado,
+      'fecha_limite_cai': fechaLimiteCai,
     };
   }
 }

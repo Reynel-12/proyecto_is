@@ -2,21 +2,21 @@ class DetalleVenta {
   int? id; // null antes de insertarse
   int? ventaId; // FK
   final String productoId; // FK
-  final String nombre;
   final int cantidad;
   final double precioUnitario;
   final double subtotal;
   final double descuento;
+  final String descripcion;
 
   DetalleVenta({
     this.id,
     this.ventaId,
     required this.productoId,
-    this.nombre = '',
     required this.cantidad,
     required this.precioUnitario,
     required this.subtotal,
     this.descuento = 0.0,
+    required this.descripcion,
   });
 
   // Map → DetalleVenta
@@ -29,6 +29,7 @@ class DetalleVenta {
       precioUnitario: map['precio_unitario'],
       subtotal: map['subtotal'],
       descuento: map['descuento'] ?? 0.0,
+      descripcion: map['descripcion'],
     );
   }
 
@@ -42,6 +43,7 @@ class DetalleVenta {
       'precio_unitario': precioUnitario,
       'subtotal': subtotal,
       'descuento': descuento,
+      'descripcion': descripcion,
     };
   }
 }

@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/repository_caja.dart';
+import 'package:proyecto_is/controller/repository_empresa.dart';
 import 'dart:io' show Platform;
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/controller/repository_venta.dart';
 import 'package:proyecto_is/model/caja.dart';
 import 'package:proyecto_is/model/detalle_venta.dart';
+import 'package:proyecto_is/model/empresa.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/producto.dart';
 import 'package:proyecto_is/model/venta.dart';
@@ -40,6 +42,7 @@ class _VentasState extends State<Ventas> {
 
   final repositoryProducto = ProductoRepository();
   final repositoryVenta = VentaRepository();
+  final repositoryEmpresa = RepositoryEmpresa();
   List<Producto> _productos = [];
   List<Producto> _productosSeleccionados = [];
   List<Producto> _productosFiltrados = [];
@@ -49,6 +52,7 @@ class _VentasState extends State<Ventas> {
   Caja? _cajaSeleccionada;
   final _sarService = SarService();
   SarConfig? _sarConfig;
+  Empresa? _empresa;
 
   double _total = 0.0;
 
@@ -80,6 +84,11 @@ class _VentasState extends State<Ventas> {
     _sarService.obtenerConfiguracionActiva().then((config) {
       setState(() {
         _sarConfig = config;
+      });
+    });
+    repositoryEmpresa.getEmpresa().then((empresa) {
+      setState(() {
+        _empresa = empresa;
       });
     });
   }
@@ -464,17 +473,22 @@ class _VentasState extends State<Ventas> {
         total: totalVenta,
         montoPagado: double.parse(cliente),
         cambio: double.parse(cambio),
-        estado: 'COMPLETADA',
+        estado: 'EMITIDA',
         cai: _sarConfig!.cai,
         rtnCliente: rtn,
         nombreCliente: nombre,
         isv: isv,
         subtotal: subtotal,
+        rtnEmisor: _empresa!.rtn,
+        razonSocialEmisor: _empresa!.razonSocial,
+        rangoAutorizado:
+            '${_sarConfig!.rangoInicial} - ${_sarConfig!.rangoFinal}',
+        fechaLimiteCai: _sarConfig!.fechaLimite,
       );
       final detalleVenta = _productosSeleccionados.map((producto) {
         return DetalleVenta(
           productoId: producto.id,
-          nombre: producto.nombre,
+          descripcion: producto.nombre,
           cantidad: producto.cantidad,
           precioUnitario: producto.precio,
           subtotal: producto.precio * producto.cantidad,
@@ -522,18 +536,18 @@ class _VentasState extends State<Ventas> {
         "${fechaVenta.hour.toString().padLeft(2, '0')}:${fechaVenta.minute.toString().padLeft(2, '0')}";
     return InvoiceData(
       typeOrder: 'Venta',
-      businessRtn: '0000000000000',
-      businessName: 'Tienda',
-      businessAddress: 'Calle 123',
-      businessPhone: '12345678',
+      businessRtn: _empresa?.rtn ?? '',
+      businessName: _empresa?.razonSocial ?? '',
+      businessAddress: _empresa?.direccion ?? '',
+      businessPhone: _empresa?.telefono ?? '',
       invoiceNumber: venta.numeroFactura,
       date: fecha,
       hora: hora,
       cashier: 'Principal',
-      customerName: 'Cliente',
+      customerName: _clienteController.text,
       items: productos.map((item) {
         return InvoiceItem(
-          description: item.nombre,
+          description: item.descripcion,
           quantity: item.cantidad,
           unitPrice: item.precioUnitario,
         );
