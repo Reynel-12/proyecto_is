@@ -81,6 +81,12 @@ class ThermalInvoicePrinter {
     children.add(pw.SizedBox(height: _sectionSpacing));
     children.add(_buildTotals(maxWidth));
 
+    // === TOTAL EN LETRAS ===
+    if (data.totalInWords.isNotEmpty) {
+      children.add(pw.SizedBox(height: 4));
+      children.add(_regularText(data.totalInWords, maxWidth));
+    }
+
     // === MONEDA ===
     children.add(pw.SizedBox(height: 4));
     children.add(_centerText("Moneda: Lempiras (HNL)", maxWidth));
@@ -436,6 +442,7 @@ class InvoiceData {
   final String rtnCliente;
   final double isv;
   final double subtotal;
+  final String totalInWords;
 
   InvoiceData({
     required this.businessName,
@@ -461,6 +468,7 @@ class InvoiceData {
     this.rtnCliente = '',
     this.isv = 0.0,
     this.subtotal = 0.0,
+    this.totalInWords = '',
   });
 }
 

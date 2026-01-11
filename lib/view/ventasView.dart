@@ -20,6 +20,7 @@ import 'package:proyecto_is/view/widgets/caja_cerrada.dart';
 import 'package:proyecto_is/view/widgets/inventario_vacio.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:proyecto_is/view/widgets/thermal_invoice_printer.dart';
+import 'package:proyecto_is/utils/number_to_words_spanish.dart';
 import 'package:proyecto_is/controller/sar_service.dart';
 import 'package:proyecto_is/model/sar_config.dart';
 
@@ -544,7 +545,7 @@ class _VentasState extends State<Ventas> {
       date: fecha,
       hora: hora,
       cashier: 'Principal',
-      customerName: _clienteController.text,
+      customerName: venta.nombreCliente ?? '',
       items: productos.map((item) {
         return InvoiceItem(
           description: item.descripcion,
@@ -563,6 +564,7 @@ class _VentasState extends State<Ventas> {
       rtnCliente: venta.rtnCliente ?? '',
       isv: venta.isv,
       subtotal: venta.subtotal,
+      totalInWords: NumberToWordsSpanish.convert(venta.total),
     );
   }
 
