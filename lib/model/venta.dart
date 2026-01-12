@@ -90,6 +90,15 @@ class VentaCompleta {
   final double cambio;
   final String numeroFactura;
   final List<DetalleItem> detalles;
+  final String cai;
+  final String rtnCliente;
+  final String nombreCliente;
+  final String rangoAutorizado;
+  final String rtnEmisor;
+  final String razonSocialEmisor;
+  final String fechaLimiteCai;
+  final double isv;
+  final double subtotal;
 
   VentaCompleta({
     required this.id,
@@ -100,6 +109,15 @@ class VentaCompleta {
     required this.montoPagado,
     required this.cambio,
     required this.numeroFactura,
+    required this.cai,
+    required this.rtnCliente,
+    required this.nombreCliente,
+    required this.rangoAutorizado,
+    required this.rtnEmisor,
+    required this.razonSocialEmisor,
+    required this.fechaLimiteCai,
+    required this.isv,
+    required this.subtotal,
   });
 }
 

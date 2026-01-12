@@ -463,15 +463,22 @@ class _VentasState extends State<Ventas> {
         return;
       }
 
-      final isv = _sarService.calcularISV(
-        totalVenta / (1 + SarService.tasaISV),
-      ); // Calculo inverso simple
-      final subtotal = totalVenta - isv;
+      // final isv = _sarService.calcularISV(
+      //   totalVenta / (1 + SarService.tasaISV),
+      // ); // Calculo inverso simple
+      // final subtotal = totalVenta - isv;
+
+      double isv = 0.0;
+      double subtotal = totalVenta;
+      double total = 0.0;
+
+      isv = subtotal * SarService.tasaISV;
+      total = subtotal + isv;
 
       final venta = Venta(
         fecha: DateTime.now().toIso8601String(),
         numeroFactura: numeroFactura,
-        total: totalVenta,
+        total: total,
         montoPagado: double.parse(cliente),
         cambio: double.parse(cambio),
         estado: 'EMITIDA',

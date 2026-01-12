@@ -1,10 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:proyecto_is/controller/repository_empresa.dart';
 import 'package:proyecto_is/controller/repository_venta.dart';
+import 'package:proyecto_is/controller/sar_service.dart';
+import 'package:proyecto_is/model/empresa.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/model/venta.dart';
+import 'package:proyecto_is/utils/number_to_words_spanish.dart';
 import 'package:proyecto_is/view/widgets/thermal_invoice_printer.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -17,7 +21,11 @@ class Historial extends StatefulWidget {
 
 class _HistorialState extends State<Historial> {
   DateTime hoy = DateTime.now();
+  final repositoryEmpresa = RepositoryEmpresa();
+  final repositorySarConfig = SarService();
+  final repositoryVenta = VentaRepository();
   List<VentaCompleta> ventas = [];
+  Empresa? _empresa;
 
   @override
   void initState() {
@@ -26,9 +34,14 @@ class _HistorialState extends State<Historial> {
   }
 
   void _cargarVentas() async {
-    final ventas = await VentaRepository().getVentasAgrupadas();
+    final ventas = await repositoryVenta.getVentasAgrupadas();
     setState(() {
       this.ventas = ventas;
+    });
+    repositoryEmpresa.getEmpresa().then((empresa) {
+      setState(() {
+        _empresa = empresa;
+      });
     });
   }
 
@@ -497,6 +510,7 @@ class _HistorialState extends State<Historial> {
           elevation,
           venta.numeroFactura,
           venta.detalles,
+          venta,
         );
       },
     );
@@ -518,6 +532,7 @@ class _HistorialState extends State<Historial> {
     double elevation,
     String numeroFactura,
     List<DetalleItem> detalles,
+    VentaCompleta venta,
   ) {
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = screenSize.width >= 900;
@@ -644,15 +659,15 @@ class _HistorialState extends State<Historial> {
                   onPressed: () async {
                     final data = InvoiceData(
                       typeOrder: 'Venta',
-                      businessName: 'Tienda',
-                      businessRtn: '0000000000000',
-                      businessAddress: 'Calle 123',
-                      businessPhone: '12345678',
+                      businessRtn: venta.rtnEmisor,
+                      businessName: venta.razonSocialEmisor,
+                      businessAddress: _empresa?.direccion ?? '',
+                      businessPhone: _empresa?.telefono ?? '',
                       invoiceNumber: numeroFactura,
                       date: fecha,
                       hora: hora,
                       cashier: 'Principal',
-                      customerName: 'Cliente',
+                      customerName: venta.nombreCliente,
                       items: detalles.map((detalle) {
                         return InvoiceItem(
                           description: detalle.producto,
@@ -664,6 +679,13 @@ class _HistorialState extends State<Historial> {
                       recibido: montoPagado,
                       metodoPago: 'Efectivo',
                       notes: '¡Gracias por su compra!',
+                      cai: venta.cai,
+                      rangoAutorizado: venta.rangoAutorizado,
+                      fechaLimite: venta.fechaLimiteCai,
+                      rtnCliente: venta.rtnCliente,
+                      isv: venta.isv,
+                      subtotal: venta.subtotal,
+                      totalInWords: NumberToWordsSpanish.convert(venta.total),
                     );
                     Navigator.push(
                       context,
