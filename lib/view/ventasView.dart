@@ -469,11 +469,20 @@ class _VentasState extends State<Ventas> {
       // final subtotal = totalVenta - isv;
 
       double isv = 0.0;
-      double subtotal = totalVenta;
+      double subtotal = 0.0;
       double total = 0.0;
+
+      subtotal = _productosSeleccionados.fold(
+        0.0,
+        (sum, item) => sum + (item.precio * item.cantidad),
+      );
 
       isv = subtotal * SarService.tasaISV;
       total = subtotal + isv;
+
+      print('Subtotal: $subtotal');
+      print('ISV: $isv');
+      print('Total: $total');
 
       final venta = Venta(
         fecha: DateTime.now().toIso8601String(),
@@ -578,7 +587,8 @@ class _VentasState extends State<Ventas> {
   void _calcularTotal() {
     _total = _productosSeleccionados.fold(
       0.0,
-      (sum, item) => sum + (item.precio * item.cantidad),
+      (sum, item) =>
+          sum + (item.precio * item.cantidad * (1 + SarService.tasaISV)),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
@@ -1023,18 +1033,17 @@ class _VentasState extends State<Ventas> {
                   SizedBox(height: padding),
 
                   //  Tarjeta de resumen de venta
-                  Expanded(
-                    flex: 1,
-                    child: Card(
-                      color: Provider.of<TemaProveedor>(context).esModoOscuro
-                          ? const Color.fromRGBO(30, 30, 30, 1)
-                          : Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 4,
-                      child: Padding(
-                        padding: EdgeInsets.all(padding),
+                  Card(
+                    color: Provider.of<TemaProveedor>(context).esModoOscuro
+                        ? const Color.fromRGBO(30, 30, 30, 1)
+                        : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 4,
+                    child: Padding(
+                      padding: EdgeInsets.all(padding),
+                      child: SingleChildScrollView(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
