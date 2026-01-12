@@ -1058,11 +1058,40 @@ class _VentasState extends State<Ventas> {
                             ),
                             SizedBox(height: 8),
                             resumenVenta(
-                              'Total a Pagar:',
+                              'Subtotal:',
                               _productosSeleccionados.isNotEmpty
                                   ? _productosSeleccionados
                                         .map<double>(
                                           (p) => p.precio * p.cantidad,
+                                        )
+                                        .reduce((a, b) => a + b)
+                                        .toStringAsFixed(2)
+                                  : '0.00',
+                            ),
+                            resumenVenta(
+                              'ISV:',
+                              _productosSeleccionados.isNotEmpty
+                                  ? _productosSeleccionados
+                                        .map<double>(
+                                          (p) =>
+                                              p.precio *
+                                              p.cantidad *
+                                              SarService.tasaISV,
+                                        )
+                                        .reduce((a, b) => a + b)
+                                        .toStringAsFixed(2)
+                                  : '0.00',
+                            ),
+                            resumenVenta(
+                              'Total a Pagar:',
+                              _productosSeleccionados.isNotEmpty
+                                  ? _productosSeleccionados
+                                        .map<double>(
+                                          (p) =>
+                                              (p.precio *
+                                                  p.cantidad *
+                                                  SarService.tasaISV) +
+                                              (p.precio * p.cantidad),
                                         )
                                         .reduce((a, b) => a + b)
                                         .toStringAsFixed(2)
@@ -1127,10 +1156,34 @@ class _VentasState extends State<Ventas> {
           ),
           SizedBox(height: 8),
           resumenVenta(
-            'Total a Pagar:',
+            'Subtotal:',
             _productosSeleccionados.isNotEmpty
                 ? _productosSeleccionados
                       .map<double>((p) => p.precio * p.cantidad)
+                      .reduce((a, b) => a + b)
+                      .toStringAsFixed(2)
+                : '0.00',
+          ),
+          resumenVenta(
+            'ISV:',
+            _productosSeleccionados.isNotEmpty
+                ? _productosSeleccionados
+                      .map<double>(
+                        (p) => p.precio * p.cantidad * SarService.tasaISV,
+                      )
+                      .reduce((a, b) => a + b)
+                      .toStringAsFixed(2)
+                : '0.00',
+          ),
+          resumenVenta(
+            'Total a Pagar:',
+            _productosSeleccionados.isNotEmpty
+                ? _productosSeleccionados
+                      .map<double>(
+                        (p) =>
+                            (p.precio * p.cantidad * SarService.tasaISV) +
+                            (p.precio * p.cantidad),
+                      )
                       .reduce((a, b) => a + b)
                       .toStringAsFixed(2)
                 : '0.00',
