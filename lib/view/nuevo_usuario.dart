@@ -108,19 +108,6 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
     String telefono = _telefono.text;
 
     try {
-      // final user = User(
-      //   id: int.parse(widget.uid),
-      //   nombre: nombre,
-      //   apellido: apellido,
-      //   telefono: telefono,
-      //   correo: correo,
-      //   contrasena: contrasena,
-      //   tipo: selectedTipo!,
-      //   estado: selectedEstado!,
-      //   fechaCreacion: DateTime.now().toIso8601String(),
-      //   fechaActualizacion: DateTime.now().toIso8601String(),
-      // );
-
       Map<String, dynamic> userMap = {
         'nombre': nombre,
         'apellido': apellido,

@@ -60,7 +60,7 @@ class RepositoryUser {
       DBHelper.usuariosTable,
       user,
       where: 'id_usuario = ?',
-      whereArgs: [user['id_usuario']],
+      whereArgs: [id],
     );
   }
 

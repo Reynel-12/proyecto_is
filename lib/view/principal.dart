@@ -24,6 +24,14 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  @override
+  void initState() {
+    super.initState();
+    obtenerTipo();
+  }
+
+  String tipo = '';
+
   void deletePreferences() async {
     final prefs = await SharedPreferences.getInstance();
     prefs.remove('email');
@@ -31,6 +39,14 @@ class _MyHomePageState extends State<MyHomePage> {
     prefs.remove('user');
     prefs.remove('tipo');
     prefs.remove('estado');
+  }
+
+  Future<void> obtenerTipo() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? tipo = prefs.getString('tipo');
+    setState(() {
+      this.tipo = tipo ?? '';
+    });
   }
 
   @override
@@ -43,61 +59,24 @@ class _MyHomePageState extends State<MyHomePage> {
     // Ajustamos tamaños según el dispositivo
     final double titleFontSize = isMobile ? 18.0 : (isTablet ? 20.0 : 22.0);
 
+    bool isAdmin = tipo == 'Administrador';
+
     final List<DashboardCardData> cards = [
-      DashboardCardData(
-        icon: Icons.point_of_sale,
-        title: 'Caja',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CajaScreen()),
+      if (isAdmin)
+        DashboardCardData(
+          icon: Icons.point_of_sale,
+          title: 'Caja',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CajaScreen()),
+          ),
         ),
-      ),
       DashboardCardData(
-        icon: Icons.inventory,
-        title: 'Inventario',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const Inventario()),
-        ),
-      ),
-      DashboardCardData(
-        icon: Icons.add_shopping_cart,
+        icon: Icons.shopping_cart_checkout,
         title: 'Ventas',
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const Ventas()),
-        ),
-      ),
-      DashboardCardData(
-        icon: Icons.add_box,
-        title: 'Nuevo producto',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => Nuevoproducto()),
-        ),
-      ),
-      DashboardCardData(
-        icon: Icons.add_box,
-        title: 'Usuarios',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const Usuarios()),
-        ),
-      ),
-      DashboardCardData(
-        icon: Icons.people,
-        title: 'Proveedores',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ProveedoresView()),
-        ),
-      ),
-      DashboardCardData(
-        icon: Icons.people,
-        title: 'Adquisiciones',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AdquisicionForm()),
         ),
       ),
       DashboardCardData(
@@ -108,14 +87,60 @@ class _MyHomePageState extends State<MyHomePage> {
           MaterialPageRoute(builder: (_) => const Historial()),
         ),
       ),
-      DashboardCardData(
-        icon: Icons.settings,
-        title: 'Configuración SAR',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ConfiguracionSarView()),
+      if (isAdmin)
+        DashboardCardData(
+          icon: Icons.inventory,
+          title: 'Inventario',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const Inventario()),
+          ),
         ),
-      ),
+      if (isAdmin)
+        DashboardCardData(
+          icon: Icons.production_quantity_limits,
+          title: 'Nuevo producto',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => Nuevoproducto()),
+          ),
+        ),
+      if (isAdmin)
+        DashboardCardData(
+          icon: Icons.shopping_bag,
+          title: 'Adquisiciones',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AdquisicionForm()),
+          ),
+        ),
+      if (isAdmin)
+        DashboardCardData(
+          icon: Icons.local_shipping,
+          title: 'Proveedores',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProveedoresView()),
+          ),
+        ),
+      if (isAdmin)
+        DashboardCardData(
+          icon: Icons.manage_accounts,
+          title: 'Usuarios',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const Usuarios()),
+          ),
+        ),
+      if (isAdmin)
+        DashboardCardData(
+          icon: Icons.settings,
+          title: 'Configuración SAR',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ConfiguracionSarView()),
+          ),
+        ),
       DashboardCardData(
         icon: Icons.logout,
         title: 'Cerrar sesión',
