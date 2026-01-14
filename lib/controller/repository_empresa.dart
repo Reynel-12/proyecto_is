@@ -15,7 +15,7 @@ class RepositoryEmpresa {
       DBHelper.empresaTable,
     );
 
-    return maps.map((map) => Empresa.fromMap(map)).toList().first;
+    return maps.map((map) => Empresa.fromMap(map)).toList().firstOrNull;
   }
 
   Future<int> updateEmpresa(Empresa empresa) async {

@@ -174,12 +174,24 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
                 double costo = double.tryParse(costoController.text) ?? 0.0;
                 if (cant > 0 && costo > 0) {
                   setState(() {
-                    _carritoCompra.add({
-                      'producto': producto,
-                      'cantidad': cant,
-                      'costo': costo,
-                      'subtotal': cant * costo,
-                    });
+                    int index = _carritoCompra.indexWhere(
+                      (item) =>
+                          (item['producto'] as Producto).id == producto.id,
+                    );
+
+                    if (index != -1) {
+                      _carritoCompra[index]['cantidad'] += cant;
+                      _carritoCompra[index]['costo'] = costo;
+                      _carritoCompra[index]['subtotal'] =
+                          _carritoCompra[index]['cantidad'] * costo;
+                    } else {
+                      _carritoCompra.add({
+                        'producto': producto,
+                        'cantidad': cant,
+                        'costo': costo,
+                        'subtotal': cant * costo,
+                      });
+                    }
                   });
                   Navigator.pop(context);
                 }
@@ -486,11 +498,50 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            subtitle: Text(
-              'Cant: ${item['cantidad']} x L. ${item['costo']}',
-              style: TextStyle(
-                color: esModoOscuro ? Colors.white70 : Colors.black54,
-              ),
+            subtitle: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  onPressed: () {
+                    setState(() {
+                      if (item['cantidad'] > 1) {
+                        item['cantidad']--;
+                        item['subtotal'] = item['cantidad'] * item['costo'];
+                      }
+                    });
+                  },
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(
+                    '${item['cantidad']}',
+                    style: TextStyle(
+                      color: esModoOscuro ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                  onPressed: () {
+                    setState(() {
+                      item['cantidad']++;
+                      item['subtotal'] = item['cantidad'] * item['costo'];
+                    });
+                  },
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'x L. ${item['costo']}',
+                  style: TextStyle(
+                    color: esModoOscuro ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+              ],
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,

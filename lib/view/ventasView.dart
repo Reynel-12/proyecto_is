@@ -662,13 +662,17 @@ class _VentasState extends State<Ventas> {
                 ? _buildDesktopLayout(contentPadding)
                 : _buildMobileTabletLayout(contentPadding),
             floatingActionButton: _cajaSeleccionada != null
-                ? MiFAB(
-                    onScan: searchProductByCode,
-                    productsList: _productos,
-                    onProductoSeleccionadoByNombre: _agregarProductoByName,
-                    onProductoSeleccionadoByCodigo: _agregarProductoByCode,
-                    addNewProduct: handleOnAddNewProduct,
-                  )
+                ? Platform.isAndroid || Platform.isIOS
+                      ? MiFAB(
+                          onScan: searchProductByCode,
+                          productsList: _productos,
+                          onProductoSeleccionadoByNombre:
+                              _agregarProductoByName,
+                          onProductoSeleccionadoByCodigo:
+                              _agregarProductoByCode,
+                          addNewProduct: handleOnAddNewProduct,
+                        )
+                      : null
                 : null,
           );
   }

@@ -6,11 +6,14 @@ import 'package:proyecto_is/view/caja_screen.dart';
 import 'package:proyecto_is/view/dashBoardCard.dart';
 import 'package:proyecto_is/view/historialView.dart';
 import 'package:proyecto_is/view/inventarioView.dart';
+import 'package:proyecto_is/view/login_view.dart';
 import 'package:proyecto_is/view/productoForm.dart';
 import 'package:proyecto_is/view/proveedoresView.dart';
+import 'package:proyecto_is/view/usuarios_view.dart';
 import 'package:proyecto_is/view/ventasView.dart';
 import 'package:proyecto_is/view/configuracion_sar_view.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MyHomePage extends StatefulWidget {
   //final CameraDescription camera;
@@ -21,6 +24,15 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  void deletePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.remove('email');
+    prefs.remove('password');
+    prefs.remove('user');
+    prefs.remove('tipo');
+    prefs.remove('estado');
+  }
+
   @override
   Widget build(BuildContext context) {
     // Obtenemos el tamaño de la pantalla
@@ -65,6 +77,14 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       DashboardCardData(
+        icon: Icons.add_box,
+        title: 'Usuarios',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const Usuarios()),
+        ),
+      ),
+      DashboardCardData(
         icon: Icons.people,
         title: 'Proveedores',
         onTap: () => Navigator.push(
@@ -95,6 +115,17 @@ class _MyHomePageState extends State<MyHomePage> {
           context,
           MaterialPageRoute(builder: (_) => const ConfiguracionSarView()),
         ),
+      ),
+      DashboardCardData(
+        icon: Icons.logout,
+        title: 'Cerrar sesión',
+        onTap: () {
+          deletePreferences();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => Login()),
+          );
+        },
       ),
     ];
 

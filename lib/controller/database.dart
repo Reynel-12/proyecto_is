@@ -15,6 +15,7 @@ class DBHelper {
   static const String movimientosCajaTable = 'movimientos_caja';
   static const String configuracionSarTable = 'configuracion_sar';
   static const String empresaTable = 'empresa';
+  static const String usuariosTable = 'usuarios';
 
   // Getter con manejo de errores
   Future<Database> get database async {
@@ -207,6 +208,21 @@ class DBHelper {
         correo TEXT,
         moneda_defecto TEXT DEFAULT 'HNL',
         fecha_creacion TEXT
+      );
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $usuariosTable (
+        id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL,
+        apellido TEXT NOT NULL,
+        telefono TEXT,
+        correo TEXT,
+        contrasena TEXT NOT NULL,
+        tipo TEXT NOT NULL,
+        estado TEXT NOT NULL,
+        fecha_creacion TEXT,
+        fecha_actualizacion TEXT
       );
     ''');
   }

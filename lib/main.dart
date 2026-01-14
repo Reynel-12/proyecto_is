@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/model/preferences.dart';
+import 'package:proyecto_is/view/login_view.dart';
 import 'package:proyecto_is/view/principal.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() async {
@@ -28,6 +30,22 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  Future<Map<String, String>> loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? email = prefs.getString('email');
+    String? password = prefs.getString('password');
+    String? user = prefs.getString('user');
+    String? tipo = prefs.getString('tipo');
+    String? estado = prefs.getString('estado');
+    return {
+      'email': email ?? '',
+      'password': password ?? '',
+      'user': user ?? '',
+      'tipo': tipo ?? '',
+      'estado': estado ?? '',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -46,7 +64,25 @@ class _MyAppState extends State<MyApp> {
             color: Provider.of<TemaProveedor>(context).esModoOscuro
                 ? Colors.black
                 : const Color.fromRGBO(244, 243, 243, 1),
-            home: const MyHomePage(),
+            home: FutureBuilder<Map<String, String>>(
+              future: loadData(),
+              builder: (context, asyncSnapshot) {
+                if (asyncSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else {
+                  if (asyncSnapshot.hasData &&
+                      (asyncSnapshot.data?['email'] ?? '').isNotEmpty &&
+                      (asyncSnapshot.data?['password'] ?? '').isNotEmpty &&
+                      (asyncSnapshot.data?['user'] ?? '').isNotEmpty &&
+                      (asyncSnapshot.data?['tipo'] ?? '').isNotEmpty &&
+                      (asyncSnapshot.data?['estado'] ?? '').isNotEmpty) {
+                    return const MyHomePage();
+                  } else {
+                    return const Login();
+                  }
+                }
+              },
+            ),
           );
         },
       ),
