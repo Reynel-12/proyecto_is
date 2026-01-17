@@ -20,6 +20,7 @@ class Nuevoproducto extends StatefulWidget {
   bool isEditPrecio;
   bool isEditCosto;
   bool isEditProveedor;
+  bool isEditEstado;
   String codigo;
   int inventario;
   String nombre;
@@ -28,6 +29,7 @@ class Nuevoproducto extends StatefulWidget {
   String unidadMedida;
   int stock;
   int proveedorId;
+  String estado;
   Nuevoproducto({
     super.key,
     this.isEdit = false,
@@ -36,6 +38,7 @@ class Nuevoproducto extends StatefulWidget {
     this.isEditUnidad = false,
     this.isEditCosto = false,
     this.isEditProveedor = false,
+    this.isEditEstado = false,
     this.codigo = '',
     this.inventario = 0,
     this.nombre = '',
@@ -44,6 +47,7 @@ class Nuevoproducto extends StatefulWidget {
     this.unidadMedida = '',
     this.stock = 0,
     this.proveedorId = 0,
+    this.estado = '',
   });
 
   @override
@@ -64,11 +68,24 @@ class _NuevoproductoState extends State<Nuevoproducto> {
   final ProveedorRepository _proveedorRepository = ProveedorRepository();
 
   Proveedor? _selectedItem;
-  List<Proveedor> items = [];
+  List<Proveedor> _items = [];
+
+  List<String> estado = ['Activo', 'Inactivo'];
+  String? selectedEstado;
 
   void cargarProveedores() async {
-    items = await _proveedorRepository.getProveedores();
-    setState(() {});
+    final items = await _proveedorRepository.getProveedoresByEstado('Activo');
+    setState(() {
+      _items = items;
+    });
+    if (widget.isEdit) {
+      if (_items.isNotEmpty) {
+        _selectedItem = _items.firstWhere(
+          (item) => item.id == widget.proveedorId,
+          orElse: () => _items.first,
+        );
+      }
+    }
   }
 
   @override
@@ -82,10 +99,10 @@ class _NuevoproductoState extends State<Nuevoproducto> {
       _inventario.text = widget.inventario.toString();
       _precio.text = widget.precio.toString();
       _costo.text = widget.costo.toString();
-      if (items.isNotEmpty) {
-        _selectedItem = items.firstWhere(
-          (item) => item.id == widget.proveedorId,
-          orElse: () => items.first,
+      if (estado.isNotEmpty) {
+        selectedEstado = estado.firstWhere(
+          (item) => item == widget.estado,
+          orElse: () => estado.first,
         );
       }
     }
@@ -128,6 +145,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
         stock: int.tryParse(_inventario.text) ?? 0,
         fechaActualizacion: DateTime.now().toString(),
         proveedorId: _selectedItem?.id ?? 0,
+        estado: selectedEstado,
       );
       await _productoRepository.updateProducto(producto);
       _mostrarMensaje(
@@ -139,7 +157,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
     } catch (e) {
       _mostrarMensaje('Error', 'Error inesperado', ContentType.failure);
       print("Error inesperado: $e");
-      Navigator.pop(context, true);
+      Navigator.pop(context, false);
     }
   }
 
@@ -162,6 +180,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
         stock: inventario,
         fechaCreacion: fechaCreacion,
         proveedorId: proveedorId,
+        estado: selectedEstado,
       );
       await _productoRepository.insertProducto(producto);
       _mostrarMensaje(
@@ -379,12 +398,44 @@ class _NuevoproductoState extends State<Nuevoproducto> {
                         Expanded(
                           child: _buildDropdown(
                             value: _selectedItem,
-                            items: items,
+                            items: _items,
                             label: 'Seleccionar proveedor',
                             icon: Icons.category,
                             onChanged: (Proveedor? newValue) {
                               setState(() {
                                 _selectedItem = newValue;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null) {
+                                return 'Por favor selecciona una opción';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        SizedBox(width: isMobile ? 8.0 : 12.0),
+                      ],
+                    ),
+                  ],
+                ),
+
+              // Estado
+              if ((widget.isEdit && widget.isEditEstado) || !widget.isEdit)
+                Column(
+                  children: [
+                    SizedBox(height: fieldSpacing),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDropdownEstado(
+                            value: selectedEstado,
+                            items: estado,
+                            label: 'Seleccionar estado',
+                            icon: Icons.category,
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                selectedEstado = newValue;
                               });
                             },
                             validator: (value) {
@@ -612,6 +663,85 @@ class _NuevoproductoState extends State<Nuevoproducto> {
             item.nombre, // usamos la propiedad del objeto
           ),
         );
+      }).toList(),
+      onChanged: onChanged,
+      validator: validator,
+      style: TextStyle(
+        fontSize: inputFontSize,
+        color: temaOscuro ? Colors.white : Colors.black,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          color: temaOscuro ? Colors.white : Colors.black,
+          fontSize: labelFontSize,
+        ),
+        filled: true,
+        fillColor: temaOscuro
+            ? const Color.fromRGBO(30, 30, 30, 1)
+            : Colors.white,
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: BorderSide(
+            color: temaOscuro ? Colors.white : Colors.black,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: temaOscuro ? Colors.white : Colors.black,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
+        ),
+        errorStyle: TextStyle(
+          color: Colors.redAccent,
+          fontWeight: FontWeight.w500,
+          fontSize: isMobile ? 12.0 : 13.0,
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          vertical: verticalPadding,
+          horizontal: horizontalPadding,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownEstado({
+    required String? value,
+    required List<String> items,
+    required String label,
+    required IconData icon,
+    required Function(String?) onChanged,
+    String? Function(String?)? validator,
+  }) {
+    // Obtenemos el tamaño de la pantalla
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+    final bool isDesktop = screenSize.width >= 900;
+
+    // Ajustamos tamaños según el dispositivo
+    final double labelFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final double inputFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final double verticalPadding = isMobile ? 15.0 : (isTablet ? 16.0 : 18.0);
+    final double horizontalPadding = isMobile ? 10.0 : (isTablet ? 12.0 : 14.0);
+
+    final temaOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
+
+    return DropdownButtonFormField<String>(
+      dropdownColor: temaOscuro ? Colors.black : Colors.white,
+      value: value,
+      items: items.map<DropdownMenuItem<String>>((String item) {
+        return DropdownMenuItem<String>(value: item, child: Text(item));
       }).toList(),
       onChanged: onChanged,
       validator: validator,

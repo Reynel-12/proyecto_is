@@ -47,7 +47,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
   }
 
   Future<void> _cargarDatos() async {
-    final proveedores = await _proveedorRepo.getProveedores();
+    final proveedores = await _proveedorRepo.getProveedoresByEstado('Activo');
     final productos = await _productoRepo.getProductos();
     final caja = await _movimientoRepo.obtenerCajaAbierta();
     setState(() {

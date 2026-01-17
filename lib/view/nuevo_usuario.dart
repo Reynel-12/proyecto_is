@@ -127,18 +127,18 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
           'Usuario actualizado correctamente',
           ContentType.success,
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } else {
         _mostrarMensaje(
           'Error',
           'Hubo un error al actualizar el usuario',
           ContentType.failure,
         );
-        Navigator.pop(context);
+        Navigator.pop(context, false);
       }
     } catch (e) {
       _mostrarMensaje('Error', 'Error inesperado: $e', ContentType.failure);
-      Navigator.pop(context);
+      Navigator.pop(context, false);
       print("Error inesperado: $e");
     } finally {
       setState(() => _isProcessing = false);

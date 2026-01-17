@@ -320,6 +320,35 @@ class _HistorialState extends State<Historial> {
             return isSameDay(fechaVenta, day);
           }).toList();
         },
+        calendarBuilders: CalendarBuilders(
+          markerBuilder: (context, day, events) {
+            if (events.isNotEmpty) {
+              return Positioned(
+                bottom: 5, // Ajuste moderno
+                right: 5,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                    color: Colors.redAccent, // Marcador en rojo elegante
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${events.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+            return null;
+          },
+        ),
       ),
     );
   }
@@ -612,8 +641,10 @@ class _HistorialState extends State<Historial> {
               children: detalles.map((detalle) {
                 return _buildProductoItem(
                   detalle.producto,
+                  detalle.unidadMedida,
                   detalle.cantidad,
                   detalle.precio,
+                  detalle.isv,
                   detalle.subtotal,
                   subtitleFontSize,
                   iconSize,
@@ -670,7 +701,8 @@ class _HistorialState extends State<Historial> {
                       customerName: venta.nombreCliente,
                       items: detalles.map((detalle) {
                         return InvoiceItem(
-                          description: detalle.producto,
+                          description:
+                              '${detalle.producto} - ${detalle.unidadMedida}',
                           quantity: detalle.cantidad,
                           unitPrice: detalle.precio,
                         );
@@ -759,8 +791,10 @@ class _HistorialState extends State<Historial> {
   // Item de producto en la venta
   Widget _buildProductoItem(
     String nombre,
+    String unidad,
     int cantidad,
     double precio,
+    double isv,
     double subtotal,
     double fontSize,
     double iconSize,
@@ -773,7 +807,7 @@ class _HistorialState extends State<Historial> {
         size: iconSize,
       ),
       title: Text(
-        nombre,
+        '$nombre - $unidad',
         style: TextStyle(
           fontWeight: FontWeight.w600,
           fontSize: fontSize + 1,
@@ -805,7 +839,16 @@ class _HistorialState extends State<Historial> {
             ),
           ),
           Text(
-            'SubTotal: L. $subtotal',
+            'ISV: L. $isv',
+            style: TextStyle(
+              color: Provider.of<TemaProveedor>(context).esModoOscuro
+                  ? Color.fromRGBO(220, 220, 220, 1)
+                  : Color.fromRGBO(60, 60, 60, 1),
+              fontSize: fontSize,
+            ),
+          ),
+          Text(
+            'SubTotal: L. ${(subtotal + isv)}',
             style: TextStyle(
               color: Provider.of<TemaProveedor>(context).esModoOscuro
                   ? Color.fromRGBO(220, 220, 220, 1)

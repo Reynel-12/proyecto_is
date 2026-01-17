@@ -63,7 +63,8 @@ class DBHelper {
       direccion TEXT,
       telefono TEXT,
       correo TEXT,
-      fecha_registro TEXT
+      fecha_registro TEXT,
+      estado TEXT
     );
   ''');
 
@@ -78,6 +79,7 @@ class DBHelper {
       stock INTEGER NOT NULL DEFAULT 0,
       fecha_creacion TEXT,
       fecha_actualizacion TEXT,
+      estado TEXT,
       FOREIGN KEY (proveedor_id) REFERENCES $proveedoresTable(id_proveedor)
           ON UPDATE CASCADE
           ON DELETE SET NULL
@@ -103,7 +105,8 @@ class DBHelper {
     moneda TEXT NOT NULL DEFAULT 'HNL',
     monto_pagado REAL,
     cambio REAL,
-    estado_fiscal TEXT NOT NULL DEFAULT 'EMITIDA'
+    estado_fiscal TEXT NOT NULL DEFAULT 'EMITIDA',
+    cajero TEXT
     );
   ''');
 

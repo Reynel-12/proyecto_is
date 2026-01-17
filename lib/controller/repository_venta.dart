@@ -216,8 +216,10 @@ class VentaRepository {
       ventasMap[idVenta]!.detalles.add(
         DetalleItem(
           producto: row['producto_nombre'],
+          unidadMedida: row['unidad_medida'],
           cantidad: row['cantidad'],
           precio: row['precio_unitario'],
+          isv: row['isv'],
           subtotal: row['subtotal'],
         ),
       );

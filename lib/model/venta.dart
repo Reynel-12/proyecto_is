@@ -16,6 +16,7 @@ class Venta {
   final String razonSocialEmisor;
   final String rangoAutorizado;
   final String fechaLimiteCai;
+  final String cajero;
 
   Venta({
     this.id,
@@ -34,6 +35,7 @@ class Venta {
     required this.razonSocialEmisor,
     required this.rangoAutorizado,
     required this.fechaLimiteCai,
+    required this.cajero,
   });
 
   // Map → Venta
@@ -55,6 +57,7 @@ class Venta {
       razonSocialEmisor: map['razon_social_emisor'],
       rangoAutorizado: map['rango_autorizado'],
       fechaLimiteCai: map['fecha_limite_cai'],
+      cajero: map['cajero'],
     );
   }
 
@@ -77,6 +80,7 @@ class Venta {
       'razon_social_emisor': razonSocialEmisor,
       'rango_autorizado': rangoAutorizado,
       'fecha_limite_cai': fechaLimiteCai,
+      'cajero': cajero,
     };
   }
 }
@@ -123,14 +127,18 @@ class VentaCompleta {
 
 class DetalleItem {
   final String producto;
+  final String unidadMedida;
   final int cantidad;
   final double precio;
+  final double isv;
   final double subtotal;
 
   DetalleItem({
     required this.producto,
+    required this.unidadMedida,
     required this.cantidad,
     required this.precio,
+    required this.isv,
     required this.subtotal,
   });
 }

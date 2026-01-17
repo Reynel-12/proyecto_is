@@ -208,8 +208,16 @@ class _InventarioState extends State<Inventario> {
                         onSelected: (value) {
                           switch (value) {
                             case 'valor_inventario':
-                              double total = 0.0;
+                              String total = '0.0';
 
+                              total = _productos
+                                  .map<double>(
+                                    (p) =>
+                                        (p.precio * p.stock) -
+                                        (p.costo * p.stock),
+                                  )
+                                  .reduce((a, b) => a + b)
+                                  .toStringAsFixed(2);
                               showDialog(
                                 context: context,
                                 builder: (context) {
@@ -475,6 +483,7 @@ class _InventarioState extends State<Inventario> {
           producto.precio,
           producto.costo,
           producto.proveedorId!,
+          producto.estado!,
           elevation,
         );
       },
@@ -493,8 +502,8 @@ class _InventarioState extends State<Inventario> {
         childAspectRatio: isDesktop
             ? 2.5
             : isDesktopL
-            ? 3.5
-            : 3.5, // Proporción ancho/alto
+            ? 3.2
+            : 3.2, // Proporción ancho/alto
         crossAxisSpacing: 16.0,
         mainAxisSpacing: 16.0,
       ),
@@ -509,6 +518,7 @@ class _InventarioState extends State<Inventario> {
           producto.precio,
           producto.costo,
           producto.proveedorId!,
+          producto.estado!,
           elevation,
         );
       },
@@ -523,6 +533,7 @@ class _InventarioState extends State<Inventario> {
     double precio,
     double costos,
     int proveedor,
+    String estado,
     double elevation,
   ) {
     // Obtenemos el tamaño de la pantalla
@@ -558,19 +569,11 @@ class _InventarioState extends State<Inventario> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => PerfilProducto(
-              docID: id,
-              nombre: nombre,
-              unidad: tipo,
-              precio: precio,
-              costos: costos,
-              idProveedor: proveedor,
-              inventario: stock,
-            ),
+            builder: (_) => PerfilProducto(docID: id, idProveedor: proveedor),
           ),
         ).then((value) {
           if (value == true) {
-            setState(() {});
+            cargarDatos();
           }
         });
       },
@@ -652,6 +655,34 @@ class _InventarioState extends State<Inventario> {
                           SizedBox(width: isMobile ? 4.0 : 6.0),
                           Text(
                             'Precio: L. $precio',
+                            style: TextStyle(
+                              fontSize: infoFontSize,
+                              fontWeight: FontWeight.w500,
+                              color:
+                                  Provider.of<TemaProveedor>(
+                                    context,
+                                  ).esModoOscuro
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: isMobile ? 8.0 : 12.0),
+                      // Costo
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.price_change_outlined,
+                            color:
+                                Provider.of<TemaProveedor>(context).esModoOscuro
+                                ? Colors.white
+                                : Colors.black,
+                            size: isMobile ? 18.0 : 20.0,
+                          ),
+                          SizedBox(width: isMobile ? 4.0 : 6.0),
+                          Text(
+                            'Costo: L. $costos',
                             style: TextStyle(
                               fontSize: infoFontSize,
                               fontWeight: FontWeight.w500,

@@ -12,26 +12,13 @@ import 'package:proyecto_is/controller/repository_venta.dart';
 import 'package:proyecto_is/view/productoForm.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:proyecto_is/view/widgets/loading.dart';
 
 // ignore: must_be_immutable
 class PerfilProducto extends StatefulWidget {
   String docID;
-  String nombre;
-  String unidad;
-  double precio;
-  double costos;
   int idProveedor;
-  int inventario;
-  PerfilProducto({
-    super.key,
-    required this.docID,
-    required this.nombre,
-    required this.unidad,
-    required this.precio,
-    required this.costos,
-    required this.idProveedor,
-    required this.inventario,
-  });
+  PerfilProducto({super.key, required this.docID, required this.idProveedor});
 
   @override
   State<PerfilProducto> createState() => _PerfilProductoState();
@@ -49,27 +36,77 @@ class _PerfilProductoState extends State<PerfilProducto> {
   Caja? _cajaSeleccionada;
   double totalVentas = 0;
   List<Map<String, dynamic>> ultimasVentas = [];
+  bool isLoading = false;
+  bool isLoadingProveedor = false;
+
+  String nombre = '';
+  String unidad = '';
+  double precio = 0.0;
+  double costos = 0.0;
+  int idProveedor = 0;
+  int inventario = 0;
+  String estado = '';
 
   @override
   void initState() {
     super.initState();
+    _getProducto();
     _getProveedor();
   }
 
   Future<void> _getProveedor() async {
-    final proveedor = await repositoryProveedor.getProveedorById(
-      widget.idProveedor,
-    );
-    final caja = await _movimientoRepo.obtenerCajaAbierta();
-    final total = await _ventaRepo.getTotalVentasByProducto(widget.docID);
-    final ultimas = await _ventaRepo.getUltimasVentasByProducto(widget.docID);
+    try {
+      setState(() {
+        isLoadingProveedor = true;
+      });
+      final proveedor = await repositoryProveedor.getProveedorById(
+        widget.idProveedor,
+      );
+      final caja = await _movimientoRepo.obtenerCajaAbierta();
+      final total = await _ventaRepo.getTotalVentasByProducto(widget.docID);
+      final ultimas = await _ventaRepo.getUltimasVentasByProducto(widget.docID);
 
-    setState(() {
-      nombreProveedor = proveedor[0].nombre;
-      _cajaSeleccionada = caja;
-      totalVentas = total;
-      ultimasVentas = ultimas;
-    });
+      setState(() {
+        nombreProveedor = proveedor[0].nombre;
+        _cajaSeleccionada = caja;
+        totalVentas = total;
+        ultimasVentas = ultimas;
+        isLoadingProveedor = false;
+      });
+    } catch (e) {
+      _mostrarMensaje(
+        'Error',
+        'Error al obtener la informacion del proveedor',
+        ContentType.failure,
+      );
+    }
+  }
+
+  Future<void> _getProducto() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+      final producto = await repositoryProducto.getProductoByID(
+        int.parse(widget.docID),
+      );
+      setState(() {
+        nombre = producto!.nombre;
+        unidad = producto.unidadMedida!;
+        precio = producto.precio;
+        costos = producto.costo;
+        widget.idProveedor = producto.proveedorId!;
+        inventario = producto.stock;
+        estado = producto.estado!;
+        isLoading = false;
+      });
+    } catch (e) {
+      _mostrarMensaje(
+        'Error',
+        'Error al obtener la informacion del producto',
+        ContentType.failure,
+      );
+    }
   }
 
   void _mostrarMensaje(String titulo, String mensaje, ContentType type) {
@@ -101,6 +138,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
     bool isEditPrecio,
     bool isEditProveedor,
     bool isEditCosto,
+    bool isEditEstado,
   ) {
     Navigator.push(
       context,
@@ -113,18 +151,21 @@ class _PerfilProductoState extends State<PerfilProducto> {
           isEditPrecio: isEditPrecio,
           isEditProveedor: isEditProveedor,
           isEditCosto: isEditCosto,
-          inventario: widget.inventario,
-          nombre: widget.nombre,
-          precio: widget.precio,
-          costo: widget.costos,
-          unidadMedida: widget.unidad,
-          stock: widget.inventario,
+          isEditEstado: isEditEstado,
+          inventario: inventario,
+          nombre: nombre,
+          precio: precio,
+          costo: costos,
+          unidadMedida: unidad,
+          stock: inventario,
           proveedorId: widget.idProveedor,
+          estado: estado,
         ),
       ),
     ).then((value) {
       if (value == true) {
-        setState(() {});
+        _getProducto();
+        _getProveedor();
       }
     });
   }
@@ -135,7 +176,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
       idCaja: _cajaSeleccionada!.id!,
       tipo: 'Egreso',
       concepto: 'Egreso de inventario',
-      monto: widget.precio * int.parse(_cantidad.text),
+      monto: precio * int.parse(_cantidad.text),
       metodoPago: 'Efectivo',
       fecha: fecha,
     );
@@ -156,7 +197,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
   void _editInventory() async {
     final fecha = DateTime.now().toIso8601String();
     final inventario = int.parse(_inventarioController.text);
-    if (inventario == widget.inventario) {
+    if (inventario == inventario) {
       _mostrarMensaje(
         'Error',
         'El inventario no ha cambiado',
@@ -166,23 +207,23 @@ class _PerfilProductoState extends State<PerfilProducto> {
       return;
     }
     MovimientoCaja? movimiento;
-    if (inventario > widget.inventario) {
-      final diferencia = inventario - widget.inventario;
+    if (inventario > inventario) {
+      final diferencia = inventario - inventario;
       movimiento = MovimientoCaja(
         idCaja: _cajaSeleccionada!.id!,
         tipo: 'Egreso',
         concepto: 'Egreso de inventario',
-        monto: widget.precio * diferencia,
+        monto: precio * diferencia,
         metodoPago: 'Efectivo',
         fecha: fecha,
       );
-    } else if (inventario < widget.inventario) {
-      final diferencia = widget.inventario - inventario;
+    } else if (inventario < inventario) {
+      final diferencia = inventario - inventario;
       movimiento = MovimientoCaja(
         idCaja: _cajaSeleccionada!.id!,
         tipo: 'Ingreso',
         concepto: 'Ingreso de inventario',
-        monto: widget.precio * diferencia,
+        monto: precio * diferencia,
         metodoPago: 'Efectivo',
         fecha: fecha,
       );
@@ -236,101 +277,119 @@ class _PerfilProductoState extends State<PerfilProducto> {
         ? screenSize.width * 0.3
         : (isTablet ? screenSize.width * 0.5 : screenSize.width * 0.8);
 
-    return Scaffold(
-      backgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
-          ? Colors.black
-          : const Color.fromRGBO(244, 243, 243, 1),
-      appBar: AppBar(
-        title: Text(
-          'Información',
-          style: TextStyle(
-            color: Provider.of<TemaProveedor>(context).esModoOscuro
-                ? Colors.white
-                : Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: titleFontSize,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
-            ? Colors.black
-            : const Color.fromRGBO(244, 243, 243, 1),
-        iconTheme: IconThemeData(
-          color: Provider.of<TemaProveedor>(context).esModoOscuro
-              ? Colors.white
-              : Colors.black,
-        ),
-        actions: [
-          PopupMenuButton(
-            color: Provider.of<TemaProveedor>(context).esModoOscuro
-                ? const Color.fromRGBO(30, 30, 30, 1)
+    return isLoading && isLoadingProveedor
+        ? CargandoInventario()
+        : Scaffold(
+            backgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
+                ? Colors.black
                 : const Color.fromRGBO(244, 243, 243, 1),
-            icon: Icon(
-              Icons.more_vert,
-              color: Provider.of<TemaProveedor>(context).esModoOscuro
-                  ? Colors.white
-                  : Colors.black,
-              size: isMobile ? 22.0 : 24.0,
-            ),
-            itemBuilder: (context) => [
-              _buildPopupMenuItem(
-                'editar_producto',
-                Icons.edit,
-                'Editar producto',
+            appBar: AppBar(
+              title: Text(
+                'Información',
+                style: TextStyle(
+                  color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      ? Colors.white
+                      : Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: titleFontSize,
+                ),
               ),
-              _buildPopupMenuItem(
-                'editar_inventario',
-                Icons.inventory_2,
-                'Editar inventario',
+              centerTitle: true,
+              backgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
+                  ? Colors.black
+                  : const Color.fromRGBO(244, 243, 243, 1),
+              iconTheme: IconThemeData(
+                color: Provider.of<TemaProveedor>(context).esModoOscuro
+                    ? Colors.white
+                    : Colors.black,
               ),
-              _buildPopupMenuItem(
-                'eliminar_producto',
-                Icons.delete,
-                'Eliminar producto',
+              leading: IconButton(
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
+                icon: Icon(Icons.arrow_back),
               ),
-            ],
-            onSelected: (value) async {
-              switch (value) {
-                case 'editar_producto':
-                  _navigateToEdit(context, true, true, true, true, true, true);
-                  break;
-                case 'editar_inventario':
-                  _showEditInventory();
-                  break;
-                case 'eliminar_producto':
-                  AwesomeDialog(
-                    width: isDesktop
-                        ? (screenSize.width - dialogWidth) / 2
-                        : null,
-                    dialogBackgroundColor:
-                        Provider.of<TemaProveedor>(
+              actions: [
+                PopupMenuButton(
+                  color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      ? const Color.fromRGBO(30, 30, 30, 1)
+                      : const Color.fromRGBO(244, 243, 243, 1),
+                  icon: Icon(
+                    Icons.more_vert,
+                    color: Provider.of<TemaProveedor>(context).esModoOscuro
+                        ? Colors.white
+                        : Colors.black,
+                    size: isMobile ? 22.0 : 24.0,
+                  ),
+                  itemBuilder: (context) => [
+                    _buildPopupMenuItem(
+                      'editar_producto',
+                      Icons.edit,
+                      'Editar producto',
+                    ),
+                    _buildPopupMenuItem(
+                      'editar_inventario',
+                      Icons.inventory_2,
+                      'Editar inventario',
+                    ),
+                    _buildPopupMenuItem(
+                      'eliminar_producto',
+                      Icons.delete,
+                      'Eliminar producto',
+                    ),
+                  ],
+                  onSelected: (value) async {
+                    switch (value) {
+                      case 'editar_producto':
+                        _navigateToEdit(
                           context,
-                          listen: false,
-                        ).esModoOscuro
-                        ? Color.fromRGBO(60, 60, 60, 1)
-                        : Color.fromRGBO(220, 220, 220, 1),
-                    context: context,
-                    dialogType: DialogType.warning,
-                    animType: AnimType.scale,
-                    title: 'Atención',
-                    desc: '¿Está seguro que desea eliminar este producto?',
-                    btnCancelText: 'Cancelar',
-                    btnOkText: 'Eliminar',
-                    btnOkOnPress: () {
-                      _eliminarProducto();
-                    },
-                    btnCancelOnPress: () {},
-                  ).show();
-                  break;
-              }
-            },
-          ),
-        ],
-      ),
-      body: isDesktop
-          ? _buildDesktopLayout(contentPadding, cardElevation)
-          : _buildMobileTabletLayout(contentPadding, cardElevation),
-    );
+                          true,
+                          true,
+                          true,
+                          true,
+                          true,
+                          true,
+                          true,
+                        );
+                        break;
+                      case 'editar_inventario':
+                        _showEditInventory();
+                        break;
+                      case 'eliminar_producto':
+                        AwesomeDialog(
+                          width: isDesktop
+                              ? (screenSize.width - dialogWidth) / 2
+                              : null,
+                          dialogBackgroundColor:
+                              Provider.of<TemaProveedor>(
+                                context,
+                                listen: false,
+                              ).esModoOscuro
+                              ? Color.fromRGBO(60, 60, 60, 1)
+                              : Color.fromRGBO(220, 220, 220, 1),
+                          context: context,
+                          dialogType: DialogType.warning,
+                          animType: AnimType.scale,
+                          title: 'Atención',
+                          desc:
+                              '¿Está seguro que desea eliminar este producto?',
+                          btnCancelText: 'Cancelar',
+                          btnOkText: 'Eliminar',
+                          btnOkOnPress: () {
+                            _eliminarProducto();
+                          },
+                          btnCancelOnPress: () {},
+                        ).show();
+                        break;
+                    }
+                  },
+                ),
+              ],
+            ),
+            body: isDesktop
+                ? _buildDesktopLayout(contentPadding, cardElevation)
+                : _buildMobileTabletLayout(contentPadding, cardElevation),
+          );
   }
 
   // Método para crear elementos del menú popup de manera más limpia
@@ -518,7 +577,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
                         ),
                         _buildStatRow(
                           'Valor en inventario',
-                          'L. ${widget.inventario * widget.precio}',
+                          'L. ${inventario * precio}',
                         ),
                         if (ultimasVentas.isNotEmpty) ...[
                           SizedBox(height: 16),
@@ -558,7 +617,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
                                     ),
                                   ),
                                   Text(
-                                    '${v['cantidad']} ${widget.unidad}',
+                                    '${v['cantidad']} $unidad',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -650,10 +709,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
                     ).format(DateTime.parse(ultimasVentas[0]['fecha']))
                   : 'N/A',
             ),
-            _buildStatRow(
-              'Valor en inventario',
-              'L. ${widget.inventario * widget.precio}',
-            ),
+            _buildStatRow('Valor en inventario', 'L. ${inventario * precio}'),
             if (ultimasVentas.isNotEmpty) ...[
               SizedBox(height: 16),
               Text(
@@ -686,7 +742,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
                         ),
                       ),
                       Text(
-                        '${v['cantidad']} ${widget.unidad}',
+                        '${v['cantidad']} $unidad',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -770,7 +826,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    widget.nombre,
+                    nombre,
                     style: TextStyle(
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.bold,
@@ -786,16 +842,17 @@ class _PerfilProductoState extends State<PerfilProducto> {
             ),
             SizedBox(height: isMobile ? 12.0 : 16.0),
             _infoRow('Código', widget.docID, infoFontSize),
-            _infoRow('Unidad', widget.unidad, infoFontSize),
-            _infoRow('Stock', widget.inventario.toString(), infoFontSize),
-            _infoRow('Precio', 'L. ${widget.precio}', infoFontSize),
-            _infoRow('Costo', 'L. ${widget.costos}', infoFontSize),
+            _infoRow('Unidad', unidad, infoFontSize),
+            _infoRow('Stock', inventario.toString(), infoFontSize),
+            _infoRow('Precio', 'L. $precio', infoFontSize),
+            _infoRow('Costo', 'L. $costos', infoFontSize),
             _infoRow(
               'Porcentaje de ganancia',
-              '${((widget.precio - widget.costos) / widget.costos * 100).toStringAsFixed(2)} %',
+              '${((precio - costos) / costos * 100).toStringAsFixed(2)} %',
               infoFontSize,
             ),
             _infoRow('Proveedor', nombreProveedor, infoFontSize),
+            _infoRow('Estado', estado, infoFontSize),
           ],
         ),
       ),

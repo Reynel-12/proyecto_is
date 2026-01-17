@@ -22,6 +22,13 @@ class _ProveedoresViewState extends State<ProveedoresView> {
   List<Proveedor> _proveedores = [];
   List<Proveedor> _proveedoresFiltrados = [];
   bool isLoading = true;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    super.dispose();
+    _scrollController.dispose();
+  }
 
   @override
   void initState() {
@@ -110,6 +117,31 @@ class _ProveedoresViewState extends State<ProveedoresView> {
                     ? Colors.white
                     : Colors.black,
               ),
+              actions: [
+                isLoading
+                    ? Container()
+                    : IconButton(
+                        icon: Icon(
+                          Icons.add,
+                          color:
+                              Provider.of<TemaProveedor>(context).esModoOscuro
+                              ? Colors.white
+                              : Colors.black,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProveedorForm(),
+                            ),
+                          ).then((value) {
+                            if (value == true) {
+                              cargarDatos();
+                            }
+                          });
+                        },
+                      ),
+              ],
             ),
             body: _proveedoresFiltrados.isEmpty
                 ? const ProveedorVacio()
@@ -216,24 +248,21 @@ class _ProveedoresViewState extends State<ProveedoresView> {
                       ],
                     ),
                   ),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => ProveedorForm()),
-                ).then((value) {
-                  if (value == true) {
-                    cargarDatos();
-                  }
-                });
-              },
-              backgroundColor: Colors.blueAccent,
-              child: Icon(
-                Icons.person_add,
-                color: Colors.white,
-                size: isMobile ? 24.0 : 28.0,
-              ),
-            ),
+            floatingActionButton: isLoading
+                ? Container()
+                : _proveedoresFiltrados.isEmpty
+                ? Container()
+                : FloatingActionButton(
+                    backgroundColor: Colors.blueAccent,
+                    onPressed: () {
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeOut,
+                      );
+                    },
+                    child: const Icon(Icons.arrow_upward, color: Colors.white),
+                  ),
           );
   }
 
@@ -241,6 +270,7 @@ class _ProveedoresViewState extends State<ProveedoresView> {
   Widget _buildListView(double elevation) {
     return ListView.builder(
       itemCount: _proveedoresFiltrados.length, // Ejemplo con 5 proveedores
+      controller: _scrollController,
       itemBuilder: (context, index) {
         final proveedor = _proveedoresFiltrados[index];
         return _cardProveedor(
@@ -249,6 +279,7 @@ class _ProveedoresViewState extends State<ProveedoresView> {
           proveedor.direccion!,
           proveedor.telefono!,
           proveedor.correo!,
+          proveedor.estado!,
           elevation,
         );
       },
@@ -263,6 +294,7 @@ class _ProveedoresViewState extends State<ProveedoresView> {
     final bool isDesktopL = screenSize.width >= 1100;
 
     return GridView.builder(
+      controller: _scrollController,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2, // 2 columnas en escritorio
         childAspectRatio: isDesktop
@@ -282,6 +314,7 @@ class _ProveedoresViewState extends State<ProveedoresView> {
           proveedor.direccion!,
           proveedor.telefono!,
           proveedor.correo!,
+          proveedor.estado!,
           elevation,
         );
       },
@@ -294,6 +327,7 @@ class _ProveedoresViewState extends State<ProveedoresView> {
     String direccion,
     String telefono,
     String correo,
+    String estado,
     double elevation,
   ) {
     // Obtenemos el tamaño de la pantalla
@@ -320,6 +354,7 @@ class _ProveedoresViewState extends State<ProveedoresView> {
               direccion: direccion,
               telefono: telefono,
               correo: correo,
+              estado: estado,
             ),
           ),
         ).then((value) {

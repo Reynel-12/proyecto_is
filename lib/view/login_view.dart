@@ -37,11 +37,13 @@ class _LoginState extends State<Login> {
 
     final prefs = await SharedPreferences.getInstance();
     final user = await repositoryUser.getUserByEmail(email);
+    String fullname = '${user!.nombre} ${user.apellido}';
     await prefs.setString('email', email);
     await prefs.setString('password', password);
-    await prefs.setString('user', user!.id.toString());
+    await prefs.setString('user', user.id.toString());
     await prefs.setString('tipo', user.tipo.toString());
     await prefs.setString('estado', user.estado.toString());
+    await prefs.setString('user_fullname', fullname);
     Navigator.pushReplacement(
       // ignore: use_build_context_synchronously
       context,
@@ -58,6 +60,7 @@ class _LoginState extends State<Login> {
         _correo.text,
         hashPassword(_contrasena.text),
       );
+      print('Respuesta: $response');
       if (response != null) {
         if (response.estado == 'Activo') {
           _login();

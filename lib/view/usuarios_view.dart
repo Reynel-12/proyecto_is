@@ -130,7 +130,11 @@ class _UsuariosState extends State<Usuarios> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => NuevoUsuario()),
-                    );
+                    ).then((value) {
+                      if (value == true) {
+                        _escucharDatos();
+                      }
+                    });
                   },
                 ),
         ],
@@ -330,7 +334,11 @@ class _UsuariosState extends State<Usuarios> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => PerfilUsuario(docID: uid)),
-        );
+        ).then((value) {
+          if (value == true) {
+            _escucharDatos();
+          }
+        });
       },
       child: Card(
         color: Provider.of<TemaProveedor>(context).esModoOscuro

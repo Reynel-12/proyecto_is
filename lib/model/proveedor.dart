@@ -5,6 +5,7 @@ class Proveedor {
   final String? telefono;
   final String? correo;
   final String? fechaRegistro;
+  final String? estado;
 
   Proveedor({
     this.id,
@@ -13,6 +14,7 @@ class Proveedor {
     this.telefono,
     this.correo,
     this.fechaRegistro,
+    required this.estado,
   });
 
   // Convertir Map → Objeto
@@ -24,6 +26,7 @@ class Proveedor {
       telefono: map['telefono'],
       correo: map['correo'],
       fechaRegistro: map['fecha_registro'],
+      estado: map['estado'],
     );
   }
 
@@ -36,6 +39,7 @@ class Proveedor {
       'telefono': telefono,
       'correo': correo,
       'fecha_registro': fechaRegistro,
+      'estado': estado,
     };
   }
 }

@@ -978,6 +978,7 @@ class _MiFABState extends State<MiFAB> {
                                         id: 'N/A',
                                         costo: 0,
                                         cantidad: 1,
+                                        estado: 'Activo',
                                       ),
                                     );
                                     Navigator.of(context).pop();

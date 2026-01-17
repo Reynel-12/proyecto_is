@@ -16,6 +16,17 @@ class ProveedorRepository {
     return maps.map((map) => Proveedor.fromMap(map)).toList();
   }
 
+  Future<List<Proveedor>> getProveedoresByEstado(String estado) async {
+    final db = await dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'proveedores',
+      where: 'estado = ?',
+      whereArgs: [estado],
+    );
+
+    return maps.map((map) => Proveedor.fromMap(map)).toList();
+  }
+
   Future<int> updateProveedor(Proveedor proveedor) async {
     final db = await dbHelper.database;
     return await db.update(

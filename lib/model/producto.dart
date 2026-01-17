@@ -10,6 +10,7 @@ class Producto {
   final int stock;
   final String? fechaCreacion;
   final String? fechaActualizacion;
+  final String? estado;
   int cantidad;
 
   Producto({
@@ -22,6 +23,7 @@ class Producto {
     this.stock = 0,
     this.fechaCreacion,
     this.fechaActualizacion,
+    required this.estado,
     this.cantidad = 0,
   });
 
@@ -36,6 +38,7 @@ class Producto {
       stock: map['stock'],
       fechaCreacion: map['fecha_creacion'],
       fechaActualizacion: map['fecha_actualizacion'],
+      estado: map['estado'],
     );
   }
 
@@ -50,6 +53,7 @@ class Producto {
       'stock': stock,
       'fecha_creacion': fechaCreacion,
       'fecha_actualizacion': fechaActualizacion,
+      'estado': estado,
     };
   }
 }

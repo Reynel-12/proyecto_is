@@ -37,12 +37,14 @@ class _MyAppState extends State<MyApp> {
     String? user = prefs.getString('user');
     String? tipo = prefs.getString('tipo');
     String? estado = prefs.getString('estado');
+    String? fullname = prefs.getString('user_fullname');
     return {
       'email': email ?? '',
       'password': password ?? '',
       'user': user ?? '',
       'tipo': tipo ?? '',
       'estado': estado ?? '',
+      'user_fullname': fullname ?? '',
     };
   }
 
@@ -75,7 +77,8 @@ class _MyAppState extends State<MyApp> {
                       (asyncSnapshot.data?['password'] ?? '').isNotEmpty &&
                       (asyncSnapshot.data?['user'] ?? '').isNotEmpty &&
                       (asyncSnapshot.data?['tipo'] ?? '').isNotEmpty &&
-                      (asyncSnapshot.data?['estado'] ?? '').isNotEmpty) {
+                      (asyncSnapshot.data?['estado'] ?? '').isNotEmpty &&
+                      (asyncSnapshot.data?['user_fullname'] ?? '').isNotEmpty) {
                     return const MyHomePage();
                   } else {
                     return const Login();

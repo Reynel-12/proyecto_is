@@ -23,6 +23,7 @@ import 'package:proyecto_is/view/widgets/thermal_invoice_printer.dart';
 import 'package:proyecto_is/utils/number_to_words_spanish.dart';
 import 'package:proyecto_is/controller/sar_service.dart';
 import 'package:proyecto_is/model/sar_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Ventas extends StatefulWidget {
   const Ventas({super.key});
@@ -70,7 +71,7 @@ class _VentasState extends State<Ventas> {
     });
     _productos.clear();
     _productosFiltrados.clear();
-    repositoryProducto.getProductos().then((productos) {
+    repositoryProducto.getProductosActivos().then((productos) {
       setState(() {
         _productos = productos;
         _productosFiltrados = productos;
@@ -480,9 +481,8 @@ class _VentasState extends State<Ventas> {
       isv = subtotal * SarService.tasaISV;
       total = subtotal + isv;
 
-      print('Subtotal: $subtotal');
-      print('ISV: $isv');
-      print('Total: $total');
+      final prefs = await SharedPreferences.getInstance();
+      String? cajero = prefs.getString('user_fullname');
 
       final venta = Venta(
         fecha: DateTime.now().toIso8601String(),
@@ -501,11 +501,12 @@ class _VentasState extends State<Ventas> {
         rangoAutorizado:
             '${_sarConfig!.rangoInicial} - ${_sarConfig!.rangoFinal}',
         fechaLimiteCai: _sarConfig!.fechaLimite,
+        cajero: cajero!,
       );
       final detalleVenta = _productosSeleccionados.map((producto) {
         return DetalleVenta(
           productoId: producto.id,
-          descripcion: producto.nombre,
+          descripcion: '${producto.nombre} - ${producto.unidadMedida}',
           cantidad: producto.cantidad,
           precioUnitario: producto.precio,
           subtotal: producto.precio * producto.cantidad,
@@ -560,7 +561,7 @@ class _VentasState extends State<Ventas> {
       invoiceNumber: venta.numeroFactura,
       date: fecha,
       hora: hora,
-      cashier: 'Principal',
+      cashier: venta.cajero,
       customerName: venta.nombreCliente ?? '',
       items: productos.map((item) {
         return InvoiceItem(

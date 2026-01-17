@@ -1,3 +1,5 @@
+import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -51,19 +53,35 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
         isLoading = false;
       });
     }
-    print('Correo: ${user?.correo}');
-    print('Apellido: ${user?.apellido}');
-    print('Nombre: ${user?.nombre}');
-    print('Telefono: ${user?.telefono}');
-    print('Tipo: ${user?.tipo}');
-    print('Estado: ${user?.estado}');
-    print('Contrasena: ${user?.contrasena}');
   }
 
   @override
   void initState() {
     super.initState();
     _obtenerInfoUsuario();
+  }
+
+  // Método para crear elementos del menú popup de manera más limpia
+  PopupMenuItem _buildPopupMenuItem(String value, IconData icon, String text) {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color:
+                Provider.of<TemaProveedor>(context, listen: false).esModoOscuro
+                ? Colors.white
+                : Colors.black,
+            size: isMobile ? 20.0 : 22.0,
+          ),
+          SizedBox(width: isMobile ? 6.0 : 8.0),
+          Text(text, style: TextStyle(fontSize: isMobile ? 14.0 : 16.0)),
+        ],
+      ),
+    );
   }
 
   @override
@@ -103,32 +121,63 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
               ? Colors.white
               : Colors.black,
         ),
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: Provider.of<TemaProveedor>(context).esModoOscuro
+                ? Colors.white
+                : Colors.black,
+          ),
+          onPressed: () => Navigator.pop(context, true),
+        ),
         actions: [
           isLoading
               ? Container()
-              : IconButton(
+              : PopupMenuButton(
+                  color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      ? const Color.fromRGBO(30, 30, 30, 1)
+                      : const Color.fromRGBO(244, 243, 243, 1),
                   icon: Icon(
-                    Icons.edit,
-                    size: isMobile ? 24.0 : 28.0,
+                    Icons.more_vert,
                     color: Provider.of<TemaProveedor>(context).esModoOscuro
                         ? Colors.white
                         : Colors.black,
+                    size: isMobile ? 22.0 : 24.0,
                   ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => NuevoUsuario(
-                          isEdit: true,
-                          uid: widget.docID,
-                          nombre: nombre,
-                          apellido: apellido,
-                          telefono: telefono,
-                          tipo: rol,
-                          estado: estado,
-                        ),
-                      ),
-                    );
+                  itemBuilder: (context) => [
+                    _buildPopupMenuItem('editar', Icons.edit, 'Editar usuario'),
+                    _buildPopupMenuItem(
+                      'eliminar',
+                      Icons.delete,
+                      'Eliminar usuario',
+                    ),
+                  ],
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'editar':
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => NuevoUsuario(
+                              isEdit: true,
+                              uid: widget.docID,
+                              nombre: nombre,
+                              apellido: apellido,
+                              telefono: telefono,
+                              tipo: rol,
+                              estado: estado,
+                            ),
+                          ),
+                        ).then((value) {
+                          if (value == true) {
+                            _obtenerInfoUsuario();
+                          }
+                        });
+                        break;
+                      case 'eliminar':
+                        eliminarUserDialog();
+                        break;
+                    }
                   },
                 ),
         ],
@@ -262,5 +311,74 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
         ],
       ),
     );
+  }
+
+  void eliminarUserDialog() {
+    // Obtenemos el tamaño de la pantalla
+    final screenSize = MediaQuery.of(context).size;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+    final bool isDesktop = screenSize.width >= 900;
+
+    // Calculamos el ancho del awesomeDialog según el tamaño de pantalla
+    final double dialogWidth = isDesktop
+        ? screenSize.width * 0.3
+        : (isTablet ? screenSize.width * 0.5 : screenSize.width * 0.8);
+    AwesomeDialog(
+      width: isDesktop ? (screenSize.width - dialogWidth) / 2 : null,
+      dialogBackgroundColor:
+          Provider.of<TemaProveedor>(context, listen: false).esModoOscuro
+          ? Color.fromRGBO(60, 60, 60, 1)
+          : Color.fromRGBO(220, 220, 220, 1),
+      context: context,
+      dialogType: DialogType.warning,
+      animType: AnimType.scale,
+      title: 'Atención',
+      desc: '¿Está seguro que desea eliminar este producto?',
+      btnCancelText: 'Cancelar',
+      btnOkText: 'Eliminar',
+      btnOkOnPress: () {
+        _eliminarUser();
+      },
+      btnCancelOnPress: () {},
+    ).show();
+  }
+
+  void _eliminarUser() async {
+    try {
+      await repo.deleteUser(int.parse(widget.docID));
+      _mostrarMensaje(
+        'Éxito',
+        'Usuario eliminado correctamente',
+        ContentType.success,
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      _mostrarMensaje(
+        'Error',
+        'Error al eliminar el usuario',
+        ContentType.failure,
+      );
+      Navigator.pop(context, true);
+    }
+  }
+
+  void _mostrarMensaje(String titulo, String mensaje, ContentType type) {
+    final snackBar = SnackBar(
+      /// need to set following properties for best effect of awesome_snackbar_content
+      elevation: 0,
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.transparent,
+      content: AwesomeSnackbarContent(
+        title: titulo,
+        message: mensaje,
+
+        /// change contentType to ContentType.success, ContentType.warning or ContentType.help for variants
+        contentType: type,
+      ),
+    );
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
   }
 }
