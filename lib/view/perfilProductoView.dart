@@ -46,6 +46,8 @@ class _PerfilProductoState extends State<PerfilProducto> {
   int idProveedor = 0;
   int inventario = 0;
   String estado = '';
+  String fechaCreacion = '';
+  String fechaActualizacion = '';
 
   @override
   void initState() {
@@ -79,6 +81,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
         'Error al obtener la informacion del proveedor',
         ContentType.failure,
       );
+      print(e);
     }
   }
 
@@ -98,6 +101,8 @@ class _PerfilProductoState extends State<PerfilProducto> {
         widget.idProveedor = producto.proveedorId!;
         inventario = producto.stock;
         estado = producto.estado!;
+        fechaCreacion = producto.fechaCreacion!;
+        fechaActualizacion = producto.fechaActualizacion!;
         isLoading = false;
       });
     } catch (e) {
@@ -106,6 +111,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
         'Error al obtener la informacion del producto',
         ContentType.failure,
       );
+      print(e);
     }
   }
 
@@ -160,6 +166,8 @@ class _PerfilProductoState extends State<PerfilProducto> {
           stock: inventario,
           proveedorId: widget.idProveedor,
           estado: estado,
+          fechaCreacion: fechaCreacion,
+          fechaActualizacion: fechaActualizacion,
         ),
       ),
     ).then((value) {
@@ -853,6 +861,20 @@ class _PerfilProductoState extends State<PerfilProducto> {
             ),
             _infoRow('Proveedor', nombreProveedor, infoFontSize),
             _infoRow('Estado', estado, infoFontSize),
+            _infoRow(
+              'Fecha de creación',
+              DateFormat(
+                'dd/MM/yyyy HH:mm:ss',
+              ).format(DateTime.parse(fechaCreacion)),
+              infoFontSize,
+            ),
+            _infoRow(
+              'Fecha de actualización',
+              DateFormat(
+                'dd/MM/yyyy HH:mm:ss',
+              ).format(DateTime.parse(fechaActualizacion)),
+              infoFontSize,
+            ),
           ],
         ),
       ),

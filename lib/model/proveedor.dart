@@ -5,6 +5,7 @@ class Proveedor {
   final String? telefono;
   final String? correo;
   final String? fechaRegistro;
+  final String? fechaActualizacion;
   final String? estado;
 
   Proveedor({
@@ -13,7 +14,8 @@ class Proveedor {
     this.direccion,
     this.telefono,
     this.correo,
-    this.fechaRegistro,
+    required this.fechaRegistro,
+    required this.fechaActualizacion,
     required this.estado,
   });
 
@@ -26,6 +28,7 @@ class Proveedor {
       telefono: map['telefono'],
       correo: map['correo'],
       fechaRegistro: map['fecha_registro'],
+      fechaActualizacion: map['fecha_actualizacion'],
       estado: map['estado'],
     );
   }
@@ -39,6 +42,7 @@ class Proveedor {
       'telefono': telefono,
       'correo': correo,
       'fecha_registro': fechaRegistro,
+      'fecha_actualizacion': fechaActualizacion,
       'estado': estado,
     };
   }

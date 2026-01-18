@@ -30,6 +30,8 @@ class Nuevoproducto extends StatefulWidget {
   int stock;
   int proveedorId;
   String estado;
+  String fechaCreacion;
+  String fechaActualizacion;
   Nuevoproducto({
     super.key,
     this.isEdit = false,
@@ -48,6 +50,8 @@ class Nuevoproducto extends StatefulWidget {
     this.stock = 0,
     this.proveedorId = 0,
     this.estado = '',
+    this.fechaCreacion = '',
+    this.fechaActualizacion = '',
   });
 
   @override
@@ -143,7 +147,8 @@ class _NuevoproductoState extends State<Nuevoproducto> {
         costo: costo,
         unidadMedida: tipo,
         stock: int.tryParse(_inventario.text) ?? 0,
-        fechaActualizacion: DateTime.now().toString(),
+        fechaActualizacion: DateTime.now().toIso8601String(),
+        fechaCreacion: widget.fechaCreacion,
         proveedorId: _selectedItem?.id ?? 0,
         estado: selectedEstado,
       );
@@ -169,7 +174,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
       double precio = double.tryParse(_precio.text) ?? 0;
       int inventario = int.tryParse(_inventario.text) ?? 0;
       double costo = double.tryParse(_costo.text) ?? 0;
-      String fechaCreacion = DateTime.now().toString();
+      String fechaCreacion = DateTime.now().toIso8601String();
       int proveedorId = _selectedItem?.id ?? 0;
       final producto = Producto(
         id: codigo,
@@ -179,6 +184,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
         unidadMedida: tipo,
         stock: inventario,
         fechaCreacion: fechaCreacion,
+        fechaActualizacion: DateTime.now().toIso8601String(),
         proveedorId: proveedorId,
         estado: selectedEstado,
       );

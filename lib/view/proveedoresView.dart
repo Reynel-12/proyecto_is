@@ -4,6 +4,7 @@ import 'package:proyecto_is/controller/repository_proveedor.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/proveedor.dart';
 import 'package:proyecto_is/view/proveedorForm.dart';
+import 'package:proyecto_is/view/proveedor_details.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:proyecto_is/view/widgets/proveedor_vacio.dart';
 import 'package:provider/provider.dart';
@@ -280,6 +281,8 @@ class _ProveedoresViewState extends State<ProveedoresView> {
           proveedor.telefono!,
           proveedor.correo!,
           proveedor.estado!,
+          proveedor.fechaRegistro!,
+          proveedor.fechaActualizacion!,
           elevation,
         );
       },
@@ -315,6 +318,8 @@ class _ProveedoresViewState extends State<ProveedoresView> {
           proveedor.telefono!,
           proveedor.correo!,
           proveedor.estado!,
+          proveedor.fechaRegistro!,
+          proveedor.fechaActualizacion!,
           elevation,
         );
       },
@@ -328,6 +333,8 @@ class _ProveedoresViewState extends State<ProveedoresView> {
     String telefono,
     String correo,
     String estado,
+    String fechaRegistro,
+    String fechaActualizacion,
     double elevation,
   ) {
     // Obtenemos el tamaño de la pantalla
@@ -347,14 +354,17 @@ class _ProveedoresViewState extends State<ProveedoresView> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProveedorForm(
-              isEdit: true,
-              id: id,
-              nombre: nombre,
-              direccion: direccion,
-              telefono: telefono,
-              correo: correo,
-              estado: estado,
+            builder: (_) => ProveedorDetails(
+              proveedor: Proveedor(
+                id: id,
+                nombre: nombre,
+                direccion: direccion,
+                telefono: telefono,
+                correo: correo,
+                estado: estado,
+                fechaRegistro: fechaRegistro,
+                fechaActualizacion: fechaActualizacion,
+              ),
             ),
           ),
         ).then((value) {

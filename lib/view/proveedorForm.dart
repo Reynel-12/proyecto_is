@@ -15,6 +15,8 @@ class ProveedorForm extends StatefulWidget {
   String direccion;
   String telefono;
   String correo;
+  String fechaRegistro;
+  String fechaActualizacion;
   String estado;
 
   ProveedorForm({
@@ -25,6 +27,8 @@ class ProveedorForm extends StatefulWidget {
     this.direccion = '',
     this.telefono = '',
     this.correo = '',
+    this.fechaRegistro = '',
+    this.fechaActualizacion = '',
     this.estado = '',
   });
 
@@ -87,6 +91,10 @@ class _ProveedorFormState extends State<ProveedorForm> {
         telefono: _telefono.text.trim(),
         correo: _correo.text.trim(),
         estado: selectedEstado,
+        fechaRegistro: widget.isEdit
+            ? widget.fechaRegistro
+            : DateTime.now().toIso8601String(),
+        fechaActualizacion: DateTime.now().toIso8601String(),
       );
 
       if (widget.isEdit) {

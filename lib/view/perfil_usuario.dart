@@ -2,6 +2,7 @@ import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/repository_user.dart';
 import 'package:proyecto_is/model/preferences.dart';
@@ -24,6 +25,8 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
   String telefono = '';
   String rol = '';
   String estado = '';
+  String fechaCreacion = '';
+  String fechaActualizacion = '';
   String contrasena = '';
   bool isLoading = true;
   bool _isProcessing = false;
@@ -50,6 +53,8 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
         rol = user.tipo;
         estado = user.estado;
         contrasena = user.contrasena;
+        fechaCreacion = user.fechaCreacion;
+        fechaActualizacion = user.fechaActualizacion;
         isLoading = false;
       });
     }
@@ -277,6 +282,20 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
             _infoRow('Teléfono', telefono, infoFontSize),
             _infoRow('Rol del usuario', rol, infoFontSize),
             _infoRow('Estado', estado, infoFontSize),
+            _infoRow(
+              'Fecha de creación',
+              DateFormat(
+                'dd/MM/yyyy HH:mm:ss',
+              ).format(DateTime.parse(fechaCreacion)),
+              infoFontSize,
+            ),
+            _infoRow(
+              'Fecha de actualización',
+              DateFormat(
+                'dd/MM/yyyy HH:mm:ss',
+              ).format(DateTime.parse(fechaActualizacion)),
+              infoFontSize,
+            ),
           ],
         ),
       ),

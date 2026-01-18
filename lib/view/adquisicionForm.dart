@@ -319,7 +319,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
           : const Color.fromRGBO(244, 243, 243, 1),
       appBar: AppBar(
         title: Text(
-          'Nueva Adquisición',
+          'Nueva adquisición',
           style: TextStyle(
             color: colorTexto,
             fontWeight: FontWeight.bold,

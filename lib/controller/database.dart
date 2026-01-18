@@ -64,6 +64,7 @@ class DBHelper {
       telefono TEXT,
       correo TEXT,
       fecha_registro TEXT,
+      fecha_actualizacion TEXT,
       estado TEXT
     );
   ''');

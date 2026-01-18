@@ -19,6 +19,8 @@ class NuevoUsuario extends StatefulWidget {
   String telefono;
   String tipo;
   String estado;
+  String fechaCreacion;
+  String fechaActualizacion;
   NuevoUsuario({
     super.key,
     this.isEdit = false,
@@ -28,6 +30,8 @@ class NuevoUsuario extends StatefulWidget {
     this.telefono = 'N/A',
     this.tipo = 'N/A',
     this.estado = 'N/A',
+    this.fechaCreacion = 'N/A',
+    this.fechaActualizacion = 'N/A',
   });
 
   @override

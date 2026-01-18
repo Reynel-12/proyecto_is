@@ -27,6 +27,17 @@ class ProductoRepository {
     return maps.map((map) => Producto.fromMap(map)).toList();
   }
 
+  Future<List<Producto>> getProductosByProveedor(int idProveedor) async {
+    final db = await dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'productos',
+      where: 'proveedor_id = ?',
+      whereArgs: [idProveedor],
+    );
+
+    return maps.map((map) => Producto.fromMap(map)).toList();
+  }
+
   Future<Producto?> getProductoByID(int id) async {
     final db = await dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(

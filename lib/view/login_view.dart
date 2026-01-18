@@ -60,7 +60,6 @@ class _LoginState extends State<Login> {
         _correo.text,
         hashPassword(_contrasena.text),
       );
-      print('Respuesta: $response');
       if (response != null) {
         if (response.estado == 'Activo') {
           _login();

@@ -212,6 +212,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          centerTitle: true,
           backgroundColor: isDark
               ? Colors.black
               : const Color.fromRGBO(244, 243, 243, 1),
@@ -315,7 +316,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
                 ),
               ),
               child: const Text(
-                'Guardar Configuración SAR',
+                'Guardar configuración SAR',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -396,7 +397,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
                   const SizedBox(height: 16),
                   _buildTextField(
                     controller: _monedaController,
-                    label: 'Moneda por Defecto',
+                    label: 'Moneda por defecto',
                     icon: Icons.monetization_on,
                     isDark: isDark,
                   ),
@@ -414,7 +415,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
                 ),
               ),
               child: const Text(
-                'Guardar Datos Empresa',
+                'Guardar datos de empresa',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

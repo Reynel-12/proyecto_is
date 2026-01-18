@@ -1140,7 +1140,7 @@ class _CajaScreenState extends State<CajaScreen>
           : const Color.fromRGBO(244, 243, 243, 1),
       appBar: AppBar(
         title: Text(
-          'Gestión de Caja',
+          'Gestión de caja',
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
