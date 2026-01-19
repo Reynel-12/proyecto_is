@@ -2,6 +2,7 @@ import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/repository_user.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/user.dart';
 import 'package:proyecto_is/view/nuevo_usuario.dart';
@@ -18,6 +19,7 @@ class Usuarios extends StatefulWidget {
 
 class _UsuariosState extends State<Usuarios> {
   final repository = RepositoryUser();
+  final AppLogger _logger = AppLogger.instance;
   TextEditingController searchController = TextEditingController();
   List<User> usuarioList = [];
   List<User> filteredUsuarios = [];
@@ -39,17 +41,21 @@ class _UsuariosState extends State<Usuarios> {
   }
 
   void _escucharDatos() {
-    setState(() {
-      isLoading = true;
-    });
-    repository.getAllUsers().then((value) {
+    try {
       setState(() {
-        usuarioList = value;
-        usuarioList.sort((a, b) => a.nombre.compareTo(b.nombre));
-        filteredUsuarios = usuarioList;
-        isLoading = false;
+        isLoading = true;
       });
-    });
+      repository.getAllUsers().then((value) {
+        setState(() {
+          usuarioList = value;
+          usuarioList.sort((a, b) => a.nombre.compareTo(b.nombre));
+          filteredUsuarios = usuarioList;
+          isLoading = false;
+        });
+      });
+    } catch (e, st) {
+      _logger.log.e('Error al escuchar datos', error: e, stackTrace: st);
+    }
   }
 
   // Función para eliminar acentos y caracteres especiales

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/repository_caja.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/caja.dart';
 import 'package:proyecto_is/model/movimiento_caja.dart';
 import 'package:proyecto_is/model/preferences.dart';
@@ -18,6 +19,7 @@ class CajaScreen extends StatefulWidget {
 class _CajaScreenState extends State<CajaScreen>
     with SingleTickerProviderStateMixin {
   final CajaRepository _cajaRepository = CajaRepository();
+  final AppLogger _logger = AppLogger.instance;
   Caja? _cajaActual;
   List<MovimientoCaja> _movimientos = [];
   bool _isLoading = true;
@@ -39,34 +41,44 @@ class _CajaScreenState extends State<CajaScreen>
   }
 
   Future<void> _cargarDatos() async {
-    setState(() => _isLoading = true);
-    final caja = await _cajaRepository.obtenerCajaAbierta();
-    if (caja != null) {
-      final movimientos = await _cajaRepository.obtenerMovimientos(caja.id!);
-      setState(() {
-        _cajaActual = caja;
-        _movimientos = movimientos;
-        _isLoading = false;
-      });
-    } else {
-      setState(() {
-        _cajaActual = null;
-        _movimientos = [];
-        _isLoading = false;
-      });
+    try {
+      setState(() => _isLoading = true);
+      final caja = await _cajaRepository.obtenerCajaAbierta();
+      if (caja != null) {
+        final movimientos = await _cajaRepository.obtenerMovimientos(caja.id!);
+        setState(() {
+          _cajaActual = caja;
+          _movimientos = movimientos;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _cajaActual = null;
+          _movimientos = [];
+          _isLoading = false;
+        });
+      }
+      _cargarHistorial();
+    } catch (e, st) {
+      _logger.log.e('Error al cargar datos', error: e, stackTrace: st);
+    } finally {
+      setState(() => _isLoading = false);
     }
-    _cargarHistorial();
   }
 
   Future<void> _cargarHistorial() async {
-    final historial = await _cajaRepository.obtenerHistorialCajas(
-      filtro: _filtroHistorial,
-      fechaInicio: _fechaInicio,
-      fechaFin: _fechaFin,
-    );
-    setState(() {
-      _historialCajas = historial;
-    });
+    try {
+      final historial = await _cajaRepository.obtenerHistorialCajas(
+        filtro: _filtroHistorial,
+        fechaInicio: _fechaInicio,
+        fechaFin: _fechaFin,
+      );
+      setState(() {
+        _historialCajas = historial;
+      });
+    } catch (e, st) {
+      _logger.log.e('Error al cargar historial', error: e, stackTrace: st);
+    }
   }
 
   Future<void> _abrirCaja() async {
@@ -237,9 +249,17 @@ class _CajaScreenState extends State<CajaScreen>
               if (!_formKey.currentState!.validate()) return;
               final monto = double.tryParse(montoController.text);
               if (monto != null) {
-                await _cajaRepository.abrirCaja(monto);
-                Navigator.pop(context);
-                _cargarDatos();
+                try {
+                  await _cajaRepository.abrirCaja(monto);
+                  Navigator.pop(context);
+                  _cargarDatos();
+                } catch (e, st) {
+                  _logger.log.e(
+                    'Error al abrir caja',
+                    error: e,
+                    stackTrace: st,
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -482,13 +502,21 @@ class _CajaScreenState extends State<CajaScreen>
                       montoRealController.text,
                     );
                     if (montoFinal != null) {
-                      await _cajaRepository.cerrarCaja(
-                        _cajaActual!,
-                        montoFinal,
-                        diferencia,
-                      );
-                      Navigator.pop(context);
-                      _cargarDatos();
+                      try {
+                        await _cajaRepository.cerrarCaja(
+                          _cajaActual!,
+                          montoFinal,
+                          diferencia,
+                        );
+                        Navigator.pop(context);
+                        _cargarDatos();
+                      } catch (e, st) {
+                        _logger.log.e(
+                          'Error al cerrar caja',
+                          error: e,
+                          stackTrace: st,
+                        );
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -762,18 +790,26 @@ class _CajaScreenState extends State<CajaScreen>
               if (!_formKey.currentState!.validate()) return;
               final monto = double.tryParse(montoController.text);
               if (monto != null && conceptoController.text.isNotEmpty) {
-                final mov = MovimientoCaja(
-                  idCaja: _cajaActual!.id!,
-                  tipo: tipo,
-                  concepto: conceptoController.text,
-                  monto: monto,
-                  metodoPago:
-                      'Efectivo', // Por defecto efectivo para ingresos/egresos manuales
-                  fecha: DateTime.now().toIso8601String(),
-                );
-                await _cajaRepository.registrarMovimiento(mov);
-                Navigator.pop(context);
-                _cargarDatos();
+                try {
+                  final mov = MovimientoCaja(
+                    idCaja: _cajaActual!.id!,
+                    tipo: tipo,
+                    concepto: conceptoController.text,
+                    monto: monto,
+                    metodoPago:
+                        'Efectivo', // Por defecto efectivo para ingresos/egresos manuales
+                    fecha: DateTime.now().toIso8601String(),
+                  );
+                  await _cajaRepository.registrarMovimiento(mov);
+                  Navigator.pop(context);
+                  _cargarDatos();
+                } catch (e, st) {
+                  _logger.log.e(
+                    'Error al registrar movimiento',
+                    error: e,
+                    stackTrace: st,
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1032,19 +1068,27 @@ class _CajaScreenState extends State<CajaScreen>
               if (!_formKey.currentState!.validate()) return;
               final monto = double.tryParse(montoController.text);
               if (monto != null && conceptoController.text.isNotEmpty) {
-                final movEditado = MovimientoCaja(
-                  id: mov.id,
-                  idCaja: mov.idCaja,
-                  idVenta: mov.idVenta,
-                  tipo: mov.tipo,
-                  concepto: conceptoController.text,
-                  monto: monto,
-                  metodoPago: mov.metodoPago,
-                  fecha: mov.fecha,
-                );
-                await _cajaRepository.editarMovimiento(movEditado);
-                Navigator.pop(context);
-                _cargarDatos();
+                try {
+                  final movEditado = MovimientoCaja(
+                    id: mov.id,
+                    idCaja: mov.idCaja,
+                    idVenta: mov.idVenta,
+                    tipo: mov.tipo,
+                    concepto: conceptoController.text,
+                    monto: monto,
+                    metodoPago: mov.metodoPago,
+                    fecha: mov.fecha,
+                  );
+                  await _cajaRepository.editarMovimiento(movEditado);
+                  Navigator.pop(context);
+                  _cargarDatos();
+                } catch (e, st) {
+                  _logger.log.e(
+                    'Error al editar movimiento',
+                    error: e,
+                    stackTrace: st,
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1088,43 +1132,19 @@ class _CajaScreenState extends State<CajaScreen>
       desc: '¿Está seguro que desea eliminar este movimiento?',
       btnCancelText: 'Cancelar',
       btnOkOnPress: () async {
-        await _cajaRepository.eliminarMovimiento(id);
-        _cargarDatos();
+        try {
+          await _cajaRepository.eliminarMovimiento(id);
+          _cargarDatos();
+        } catch (e, st) {
+          _logger.log.e(
+            'Error al eliminar movimiento',
+            error: e,
+            stackTrace: st,
+          );
+        }
       },
       btnCancelOnPress: () {},
     ).show();
-    // final confirm = await showDialog<bool>(
-    //   context: context,
-    //   builder: (context) => AlertDialog(
-    //     backgroundColor: isDark
-    //         ? const Color.fromRGBO(30, 30, 30, 1)
-    //         : Colors.white,
-    //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    //     title: Text(
-    //       'Confirmar',
-    //       style: TextStyle(color: isDark ? Colors.white : Colors.black),
-    //     ),
-    //     content: Text(
-    //       '¿Eliminar este movimiento?',
-    //       style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
-    //     ),
-    //     actions: [
-    //       TextButton(
-    //         onPressed: () => Navigator.pop(context, false),
-    //         child: const Text('No'),
-    //       ),
-    //       TextButton(
-    //         onPressed: () => Navigator.pop(context, true),
-    //         child: const Text('Sí'),
-    //       ),
-    //     ],
-    //   ),
-    // );
-
-    // if (confirm == true) {
-    //   await _cajaRepository.eliminarMovimiento(id);
-    //   _cargarDatos();
-    // }
   }
 
   @override

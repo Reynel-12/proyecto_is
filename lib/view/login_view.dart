@@ -4,6 +4,7 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/repository_user.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/view/principal.dart';
 import 'package:proyecto_is/view/reset_password.dart';
@@ -18,6 +19,7 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   final repositoryUser = RepositoryUser();
+  final AppLogger _logger = AppLogger.instance;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _correo = TextEditingController();
   final TextEditingController _contrasena = TextEditingController();
@@ -32,23 +34,32 @@ class _LoginState extends State<Login> {
   }
 
   Future<void> _login() async {
-    final email = _correo.text;
-    final password = hashPassword(_contrasena.text);
+    try {
+      final email = _correo.text;
+      final password = hashPassword(_contrasena.text);
 
-    final prefs = await SharedPreferences.getInstance();
-    final user = await repositoryUser.getUserByEmail(email);
-    String fullname = '${user!.nombre} ${user.apellido}';
-    await prefs.setString('email', email);
-    await prefs.setString('password', password);
-    await prefs.setString('user', user.id.toString());
-    await prefs.setString('tipo', user.tipo.toString());
-    await prefs.setString('estado', user.estado.toString());
-    await prefs.setString('user_fullname', fullname);
-    Navigator.pushReplacement(
-      // ignore: use_build_context_synchronously
-      context,
-      MaterialPageRoute(builder: (context) => MyHomePage()),
-    );
+      final prefs = await SharedPreferences.getInstance();
+      final user = await repositoryUser.getUserByEmail(email);
+      String fullname = '${user!.nombre} ${user.apellido}';
+      await prefs.setString('email', email);
+      await prefs.setString('password', password);
+      await prefs.setString('user', user.id.toString());
+      await prefs.setString('tipo', user.tipo.toString());
+      await prefs.setString('estado', user.estado.toString());
+      await prefs.setString('user_fullname', fullname);
+      Navigator.pushReplacement(
+        // ignore: use_build_context_synchronously
+        context,
+        MaterialPageRoute(builder: (context) => MyHomePage()),
+      );
+    } catch (e, st) {
+      _logger.log.e('Error al iniciar sesión', error: e, stackTrace: st);
+      _mostrarMensaje(
+        "Atención",
+        "Error al iniciar sesión",
+        ContentType.failure,
+      );
+    }
   }
 
   Future<void> signInWithEmailAndPassword() async {
@@ -80,7 +91,7 @@ class _LoginState extends State<Login> {
       setState(() {
         _isProcessing = false;
       });
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
       setState(() {
         errorMessage = e.toString();
       });
@@ -88,6 +99,7 @@ class _LoginState extends State<Login> {
       setState(() {
         _isProcessing = false;
       });
+      _logger.log.e('Error al iniciar sesión', error: e, stackTrace: st);
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/controller/repository_proveedor.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/producto.dart';
 import 'package:proyecto_is/model/proveedor.dart';
@@ -23,6 +24,7 @@ class ProveedorDetails extends StatefulWidget {
 class _ProveedorDetailsState extends State<ProveedorDetails> {
   final _productoRepository = ProductoRepository();
   final _proveedorRepository = ProveedorRepository();
+  final AppLogger _logger = AppLogger.instance;
   List<Producto> _productos = [];
   bool _isLoading = true;
   late Proveedor _currentProveedor;
@@ -54,13 +56,14 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error al cargar datos: $e')));
       }
+      _logger.log.e('Error al cargar datos', error: e, stackTrace: stackTrace);
     }
   }
 
@@ -107,9 +110,20 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
           '¿Está seguro que desea eliminar a ${_currentProveedor.nombre}? Esta acción no se puede deshacer.',
       btnCancelOnPress: () {},
       btnOkOnPress: () async {
-        await _proveedorRepository.deleteProveedor(_currentProveedor.id!);
-        if (mounted) {
-          Navigator.pop(context, true); // Return true to refresh list
+        try {
+          await _proveedorRepository.deleteProveedor(_currentProveedor.id!);
+          if (mounted) {
+            Navigator.pop(context, true); // Return true to refresh list
+          }
+        } catch (e, stackTrace) {
+          _logger.log.e(
+            'Error al eliminar proveedor',
+            error: e,
+            stackTrace: stackTrace,
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al eliminar proveedor: $e')),
+          );
         }
       },
       dialogBackgroundColor:

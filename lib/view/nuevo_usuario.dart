@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/repository_user.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/user.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
@@ -40,6 +41,7 @@ class NuevoUsuario extends StatefulWidget {
 
 class _NuevoUsuarioState extends State<NuevoUsuario> {
   final repository = RepositoryUser();
+  final AppLogger _logger = AppLogger.instance;
   final TextEditingController _nombre = TextEditingController();
   final TextEditingController _apellido = TextEditingController();
   final TextEditingController _telefono = TextEditingController();
@@ -140,10 +142,10 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
         );
         Navigator.pop(context, false);
       }
-    } catch (e) {
+    } catch (e, st) {
       _mostrarMensaje('Error', 'Error inesperado: $e', ContentType.failure);
       Navigator.pop(context, false);
-      print("Error inesperado: $e");
+      _logger.log.e('Error al actualizar el usuario', error: e, stackTrace: st);
     } finally {
       setState(() => _isProcessing = false);
     }
@@ -194,12 +196,12 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
         );
         Navigator.pop(context, false);
       }
-    } catch (e) {
+    } catch (e, st) {
       setState(() {
         _isProcessing = false; // Volver a habilitar el botón
       });
       _mostrarMensaje('Error', 'Error inesperado: $e', ContentType.failure);
-      print("Error inesperado: $e");
+      _logger.log.e('Error al crear el usuario', error: e, stackTrace: st);
       Navigator.pop(context, false);
     }
   }

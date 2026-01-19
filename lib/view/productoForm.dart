@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/controller/repository_proveedor.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/producto.dart';
 import 'package:proyecto_is/model/proveedor.dart';
@@ -70,6 +71,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
 
   final ProductoRepository _productoRepository = ProductoRepository();
   final ProveedorRepository _proveedorRepository = ProveedorRepository();
+  final AppLogger _logger = AppLogger.instance;
 
   Proveedor? _selectedItem;
   List<Proveedor> _items = [];
@@ -78,17 +80,25 @@ class _NuevoproductoState extends State<Nuevoproducto> {
   String? selectedEstado;
 
   void cargarProveedores() async {
-    final items = await _proveedorRepository.getProveedoresByEstado('Activo');
-    setState(() {
-      _items = items;
-    });
-    if (widget.isEdit) {
-      if (_items.isNotEmpty) {
-        _selectedItem = _items.firstWhere(
-          (item) => item.id == widget.proveedorId,
-          orElse: () => _items.first,
-        );
+    try {
+      final items = await _proveedorRepository.getProveedoresByEstado('Activo');
+      setState(() {
+        _items = items;
+      });
+      if (widget.isEdit) {
+        if (_items.isNotEmpty) {
+          _selectedItem = _items.firstWhere(
+            (item) => item.id == widget.proveedorId,
+            orElse: () => _items.first,
+          );
+        }
       }
+    } catch (e, stackTrace) {
+      _logger.log.e(
+        'Error al obtener proveedores',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -159,9 +169,13 @@ class _NuevoproductoState extends State<Nuevoproducto> {
         ContentType.success,
       );
       Navigator.pop(context, true);
-    } catch (e) {
+    } catch (e, stackTrace) {
       _mostrarMensaje('Error', 'Error inesperado', ContentType.failure);
-      print("Error inesperado: $e");
+      _logger.log.e(
+        'Error al actualizar el producto',
+        error: e,
+        stackTrace: stackTrace,
+      );
       Navigator.pop(context, false);
     }
   }
@@ -195,9 +209,14 @@ class _NuevoproductoState extends State<Nuevoproducto> {
         ContentType.success,
       );
       Navigator.pop(context);
-    } catch (e) {
+    } catch (e, stackTrace) {
       _mostrarMensaje('Error', 'Error inesperado', ContentType.failure);
-      print("Error inesperado: $e");
+      _logger.log.e(
+        'Error al agregar el producto',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      Navigator.pop(context);
     }
   }
 

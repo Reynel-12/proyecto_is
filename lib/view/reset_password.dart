@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/repository_user.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 
 class RestablecerContrasena extends StatefulWidget {
@@ -16,6 +17,7 @@ class RestablecerContrasena extends StatefulWidget {
 
 class _RestablecerContrasenaState extends State<RestablecerContrasena> {
   final repositoryUser = RepositoryUser();
+  final AppLogger _logger = AppLogger.instance;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _correo = TextEditingController();
   final TextEditingController _password = TextEditingController();
@@ -50,11 +52,16 @@ class _RestablecerContrasenaState extends State<RestablecerContrasena> {
         ContentType.success,
       );
       Navigator.pop(context);
-    } catch (e) {
+    } catch (e, st) {
       _mostrarMensaje("Atención", e.toString(), ContentType.warning);
       setState(() {
         _isProcessing = false;
       });
+      _logger.log.e(
+        'Error al restablecer la contraseña',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 

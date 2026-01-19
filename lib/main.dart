@@ -3,22 +3,41 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/view/login_view.dart';
 import 'package:proyecto_is/view/principal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:window_manager/window_manager.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+    if (Platform.isWindows) {
+      await windowManager.ensureInitialized();
+
+      WindowOptions windowOptions = const WindowOptions(
+        size: Size(1920, 1080), // tamaño inicial
+        center: true,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.normal,
+        // fullScreen: true,
+      );
+
+      windowManager.waitUntilReadyToShow(windowOptions, () async {
+        await windowManager.maximize(); // abre maximizado
+        await windowManager.show();
+        await windowManager.focus();
+      });
+    }
   }
 
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  // Inicializar el logger ANTES de cualquier otra cosa
+  await AppLogger.init();
 
-  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 

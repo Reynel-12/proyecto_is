@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:proyecto_is/controller/repository_caja.dart';
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/controller/repository_proveedor.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/caja.dart';
 import 'package:proyecto_is/model/movimiento_caja.dart';
 import 'package:proyecto_is/model/preferences.dart';
@@ -32,6 +33,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
   final _formKey = GlobalKey<FormState>();
   String nombreProveedor = '';
   final _movimientoRepo = CajaRepository();
+  final AppLogger _logger = AppLogger.instance;
   final _ventaRepo = VentaRepository();
   Caja? _cajaSeleccionada;
   double totalVentas = 0;
@@ -75,13 +77,17 @@ class _PerfilProductoState extends State<PerfilProducto> {
         ultimasVentas = ultimas;
         isLoadingProveedor = false;
       });
-    } catch (e) {
+    } catch (e, st) {
       _mostrarMensaje(
         'Error',
         'Error al obtener la informacion del proveedor',
         ContentType.failure,
       );
-      print(e);
+      _logger.log.e(
+        'Error al obtener la informacion del proveedor',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -105,13 +111,17 @@ class _PerfilProductoState extends State<PerfilProducto> {
         fechaActualizacion = producto.fechaActualizacion!;
         isLoading = false;
       });
-    } catch (e) {
+    } catch (e, st) {
       _mostrarMensaje(
         'Error',
         'Error al obtener la informacion del producto',
         ContentType.failure,
       );
-      print(e);
+      _logger.log.e(
+        'Error al obtener la informacion del producto',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -179,71 +189,79 @@ class _PerfilProductoState extends State<PerfilProducto> {
   }
 
   void addInventory() async {
-    final fecha = DateTime.now().toIso8601String();
-    final movimiento = MovimientoCaja(
-      idCaja: _cajaSeleccionada!.id!,
-      tipo: 'Egreso',
-      concepto: 'Egreso de inventario',
-      monto: precio * int.parse(_cantidad.text),
-      metodoPago: 'Efectivo',
-      fecha: fecha,
-    );
-    await repositoryProducto.addInventario(
-      widget.docID,
-      int.parse(_cantidad.text),
-    );
-    await _movimientoRepo.registrarMovimiento(movimiento);
-    _mostrarMensaje(
-      'Éxito',
-      'Se actualizó correctamente el inventario',
-      ContentType.success,
-    );
-    // Navegar hacia atrás
-    Navigator.pop(context);
-  }
-
-  void _editInventory() async {
-    final fecha = DateTime.now().toIso8601String();
-    final inventario = int.parse(_inventarioController.text);
-    if (inventario == inventario) {
-      _mostrarMensaje(
-        'Error',
-        'El inventario no ha cambiado',
-        ContentType.warning,
-      );
-      Navigator.pop(context);
-      return;
-    }
-    MovimientoCaja? movimiento;
-    if (inventario > inventario) {
-      final diferencia = inventario - inventario;
-      movimiento = MovimientoCaja(
+    try {
+      final fecha = DateTime.now().toIso8601String();
+      final movimiento = MovimientoCaja(
         idCaja: _cajaSeleccionada!.id!,
         tipo: 'Egreso',
         concepto: 'Egreso de inventario',
-        monto: precio * diferencia,
+        monto: precio * int.parse(_cantidad.text),
         metodoPago: 'Efectivo',
         fecha: fecha,
       );
-    } else if (inventario < inventario) {
-      final diferencia = inventario - inventario;
-      movimiento = MovimientoCaja(
-        idCaja: _cajaSeleccionada!.id!,
-        tipo: 'Ingreso',
-        concepto: 'Ingreso de inventario',
-        monto: precio * diferencia,
-        metodoPago: 'Efectivo',
-        fecha: fecha,
+      await repositoryProducto.addInventario(
+        widget.docID,
+        int.parse(_cantidad.text),
       );
+      await _movimientoRepo.registrarMovimiento(movimiento);
+      _mostrarMensaje(
+        'Éxito',
+        'Se actualizó correctamente el inventario',
+        ContentType.success,
+      );
+      // Navegar hacia atrás
+      Navigator.pop(context);
+    } catch (e, st) {
+      _logger.log.e('Error al agregar inventario', error: e, stackTrace: st);
     }
-    await repositoryProducto.editInventario(widget.docID, inventario);
-    await _movimientoRepo.registrarMovimiento(movimiento!);
-    _mostrarMensaje(
-      'Éxito',
-      'Inventario actualizado correctamente',
-      ContentType.success,
-    );
-    Navigator.pop(context);
+  }
+
+  void _editInventory() async {
+    try {
+      final fecha = DateTime.now().toIso8601String();
+      final inventario = int.parse(_inventarioController.text);
+      if (inventario == inventario) {
+        _mostrarMensaje(
+          'Error',
+          'El inventario no ha cambiado',
+          ContentType.warning,
+        );
+        Navigator.pop(context);
+        return;
+      }
+      MovimientoCaja? movimiento;
+      if (inventario > inventario) {
+        final diferencia = inventario - inventario;
+        movimiento = MovimientoCaja(
+          idCaja: _cajaSeleccionada!.id!,
+          tipo: 'Egreso',
+          concepto: 'Egreso de inventario',
+          monto: precio * diferencia,
+          metodoPago: 'Efectivo',
+          fecha: fecha,
+        );
+      } else if (inventario < inventario) {
+        final diferencia = inventario - inventario;
+        movimiento = MovimientoCaja(
+          idCaja: _cajaSeleccionada!.id!,
+          tipo: 'Ingreso',
+          concepto: 'Ingreso de inventario',
+          monto: precio * diferencia,
+          metodoPago: 'Efectivo',
+          fecha: fecha,
+        );
+      }
+      await repositoryProducto.editInventario(widget.docID, inventario);
+      await _movimientoRepo.registrarMovimiento(movimiento!);
+      _mostrarMensaje(
+        'Éxito',
+        'Inventario actualizado correctamente',
+        ContentType.success,
+      );
+      Navigator.pop(context);
+    } catch (e, st) {
+      _logger.log.e('Error al editar inventario', error: e, stackTrace: st);
+    }
   }
 
   void _eliminarProducto() async {
@@ -256,13 +274,14 @@ class _PerfilProductoState extends State<PerfilProducto> {
         ContentType.success,
       );
       Navigator.pop(context, true);
-    } catch (e) {
+    } catch (e, st) {
       _mostrarMensaje(
         'Error',
         'Error al eliminar el producto',
         ContentType.warning,
       );
       Navigator.pop(context);
+      _logger.log.e('Error al eliminar el producto', error: e, stackTrace: st);
       return;
     }
   }

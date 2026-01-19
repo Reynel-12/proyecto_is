@@ -9,6 +9,7 @@ import 'package:proyecto_is/controller/repository_empresa.dart';
 import 'dart:io' show Platform;
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/controller/repository_venta.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/caja.dart';
 import 'package:proyecto_is/model/detalle_venta.dart';
 import 'package:proyecto_is/model/empresa.dart';
@@ -50,6 +51,7 @@ class _VentasState extends State<Ventas> {
   List<Producto> _productosFiltrados = [];
   bool isLoading = true;
   final _movimientoRepo = CajaRepository();
+  final AppLogger _logger = AppLogger.instance;
 
   Caja? _cajaSeleccionada;
   final _sarService = SarService();
@@ -66,44 +68,52 @@ class _VentasState extends State<Ventas> {
   }
 
   void cargarDatos() {
-    setState(() {
-      isLoading = true;
-    });
-    _productos.clear();
-    _productosFiltrados.clear();
-    repositoryProducto.getProductosActivos().then((productos) {
+    try {
       setState(() {
-        _productos = productos;
-        _productosFiltrados = productos;
-        isLoading = false;
+        isLoading = true;
       });
-    });
-    _movimientoRepo.obtenerCajaAbierta().then((caja) {
-      setState(() {
-        _cajaSeleccionada = caja;
+      _productos.clear();
+      _productosFiltrados.clear();
+      repositoryProducto.getProductosActivos().then((productos) {
+        setState(() {
+          _productos = productos;
+          _productosFiltrados = productos;
+          isLoading = false;
+        });
       });
-    });
-    _sarService.obtenerConfiguracionActiva().then((config) {
-      setState(() {
-        _sarConfig = config;
+      _movimientoRepo.obtenerCajaAbierta().then((caja) {
+        setState(() {
+          _cajaSeleccionada = caja;
+        });
       });
-    });
-    repositoryEmpresa.getEmpresa().then((empresa) {
-      setState(() {
-        _empresa = empresa;
+      _sarService.obtenerConfiguracionActiva().then((config) {
+        setState(() {
+          _sarConfig = config;
+        });
       });
-    });
+      repositoryEmpresa.getEmpresa().then((empresa) {
+        setState(() {
+          _empresa = empresa;
+        });
+      });
+    } catch (e, st) {
+      _logger.log.e('Error al cargar datos', error: e, stackTrace: st);
+    }
   }
 
   void actualizarInventario() {
-    _productos.clear();
-    _productosFiltrados.clear();
-    repositoryProducto.getProductos().then((productos) {
-      setState(() {
-        _productos = productos;
-        _productosFiltrados = productos;
+    try {
+      _productos.clear();
+      _productosFiltrados.clear();
+      repositoryProducto.getProductos().then((productos) {
+        setState(() {
+          _productos = productos;
+          _productosFiltrados = productos;
+        });
       });
-    });
+    } catch (e, st) {
+      _logger.log.e('Error al actualizar inventario', error: e, stackTrace: st);
+    }
   }
 
   void handleOnAddNewProduct(Producto value) {
@@ -536,13 +546,13 @@ class _VentasState extends State<Ventas> {
         'Venta registrada con éxito',
         ContentType.success,
       );
-    } catch (e) {
+    } catch (e, st) {
       _mostrarMensaje(
         'Error',
         'Error al registrar la venta',
         ContentType.failure,
       );
-      print(e);
+      _logger.log.e('Error al registrar la venta', error: e, stackTrace: st);
     }
   }
 

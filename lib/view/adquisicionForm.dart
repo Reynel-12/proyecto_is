@@ -4,6 +4,7 @@ import 'package:proyecto_is/controller/repository_caja.dart';
 import 'package:proyecto_is/controller/repository_producto.dart';
 import 'package:proyecto_is/controller/repository_proveedor.dart';
 import 'package:proyecto_is/controller/repository_compra.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/caja.dart';
 import 'package:proyecto_is/model/movimiento_caja.dart';
 import 'package:proyecto_is/model/producto.dart';
@@ -27,6 +28,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
   final _proveedorRepo = ProveedorRepository();
   final _compraRepo = CompraRepository();
   final _movimientoRepo = CajaRepository();
+  final AppLogger _logger = AppLogger.instance;
 
   List<Proveedor> _proveedores = [];
   List<Producto> _productos = [];
@@ -47,16 +49,20 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
   }
 
   Future<void> _cargarDatos() async {
-    final proveedores = await _proveedorRepo.getProveedoresByEstado('Activo');
-    final productos = await _productoRepo.getProductos();
-    final caja = await _movimientoRepo.obtenerCajaAbierta();
-    setState(() {
-      _proveedores = proveedores;
-      _productos = productos;
-      _cajaSeleccionada = caja;
-      _productosFiltrados = productos;
-      _isLoading = false;
-    });
+    try {
+      final proveedores = await _proveedorRepo.getProveedoresByEstado('Activo');
+      final productos = await _productoRepo.getProductos();
+      final caja = await _movimientoRepo.obtenerCajaAbierta();
+      setState(() {
+        _proveedores = proveedores;
+        _productos = productos;
+        _cajaSeleccionada = caja;
+        _productosFiltrados = productos;
+        _isLoading = false;
+      });
+    } catch (e, st) {
+      _logger.log.e('Error al cargar datos', error: e, stackTrace: st);
+    }
   }
 
   void _agregarAlCarrito(Producto producto) {
@@ -278,13 +284,13 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
         ContentType.success,
       );
       Navigator.pop(context, true);
-    } catch (e) {
+    } catch (e, st) {
       _mostrarMensaje(
         'Error',
         'No se pudo registrar la compra',
         ContentType.failure,
       );
-      print(e);
+      _logger.log.e('Error al registrar compra', error: e, stackTrace: st);
     } finally {
       setState(() => _isLoading = false);
     }

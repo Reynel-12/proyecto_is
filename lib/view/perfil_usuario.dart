@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/repository_user.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/view/nuevo_usuario.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
@@ -32,6 +33,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
   bool _isProcessing = false;
 
   final repo = RepositoryUser();
+  final AppLogger _logger = AppLogger.instance;
 
   @override
   void dispose() {
@@ -40,23 +42,31 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
 
   ///Método para obtener el ultimo código de la orden de ttrabajo, dentro de la colección Control
   Future<void> _obtenerInfoUsuario() async {
-    setState(() {
-      isLoading = true;
-    });
-    final user = await repo.getUserById(int.parse(widget.docID));
-    if (user != null) {
+    try {
       setState(() {
-        nombre = user.nombre;
-        apellido = user.apellido;
-        correo = user.correo;
-        telefono = user.telefono;
-        rol = user.tipo;
-        estado = user.estado;
-        contrasena = user.contrasena;
-        fechaCreacion = user.fechaCreacion;
-        fechaActualizacion = user.fechaActualizacion;
-        isLoading = false;
+        isLoading = true;
       });
+      final user = await repo.getUserById(int.parse(widget.docID));
+      if (user != null) {
+        setState(() {
+          nombre = user.nombre;
+          apellido = user.apellido;
+          correo = user.correo;
+          telefono = user.telefono;
+          rol = user.tipo;
+          estado = user.estado;
+          contrasena = user.contrasena;
+          fechaCreacion = user.fechaCreacion;
+          fechaActualizacion = user.fechaActualizacion;
+          isLoading = false;
+        });
+      }
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al obtener la información del usuario',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -371,13 +381,14 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
         ContentType.success,
       );
       Navigator.pop(context, true);
-    } catch (e) {
+    } catch (e, st) {
       _mostrarMensaje(
         'Error',
         'Error al eliminar el usuario',
         ContentType.failure,
       );
       Navigator.pop(context, true);
+      _logger.log.e('Error al eliminar el usuario', error: e, stackTrace: st);
     }
   }
 

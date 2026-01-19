@@ -1,87 +1,146 @@
 import 'package:proyecto_is/controller/database.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/producto.dart';
 
 class ProductoRepository {
   final dbHelper = DBHelper();
+  final AppLogger _logger = AppLogger.instance;
 
   Future<int> insertProducto(Producto producto) async {
-    final db = await dbHelper.database;
-    return await db.insert('productos', producto.toMap());
+    try {
+      final db = await dbHelper.database;
+      return await db.insert('productos', producto.toMap());
+    } catch (e, st) {
+      _logger.log.e('Error al insertar producto', error: e, stackTrace: st);
+      return -1;
+    }
   }
 
   Future<List<Producto>> getProductos() async {
-    final db = await dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('productos');
+    try {
+      final db = await dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query('productos');
 
-    return maps.map((map) => Producto.fromMap(map)).toList();
+      return maps.map((map) => Producto.fromMap(map)).toList();
+    } catch (e, st) {
+      _logger.log.e('Error al obtener productos', error: e, stackTrace: st);
+      return [];
+    }
   }
 
   Future<List<Producto>> getProductosActivos() async {
-    final db = await dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'productos',
-      where: 'estado = ?',
-      whereArgs: ['Activo'],
-    );
+    try {
+      final db = await dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'productos',
+        where: 'estado = ?',
+        whereArgs: ['Activo'],
+      );
 
-    return maps.map((map) => Producto.fromMap(map)).toList();
+      return maps.map((map) => Producto.fromMap(map)).toList();
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al obtener productos activos',
+        error: e,
+        stackTrace: st,
+      );
+      return [];
+    }
   }
 
   Future<List<Producto>> getProductosByProveedor(int idProveedor) async {
-    final db = await dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'productos',
-      where: 'proveedor_id = ?',
-      whereArgs: [idProveedor],
-    );
+    try {
+      final db = await dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'productos',
+        where: 'proveedor_id = ?',
+        whereArgs: [idProveedor],
+      );
 
-    return maps.map((map) => Producto.fromMap(map)).toList();
+      return maps.map((map) => Producto.fromMap(map)).toList();
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al obtener productos por proveedor',
+        error: e,
+        stackTrace: st,
+      );
+      return [];
+    }
   }
 
   Future<Producto?> getProductoByID(int id) async {
-    final db = await dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'productos',
-      where: 'id_producto = ?',
-      whereArgs: [id],
-    );
+    try {
+      final db = await dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'productos',
+        where: 'id_producto = ?',
+        whereArgs: [id],
+      );
 
-    return maps.map((map) => Producto.fromMap(map)).toList().firstOrNull;
+      return maps.map((map) => Producto.fromMap(map)).toList().firstOrNull;
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al obtener producto por ID',
+        error: e,
+        stackTrace: st,
+      );
+      return null;
+    }
   }
 
   Future<int> updateProducto(Producto producto) async {
-    final db = await dbHelper.database;
-    return await db.update(
-      'productos',
-      producto.toMap(),
-      where: 'id_producto = ?',
-      whereArgs: [producto.id],
-    );
+    try {
+      final db = await dbHelper.database;
+      return await db.update(
+        'productos',
+        producto.toMap(),
+        where: 'id_producto = ?',
+        whereArgs: [producto.id],
+      );
+    } catch (e, st) {
+      _logger.log.e('Error al actualizar producto', error: e, stackTrace: st);
+      return -1;
+    }
   }
 
   Future<int> deleteProducto(String id) async {
-    final db = await dbHelper.database;
-    return await db.delete(
-      'productos',
-      where: 'id_producto = ?',
-      whereArgs: [id],
-    );
+    try {
+      final db = await dbHelper.database;
+      return await db.delete(
+        'productos',
+        where: 'id_producto = ?',
+        whereArgs: [id],
+      );
+    } catch (e, st) {
+      _logger.log.e('Error al eliminar producto', error: e, stackTrace: st);
+      return -1;
+    }
   }
 
   Future<int> addInventario(String id, int cantidad) async {
-    final db = await dbHelper.database;
-    return await db.rawUpdate(
-      'update productos set stock = stock + $cantidad where id_producto = $id',
-    );
+    try {
+      final db = await dbHelper.database;
+      return await db.rawUpdate(
+        'update productos set stock = stock + $cantidad where id_producto = $id',
+      );
+    } catch (e, st) {
+      _logger.log.e('Error al agregar inventario', error: e, stackTrace: st);
+      return -1;
+    }
   }
 
   Future<int> editInventario(String id, int cantidad) async {
-    final db = await dbHelper.database;
-    return await db.update(
-      'productos',
-      {'stock': cantidad},
-      where: 'id_producto = ?',
-      whereArgs: [id],
-    );
+    try {
+      final db = await dbHelper.database;
+      return await db.update(
+        'productos',
+        {'stock': cantidad},
+        where: 'id_producto = ?',
+        whereArgs: [id],
+      );
+    } catch (e, st) {
+      _logger.log.e('Error al editar inventario', error: e, stackTrace: st);
+      return -1;
+    }
   }
 }

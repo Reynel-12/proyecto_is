@@ -3,6 +3,7 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proyecto_is/controller/repository_proveedor.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/proveedor.dart';
 import 'package:provider/provider.dart';
@@ -46,6 +47,7 @@ class _ProveedorFormState extends State<ProveedorForm> {
   String? selectedEstado;
 
   final ProveedorRepository _proveedorRepository = ProveedorRepository();
+  final AppLogger _logger = AppLogger.instance;
 
   @override
   void initState() {
@@ -113,13 +115,17 @@ class _ProveedorFormState extends State<ProveedorForm> {
         );
       }
       Navigator.pop(context, true);
-    } catch (e) {
+    } catch (e, stackTrace) {
       _mostrarMensaje(
         'Error',
         'Error al guardar el proveedor',
         ContentType.warning,
       );
-      print(e);
+      _logger.log.e(
+        'Error al guardar proveedor',
+        error: e,
+        stackTrace: stackTrace,
+      );
       Navigator.pop(context, true);
     }
   }
@@ -153,13 +159,17 @@ class _ProveedorFormState extends State<ProveedorForm> {
             ContentType.success,
           );
           Navigator.pop(context, true);
-        } catch (e) {
+        } catch (e, stackTrace) {
           _mostrarMensaje(
             'Error',
             'Error al eliminar el proveedor',
             ContentType.warning,
           );
-          print(e);
+          _logger.log.e(
+            'Error al eliminar proveedor',
+            error: e,
+            stackTrace: stackTrace,
+          );
           Navigator.pop(context, true);
         }
       },

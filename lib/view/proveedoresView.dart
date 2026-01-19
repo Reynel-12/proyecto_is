@@ -1,6 +1,7 @@
 import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
 import 'package:proyecto_is/controller/repository_proveedor.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/proveedor.dart';
 import 'package:proyecto_is/view/proveedorForm.dart';
@@ -24,6 +25,7 @@ class _ProveedoresViewState extends State<ProveedoresView> {
   List<Proveedor> _proveedoresFiltrados = [];
   bool isLoading = true;
   final ScrollController _scrollController = ScrollController();
+  final AppLogger _logger = AppLogger.instance;
 
   @override
   void dispose() {
@@ -38,18 +40,26 @@ class _ProveedoresViewState extends State<ProveedoresView> {
   }
 
   void cargarDatos() {
-    setState(() {
-      isLoading = true;
-    });
-    _proveedores.clear();
-    _proveedoresFiltrados.clear();
-    repositoryProveedor.getProveedores().then((proveedores) {
+    try {
       setState(() {
-        _proveedores = proveedores;
-        _proveedoresFiltrados = proveedores;
-        isLoading = false;
+        isLoading = true;
       });
-    });
+      _proveedores.clear();
+      _proveedoresFiltrados.clear();
+      repositoryProveedor.getProveedores().then((proveedores) {
+        setState(() {
+          _proveedores = proveedores;
+          _proveedoresFiltrados = proveedores;
+          isLoading = false;
+        });
+      });
+    } catch (e, stackTrace) {
+      _logger.log.e(
+        'Error al obtener proveedores',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   // Función para eliminar acentos y caracteres especiales

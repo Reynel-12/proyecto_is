@@ -3,6 +3,7 @@ import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proyecto_is/controller/repository_producto.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/producto.dart';
 import 'package:proyecto_is/view/barcode_scanner_view.dart';
@@ -22,6 +23,7 @@ class Inventario extends StatefulWidget {
 class _InventarioState extends State<Inventario> {
   TextEditingController searchController = TextEditingController();
   final repositoryProducto = ProductoRepository();
+  final AppLogger _logger = AppLogger.instance;
   List<Producto> _productos = [];
   List<Producto> _productosFiltrados = [];
   bool isLoading = false;
@@ -39,16 +41,20 @@ class _InventarioState extends State<Inventario> {
   }
 
   void cargarDatos() {
-    setState(() {
-      isLoading = true;
-    });
-    repositoryProducto.getProductos().then((productos) {
+    try {
       setState(() {
-        _productos = productos;
-        _productosFiltrados = productos;
-        isLoading = false;
+        isLoading = true;
       });
-    });
+      repositoryProducto.getProductos().then((productos) {
+        setState(() {
+          _productos = productos;
+          _productosFiltrados = productos;
+          isLoading = false;
+        });
+      });
+    } catch (e, stackTrace) {
+      _logger.log.e('Error al cargar datos', error: e, stackTrace: stackTrace);
+    }
   }
 
   // Función para eliminar acentos y caracteres especiales

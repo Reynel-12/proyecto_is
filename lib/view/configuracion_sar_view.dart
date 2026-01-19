@@ -3,6 +3,7 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/sar_service.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/sar_config.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/controller/repository_empresa.dart';
@@ -36,6 +37,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
 
   final _sarService = SarService();
   final _empresaRepository = RepositoryEmpresa();
+  final AppLogger _logger = AppLogger.instance;
 
   bool _isLoading = false;
   int _empresaId = 0; // 0 indicates new record
@@ -53,13 +55,21 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
   }
 
   Future<void> _cargarConfiguracionSar() async {
-    final config = await _sarService.obtenerConfiguracionActiva();
-    if (config != null) {
-      _caiController.text = config.cai;
-      _rangoInicialController.text = config.rangoInicial;
-      _rangoFinalController.text = config.rangoFinal;
-      _fechaLimiteController.text = config.fechaLimite;
-      _numeroActualController.text = config.numeroActual.toString();
+    try {
+      final config = await _sarService.obtenerConfiguracionActiva();
+      if (config != null) {
+        _caiController.text = config.cai;
+        _rangoInicialController.text = config.rangoInicial;
+        _rangoFinalController.text = config.rangoFinal;
+        _fechaLimiteController.text = config.fechaLimite;
+        _numeroActualController.text = config.numeroActual.toString();
+      }
+    } catch (e, st) {
+      _logger.log.e(
+        'Error cargando configuración SAR',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -77,8 +87,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
         _monedaController.text = empresa.monedaDefecto;
       }
     } catch (e) {
-      // Handle error or assume no company exists yet
-      print('Error cargando empresa: $e');
+      _logger.log.e('Error cargando empresa', error: e);
     }
   }
 
@@ -119,7 +128,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
             ContentType.success,
           );
         }
-      } catch (e) {
+      } catch (e, st) {
         if (mounted) {
           _mostrarMensaje(
             'Error',
@@ -127,6 +136,11 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
             ContentType.failure,
           );
         }
+        _logger.log.e(
+          'Error al guardar la configuración SAR',
+          error: e,
+          stackTrace: st,
+        );
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
@@ -174,6 +188,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
             ContentType.failure,
           );
         }
+        _logger.log.e('Error al guardar datos de la empresa', error: e);
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }

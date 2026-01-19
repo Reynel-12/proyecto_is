@@ -1,8 +1,10 @@
 import 'package:proyecto_is/controller/database.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/sar_config.dart';
 
 class SarService {
   final DBHelper _dbHelper = DBHelper();
+  final AppLogger _logger = AppLogger.instance;
 
   // Tasa de ISV (15%)
   static const double tasaISV = 0.15;
@@ -47,8 +49,12 @@ class SarService {
         return SarConfig.fromMap(maps.first);
       }
       return null;
-    } catch (e) {
-      print('Error al obtener la configuración SAR activa: $e');
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al obtener la configuración SAR activa',
+        error: e,
+        stackTrace: st,
+      );
       return null;
     }
   }
@@ -80,7 +86,14 @@ class SarService {
     // 2. Concatenar con el nuevo correlativo paddeado a 8 ceros.
 
     String rangoInicial = config.rangoInicial;
-    if (rangoInicial.length < 19) return null; // Formato inválido
+    if (rangoInicial.length < 19) {
+      _logger.log.e(
+        'Formato inválido del rango inicial',
+        error: 'El rango inicial debe tener al menos 19 caracteres',
+        stackTrace: StackTrace.current,
+      );
+      return null;
+    }
 
     String prefijo = rangoInicial.substring(0, 11); // "000-001-01-"
     String nuevoCorrelativo = siguienteNumero.toString().padLeft(8, '0');
@@ -90,14 +103,22 @@ class SarService {
 
   /// Actualiza el número actual en la configuración
   Future<void> actualizarCorrelativo() async {
-    final config = await obtenerConfiguracionActiva();
-    if (config != null) {
-      final db = await _dbHelper.database;
-      await db.update(
-        DBHelper.configuracionSarTable,
-        {'numero_actual': config.numeroActual + 1},
-        where: 'id_config = ?',
-        whereArgs: [config.id],
+    try {
+      final config = await obtenerConfiguracionActiva();
+      if (config != null) {
+        final db = await _dbHelper.database;
+        await db.update(
+          DBHelper.configuracionSarTable,
+          {'numero_actual': config.numeroActual + 1},
+          where: 'id_config = ?',
+          whereArgs: [config.id],
+        );
+      }
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al actualizar el número actual',
+        error: e,
+        stackTrace: st,
       );
     }
   }
@@ -105,20 +126,29 @@ class SarService {
   /// Guarda una nueva configuración SAR
   /// Desactiva la configuración anterior si existe
   Future<void> guardarConfiguracion(SarConfig config) async {
-    final db = await _dbHelper.database;
+    try {
+      final db = await _dbHelper.database;
 
-    // Desactivar configuración actual
-    await db.update(
-      DBHelper.configuracionSarTable,
-      {'activo': 0},
-      where: 'activo = ?',
-      whereArgs: [1],
-    );
+      // Desactivar configuración actual
+      await db.update(
+        DBHelper.configuracionSarTable,
+        {'activo': 0},
+        where: 'activo = ?',
+        whereArgs: [1],
+      );
 
-    // Insertar nueva configuración
-    await db.insert(
-      DBHelper.configuracionSarTable,
-      config.toMap()..remove('id_config'), // Asegurar que sea un nuevo registro
-    );
+      // Insertar nueva configuración
+      await db.insert(
+        DBHelper.configuracionSarTable,
+        config.toMap()
+          ..remove('id_config'), // Asegurar que sea un nuevo registro
+      );
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al guardar la configuración',
+        error: e,
+        stackTrace: st,
+      );
+    }
   }
 }

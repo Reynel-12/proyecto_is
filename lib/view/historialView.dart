@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:proyecto_is/controller/repository_empresa.dart';
 import 'package:proyecto_is/controller/repository_venta.dart';
 import 'package:proyecto_is/controller/sar_service.dart';
+import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/empresa.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +25,7 @@ class _HistorialState extends State<Historial> {
   final repositoryEmpresa = RepositoryEmpresa();
   final repositorySarConfig = SarService();
   final repositoryVenta = VentaRepository();
+  final AppLogger _logger = AppLogger.instance;
   List<VentaCompleta> ventas = [];
   Empresa? _empresa;
 
@@ -34,15 +36,19 @@ class _HistorialState extends State<Historial> {
   }
 
   void _cargarVentas() async {
-    final ventas = await repositoryVenta.getVentasAgrupadas();
-    setState(() {
-      this.ventas = ventas;
-    });
-    repositoryEmpresa.getEmpresa().then((empresa) {
+    try {
+      final ventas = await repositoryVenta.getVentasAgrupadas();
       setState(() {
-        _empresa = empresa;
+        this.ventas = ventas;
       });
-    });
+      repositoryEmpresa.getEmpresa().then((empresa) {
+        setState(() {
+          _empresa = empresa;
+        });
+      });
+    } catch (e, st) {
+      _logger.log.e('Error cargando ventas', error: e, stackTrace: st);
+    }
   }
 
   void _DiaSeleccionado(DateTime selectedDay, DateTime focusedDay) {
