@@ -41,6 +41,8 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
   final _formKey = GlobalKey<FormState>();
 
   bool _isLoading = true;
+  List<String> _metodosPago = ['Efectivo', 'Tarjeta', 'Transferencia'];
+  String _metodoPago = 'Efectivo';
 
   @override
   void initState() {
@@ -271,7 +273,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
         tipo: 'Egreso',
         concepto: 'Adquisición de ${_proveedorSeleccionado!.nombre}',
         monto: _totalCompra,
-        metodoPago: 'Efectivo',
+        metodoPago: _metodoPago,
         fecha: fecha,
       );
 
@@ -696,7 +698,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed: _finalizarCompra,
+            onPressed: _registrarAdquisicion,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               minimumSize: const Size(double.infinity, 50),
@@ -898,6 +900,217 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
             ? const Color.fromRGBO(30, 30, 30, 1)
             : Colors.white,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Future<void> _registrarAdquisicion() async {
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+    final bool isDesktop = screenSize.width >= 900;
+
+    // Calculamos el ancho del diálogo según el tamaño de pantalla
+    final double dialogWidth = isDesktop
+        ? screenSize.width * 0.3
+        : (isTablet ? screenSize.width * 0.5 : screenSize.width * 0.8);
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
+            ? Color.fromRGBO(60, 60, 60, 1)
+            : Color.fromRGBO(220, 220, 220, 1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: EdgeInsets.zero,
+        contentPadding: EdgeInsets.all(isMobile ? 20.0 : 24.0),
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: isDesktop ? (screenSize.width - dialogWidth) / 2 : 24.0,
+          vertical: 24.0,
+        ),
+        title: Container(
+          padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
+          decoration: BoxDecoration(
+            color: Provider.of<TemaProveedor>(context).esModoOscuro
+                ? Color.fromRGBO(60, 60, 60, 1)
+                : Color.fromRGBO(220, 220, 220, 1),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.add,
+                size: isMobile ? 20.0 : 24.0,
+                color: Provider.of<TemaProveedor>(context).esModoOscuro
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Registrar adquisición',
+                style: TextStyle(
+                  color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      ? Colors.white
+                      : Colors.black,
+                  fontSize: isMobile ? 18.0 : 20.0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        content: Container(
+          width: dialogWidth,
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDropdownMetodoPago(
+                    value: _metodoPago,
+                    items: _metodosPago,
+                    label: 'Método de pago',
+                    icon: Icons.payment,
+                    onChanged: (value) {
+                      setState(() {
+                        _metodoPago = value!;
+                      });
+                    },
+                    validator: (value) {
+                      if (value!.isEmpty) {
+                        return 'Por favor, seleccione un método de pago';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        actionsPadding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 12.0 : 16.0,
+          vertical: isMobile ? 8.0 : 12.0,
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 16.0 : 24.0,
+                vertical: isMobile ? 8.0 : 12.0,
+              ),
+            ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!_formKey.currentState!.validate()) return;
+              _finalizarCompra();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 16.0 : 24.0,
+                vertical: isMobile ? 8.0 : 12.0,
+              ),
+            ),
+            child: const Text('Guardar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownMetodoPago({
+    required String? value,
+    required List<String> items,
+    required String label,
+    required IconData icon,
+    required Function(String?) onChanged,
+    String? Function(String?)? validator,
+  }) {
+    // Obtenemos el tamaño de la pantalla
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+    final bool isDesktop = screenSize.width >= 900;
+
+    // Ajustamos tamaños según el dispositivo
+    final double labelFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final double inputFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final double verticalPadding = isMobile ? 15.0 : (isTablet ? 16.0 : 18.0);
+    final double horizontalPadding = isMobile ? 10.0 : (isTablet ? 12.0 : 14.0);
+
+    final temaOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
+
+    return DropdownButtonFormField<String>(
+      dropdownColor: temaOscuro ? Colors.black : Colors.white,
+      value: value,
+      items: items.map<DropdownMenuItem<String>>((String item) {
+        return DropdownMenuItem<String>(value: item, child: Text(item));
+      }).toList(),
+      onChanged: onChanged,
+      validator: validator,
+      style: TextStyle(
+        fontSize: inputFontSize,
+        color: temaOscuro ? Colors.white : Colors.black,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          color: temaOscuro ? Colors.white : Colors.black,
+          fontSize: labelFontSize,
+        ),
+        filled: true,
+        fillColor: temaOscuro
+            ? const Color.fromRGBO(30, 30, 30, 1)
+            : Colors.white,
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: BorderSide(
+            color: temaOscuro ? Colors.white : Colors.black,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: temaOscuro ? Colors.white : Colors.black,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
+        ),
+        errorStyle: TextStyle(
+          color: Colors.redAccent,
+          fontWeight: FontWeight.w500,
+          fontSize: isMobile ? 12.0 : 13.0,
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          vertical: verticalPadding,
+          horizontal: horizontalPadding,
+        ),
       ),
     );
   }

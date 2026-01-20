@@ -107,7 +107,8 @@ class DBHelper {
     monto_pagado REAL,
     cambio REAL,
     estado_fiscal TEXT NOT NULL DEFAULT 'EMITIDA',
-    cajero TEXT
+    cajero TEXT,
+    metodo_pago TEXT
     );
   ''');
 

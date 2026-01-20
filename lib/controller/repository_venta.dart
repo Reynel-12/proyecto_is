@@ -183,6 +183,7 @@ class VentaRepository {
       v.fecha_limite_cai,
       v.isv,
       v.subtotal,
+      v.metodo_pago,
       dv.cantidad,
       dv.precio_unitario,
       dv.subtotal,
@@ -231,6 +232,7 @@ class VentaRepository {
             fechaLimiteCai: row['fecha_limite_cai'],
             isv: row['isv'],
             subtotal: row['subtotal'],
+            metodoPago: row['metodo_pago'],
             detalles: [],
           );
         }

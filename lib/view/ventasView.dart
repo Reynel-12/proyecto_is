@@ -36,13 +36,11 @@ class Ventas extends StatefulWidget {
 class _VentasState extends State<Ventas> {
   final TextEditingController _totalController = TextEditingController();
   final TextEditingController _clienteController = TextEditingController();
-
   final TextEditingController _cambioController = TextEditingController();
   final TextEditingController _rtnController = TextEditingController();
   final TextEditingController _nombreClienteController =
       TextEditingController();
   final _formKey = GlobalKey<FormState>();
-
   final repositoryProducto = ProductoRepository();
   final repositoryVenta = VentaRepository();
   final repositoryEmpresa = RepositoryEmpresa();
@@ -52,13 +50,13 @@ class _VentasState extends State<Ventas> {
   bool isLoading = true;
   final _movimientoRepo = CajaRepository();
   final AppLogger _logger = AppLogger.instance;
-
   Caja? _cajaSeleccionada;
   final _sarService = SarService();
   SarConfig? _sarConfig;
   Empresa? _empresa;
-
   double _total = 0.0;
+  List<String> _metodosPago = ['Efectivo', 'Tarjeta', 'Transferencia'];
+  String _metodoPago = 'Efectivo';
 
   @override
   void initState() {
@@ -512,6 +510,7 @@ class _VentasState extends State<Ventas> {
             '${_sarConfig!.rangoInicial} - ${_sarConfig!.rangoFinal}',
         fechaLimiteCai: _sarConfig!.fechaLimite,
         cajero: cajero!,
+        metodoPago: _metodoPago,
       );
       final detalleVenta = _productosSeleccionados.map((producto) {
         return DetalleVenta(
@@ -582,7 +581,7 @@ class _VentasState extends State<Ventas> {
       }).toList(),
       total: venta.total,
       recibido: venta.montoPagado!,
-      metodoPago: 'Efectivo',
+      metodoPago: _metodoPago,
       notes: '¡Gracias por su compra!',
       cai: venta.cai ?? '',
       rangoAutorizado:
@@ -1561,6 +1560,30 @@ class _VentasState extends State<Ventas> {
                     key: _formKey,
                     child: Column(
                       children: [
+                        _buildDropdownEstado(
+                          value: _metodoPago,
+                          items: _metodosPago,
+                          label: 'Método de pago',
+                          icon: Icons.payment,
+                          onChanged: (value) {
+                            setState(() {
+                              _metodoPago = value!;
+                              if (_metodoPago != 'Efectivo') {
+                                _clienteController.text = _totalController.text;
+                              } else {
+                                _clienteController.clear();
+                                _cambioController.text = '0.0';
+                              }
+                            });
+                          },
+                          validator: (value) {
+                            if (value!.isEmpty) {
+                              return 'Por favor, seleccione un método de pago';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: isMobile ? 12.0 : 16.0),
                         // Campo Total
                         _buildDialogTextField(
                           _totalController,
@@ -1595,7 +1618,7 @@ class _VentasState extends State<Ventas> {
                         ),
                         SizedBox(height: isMobile ? 12.0 : 16.0),
 
-                        // Campo Cliente
+                        // Campo Recibido
                         _buildDialogTextField(
                           _clienteController,
                           'Recibido',
@@ -1799,6 +1822,85 @@ class _VentasState extends State<Ventas> {
             : Colors.black,
       ),
       validator: validator,
+    );
+  }
+
+  Widget _buildDropdownEstado({
+    required String? value,
+    required List<String> items,
+    required String label,
+    required IconData icon,
+    required Function(String?) onChanged,
+    String? Function(String?)? validator,
+  }) {
+    // Obtenemos el tamaño de la pantalla
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+    final bool isDesktop = screenSize.width >= 900;
+
+    // Ajustamos tamaños según el dispositivo
+    final double labelFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final double inputFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final double verticalPadding = isMobile ? 15.0 : (isTablet ? 16.0 : 18.0);
+    final double horizontalPadding = isMobile ? 10.0 : (isTablet ? 12.0 : 14.0);
+
+    final temaOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
+
+    return DropdownButtonFormField<String>(
+      dropdownColor: temaOscuro ? Colors.black : Colors.white,
+      value: value,
+      items: items.map<DropdownMenuItem<String>>((String item) {
+        return DropdownMenuItem<String>(value: item, child: Text(item));
+      }).toList(),
+      onChanged: onChanged,
+      validator: validator,
+      style: TextStyle(
+        fontSize: inputFontSize,
+        color: temaOscuro ? Colors.white : Colors.black,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          color: temaOscuro ? Colors.white : Colors.black,
+          fontSize: labelFontSize,
+        ),
+        filled: true,
+        fillColor: temaOscuro
+            ? const Color.fromRGBO(30, 30, 30, 1)
+            : Colors.white,
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: BorderSide(
+            color: temaOscuro ? Colors.white : Colors.black,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: temaOscuro ? Colors.white : Colors.black,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
+        ),
+        errorStyle: TextStyle(
+          color: Colors.redAccent,
+          fontWeight: FontWeight.w500,
+          fontSize: isMobile ? 12.0 : 13.0,
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          vertical: verticalPadding,
+          horizontal: horizontalPadding,
+        ),
+      ),
     );
   }
 }

@@ -32,7 +32,8 @@ class _CajaScreenState extends State<CajaScreen>
   List<Caja> _historialCajas = [];
 
   final _formKey = GlobalKey<FormState>();
-
+  final List<String> _metodosPago = ['Efectivo', 'Tarjeta', 'Transferencia'];
+  String _metodoPago = 'Efectivo';
   @override
   void initState() {
     super.initState();
@@ -758,6 +759,24 @@ class _CajaScreenState extends State<CajaScreen>
                       return null;
                     },
                   ),
+                  const SizedBox(height: 16),
+                  _buildDropdownMetodoPago(
+                    value: _metodoPago,
+                    items: _metodosPago,
+                    label: 'Método de pago',
+                    icon: Icons.payment,
+                    onChanged: (value) {
+                      setState(() {
+                        _metodoPago = value!;
+                      });
+                    },
+                    validator: (value) {
+                      if (value!.isEmpty) {
+                        return 'Por favor, seleccione un método de pago';
+                      }
+                      return null;
+                    },
+                  ),
                 ],
               ),
             ),
@@ -796,8 +815,7 @@ class _CajaScreenState extends State<CajaScreen>
                     tipo: tipo,
                     concepto: conceptoController.text,
                     monto: monto,
-                    metodoPago:
-                        'Efectivo', // Por defecto efectivo para ingresos/egresos manuales
+                    metodoPago: _metodoPago,
                     fecha: DateTime.now().toIso8601String(),
                   );
                   await _cajaRepository.registrarMovimiento(mov);
@@ -1036,6 +1054,18 @@ class _CajaScreenState extends State<CajaScreen>
                       return null;
                     },
                   ),
+                  const SizedBox(height: 16),
+                  _buildDropdownMetodoPago(
+                    value: _metodoPago,
+                    items: _metodosPago,
+                    label: 'Método de pago',
+                    icon: Icons.payment,
+                    onChanged: (value) {
+                      setState(() {
+                        _metodoPago = value!;
+                      });
+                    },
+                  ),
                 ],
               ),
             ),
@@ -1076,7 +1106,7 @@ class _CajaScreenState extends State<CajaScreen>
                     tipo: mov.tipo,
                     concepto: conceptoController.text,
                     monto: monto,
-                    metodoPago: mov.metodoPago,
+                    metodoPago: _metodoPago,
                     fecha: mov.fecha,
                   );
                   await _cajaRepository.editarMovimiento(movEditado);
@@ -1856,6 +1886,85 @@ class _CajaScreenState extends State<CajaScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownMetodoPago({
+    required String? value,
+    required List<String> items,
+    required String label,
+    required IconData icon,
+    required Function(String?) onChanged,
+    String? Function(String?)? validator,
+  }) {
+    // Obtenemos el tamaño de la pantalla
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+    final bool isDesktop = screenSize.width >= 900;
+
+    // Ajustamos tamaños según el dispositivo
+    final double labelFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final double inputFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
+    final double verticalPadding = isMobile ? 15.0 : (isTablet ? 16.0 : 18.0);
+    final double horizontalPadding = isMobile ? 10.0 : (isTablet ? 12.0 : 14.0);
+
+    final temaOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
+
+    return DropdownButtonFormField<String>(
+      dropdownColor: temaOscuro ? Colors.black : Colors.white,
+      value: value,
+      items: items.map<DropdownMenuItem<String>>((String item) {
+        return DropdownMenuItem<String>(value: item, child: Text(item));
+      }).toList(),
+      onChanged: onChanged,
+      validator: validator,
+      style: TextStyle(
+        fontSize: inputFontSize,
+        color: temaOscuro ? Colors.white : Colors.black,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          color: temaOscuro ? Colors.white : Colors.black,
+          fontSize: labelFontSize,
+        ),
+        filled: true,
+        fillColor: temaOscuro
+            ? const Color.fromRGBO(30, 30, 30, 1)
+            : Colors.white,
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: BorderSide(
+            color: temaOscuro ? Colors.white : Colors.black,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: temaOscuro ? Colors.white : Colors.black,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
+        ),
+        errorStyle: TextStyle(
+          color: Colors.redAccent,
+          fontWeight: FontWeight.w500,
+          fontSize: isMobile ? 12.0 : 13.0,
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          vertical: verticalPadding,
+          horizontal: horizontalPadding,
+        ),
       ),
     );
   }

@@ -55,10 +55,8 @@ class ThermalInvoicePrinter {
     children.add(_divider(maxWidth));
 
     // === INFORMACIÓN DEL CLIENTE ===
-    if (data.customerName.isNotEmpty) {
-      children.add(pw.SizedBox(height: _sectionSpacing));
-      children.add(_buildCustomerInfo(maxWidth));
-    }
+    children.add(pw.SizedBox(height: _sectionSpacing));
+    children.add(_buildCustomerInfo(maxWidth));
 
     // === DETALLES DE FACTURA ===
     children.add(pw.SizedBox(height: _sectionSpacing));

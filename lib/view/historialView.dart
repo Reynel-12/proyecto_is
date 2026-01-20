@@ -613,6 +613,13 @@ class _HistorialState extends State<Historial> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildVentaInfoRow(
+                  'Método de pago:',
+                  venta.metodoPago,
+                  subtitleFontSize,
+                  Icons.payment,
+                ),
+                SizedBox(height: 4),
+                _buildVentaInfoRow(
                   'Total:',
                   'L. $total',
                   subtitleFontSize,
@@ -715,7 +722,7 @@ class _HistorialState extends State<Historial> {
                       }).toList(),
                       total: total,
                       recibido: montoPagado,
-                      metodoPago: 'Efectivo',
+                      metodoPago: venta.metodoPago,
                       notes: '¡Gracias por su compra!',
                       cai: venta.cai,
                       rangoAutorizado: venta.rangoAutorizado,

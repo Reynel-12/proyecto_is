@@ -17,6 +17,7 @@ class Venta {
   final String rangoAutorizado;
   final String fechaLimiteCai;
   final String cajero;
+  final String metodoPago;
 
   Venta({
     this.id,
@@ -36,6 +37,7 @@ class Venta {
     required this.rangoAutorizado,
     required this.fechaLimiteCai,
     required this.cajero,
+    required this.metodoPago,
   });
 
   // Map → Venta
@@ -58,6 +60,7 @@ class Venta {
       rangoAutorizado: map['rango_autorizado'],
       fechaLimiteCai: map['fecha_limite_cai'],
       cajero: map['cajero'],
+      metodoPago: map['metodo_pago'],
     );
   }
 
@@ -81,6 +84,7 @@ class Venta {
       'rango_autorizado': rangoAutorizado,
       'fecha_limite_cai': fechaLimiteCai,
       'cajero': cajero,
+      'metodo_pago': metodoPago,
     };
   }
 }
@@ -103,6 +107,7 @@ class VentaCompleta {
   final String fechaLimiteCai;
   final double isv;
   final double subtotal;
+  final String metodoPago;
 
   VentaCompleta({
     required this.id,
@@ -122,6 +127,7 @@ class VentaCompleta {
     required this.fechaLimiteCai,
     required this.isv,
     required this.subtotal,
+    required this.metodoPago,
   });
 }
 
