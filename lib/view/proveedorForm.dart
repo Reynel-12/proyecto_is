@@ -144,11 +144,11 @@ class _ProveedorFormState extends State<ProveedorForm> {
       width: isDesktop ? (screenSize.width - dialogWidth) / 2 : null,
       context: context,
       dialogType: DialogType.warning,
-      animType: AnimType.bottomSlide,
+      animType: AnimType.scale,
       title: 'Eliminar Proveedor',
       desc: '¿Está seguro que desea eliminar a este proveedor?',
-      btnCancelText: 'Cancelar',
-      btnOkText: 'Eliminar',
+      btnCancelText: 'No, cancelar',
+      btnOkText: 'Si, eliminar',
       btnCancelOnPress: () {},
       btnOkOnPress: () async {
         try {
@@ -173,6 +173,10 @@ class _ProveedorFormState extends State<ProveedorForm> {
           Navigator.pop(context, true);
         }
       },
+      dialogBackgroundColor:
+          Provider.of<TemaProveedor>(context, listen: false).esModoOscuro
+          ? const Color.fromRGBO(60, 60, 60, 1)
+          : Colors.white,
     ).show();
   }
 

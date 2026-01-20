@@ -1130,7 +1130,8 @@ class _CajaScreenState extends State<CajaScreen>
       animType: AnimType.scale,
       title: 'Atención',
       desc: '¿Está seguro que desea eliminar este movimiento?',
-      btnCancelText: 'Cancelar',
+      btnCancelText: 'No, cancelar',
+      btnOkText: 'Sí, eliminar',
       btnOkOnPress: () async {
         try {
           await _cajaRepository.eliminarMovimiento(id);

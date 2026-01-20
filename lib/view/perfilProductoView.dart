@@ -400,8 +400,8 @@ class _PerfilProductoState extends State<PerfilProducto> {
                           title: 'Atención',
                           desc:
                               '¿Está seguro que desea eliminar este producto?',
-                          btnCancelText: 'Cancelar',
-                          btnOkText: 'Eliminar',
+                          btnCancelText: 'No, cancelar',
+                          btnOkText: 'Sí, eliminar',
                           btnOkOnPress: () {
                             _eliminarProducto();
                           },

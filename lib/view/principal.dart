@@ -31,6 +31,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   String tipo = '';
+  String userFullname = '';
 
   void deletePreferences() async {
     final prefs = await SharedPreferences.getInstance();
@@ -44,8 +45,10 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> obtenerTipo() async {
     final prefs = await SharedPreferences.getInstance();
     String? tipo = prefs.getString('tipo');
+    String? fullname = prefs.getString('user_fullname');
     setState(() {
       this.tipo = tipo ?? '';
+      userFullname = fullname ?? 'Usuario';
     });
   }
 
@@ -176,36 +179,140 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             centerTitle: true,
             backgroundColor: Colors.transparent, // Color de fondo de la barra
-            leading: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 500),
-              switchInCurve: Curves.easeIn,
-              switchOutCurve: Curves.easeOut,
-              transitionBuilder: (child, animation) {
-                return ScaleTransition(scale: animation, child: child);
-              },
-              child: IconButton(
-                key: ValueKey<bool>(
-                  Provider.of<TemaProveedor>(context).esModoOscuro,
-                ),
-                icon: Icon(
-                  Provider.of<TemaProveedor>(context).esModoOscuro
-                      ? Icons.dark_mode
-                      : Icons.light_mode,
-                  color: Provider.of<TemaProveedor>(context).esModoOscuro
-                      ? Colors.white
-                      : Colors.black,
-                ),
-                onPressed: () {
-                  // Cambiar el tema al presionar el botón
-                  Provider.of<TemaProveedor>(
-                    context,
-                    listen: false,
-                  ).cambiarTema();
+            actions: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                switchInCurve: Curves.easeIn,
+                switchOutCurve: Curves.easeOut,
+                transitionBuilder: (child, animation) {
+                  return ScaleTransition(scale: animation, child: child);
                 },
-                splashRadius:
-                    25, // Ajusta el tamaño del efecto de onda al presionar
+                child: IconButton(
+                  key: ValueKey<bool>(
+                    Provider.of<TemaProveedor>(context).esModoOscuro,
+                  ),
+                  icon: Icon(
+                    Provider.of<TemaProveedor>(context).esModoOscuro
+                        ? Icons.dark_mode
+                        : Icons.light_mode,
+                    color: Provider.of<TemaProveedor>(context).esModoOscuro
+                        ? Colors.white
+                        : Colors.black,
+                  ),
+                  onPressed: () {
+                    // Cambiar el tema al presionar el botón
+                    Provider.of<TemaProveedor>(
+                      context,
+                      listen: false,
+                    ).cambiarTema();
+                  },
+                  splashRadius: 25,
+                ),
               ),
-            ),
+            ],
+          ),
+        ),
+      ),
+      drawer: Drawer(
+        child: Container(
+          color: Provider.of<TemaProveedor>(context).esModoOscuro
+              ? Colors.black
+              : Colors.white,
+          child: Column(
+            children: [
+              UserAccountsDrawerHeader(
+                decoration: BoxDecoration(
+                  color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      ? Colors.grey[900]
+                      : Colors.blueAccent,
+                ),
+                currentAccountPicture: CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: Icon(
+                    Icons.person,
+                    size: 40,
+                    color: Provider.of<TemaProveedor>(context).esModoOscuro
+                        ? Colors.black
+                        : Colors.blueAccent,
+                  ),
+                ),
+                accountName: Text(
+                  userFullname,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                accountEmail: Text(
+                  tipo,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    ...cards.map((card) {
+                      return ListTile(
+                        leading: Icon(
+                          card.icon,
+                          color:
+                              Provider.of<TemaProveedor>(context).esModoOscuro
+                              ? Colors.white
+                              : Colors.blueAccent,
+                        ),
+                        title: Text(
+                          card.title,
+                          style: TextStyle(
+                            color:
+                                Provider.of<TemaProveedor>(context).esModoOscuro
+                                ? Colors.white
+                                : Colors.black87,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.pop(context); // Close drawer
+                          card.onTap();
+                        },
+                      );
+                    }).toList(),
+                    const Divider(),
+                    SwitchListTile(
+                      title: const Text(
+                        'Modo noche',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      secondary: Icon(
+                        Provider.of<TemaProveedor>(context).esModoOscuro
+                            ? Icons.dark_mode
+                            : Icons.light_mode,
+                        color: Provider.of<TemaProveedor>(context).esModoOscuro
+                            ? Colors.amber
+                            : Colors.blueAccent,
+                      ),
+                      value: Provider.of<TemaProveedor>(context).esModoOscuro,
+                      onChanged: (bool value) {
+                        Provider.of<TemaProveedor>(
+                          context,
+                          listen: false,
+                        ).cambiarTema();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'v1.0.0',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+              ),
+            ],
           ),
         ),
       ),

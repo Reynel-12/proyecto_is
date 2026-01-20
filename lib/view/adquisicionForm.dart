@@ -616,7 +616,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
         child: Column(
           children: [
             Text(
-              'Resumen de Adquisición',
+              'Resumen de adquisición',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -685,7 +685,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
             ),
             icon: const Icon(Icons.add, color: Colors.white),
             label: const Text(
-              'Agregar Producto',
+              'Agregar producto',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,

@@ -108,6 +108,8 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
       title: 'Eliminar Proveedor',
       desc:
           '¿Está seguro que desea eliminar a ${_currentProveedor.nombre}? Esta acción no se puede deshacer.',
+      btnCancelText: 'No, cancelar',
+      btnOkText: 'Sí, eliminar',
       btnCancelOnPress: () {},
       btnOkOnPress: () async {
         try {
