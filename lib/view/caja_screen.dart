@@ -1458,6 +1458,185 @@ class _CajaScreenState extends State<CajaScreen>
     );
   }
 
+  void _showCalculationDetails({
+    required String title,
+    required String formula,
+    Map<String, double>? breakdown,
+    List<MovimientoCaja>? movimientos,
+  }) {
+    final currency = NumberFormat.currency(symbol: 'L. ');
+    final isDark = Provider.of<TemaProveedor>(
+      context,
+      listen: false,
+    ).esModoOscuro;
+
+    final screenSize = MediaQuery.of(context).size;
+    final bool isDesktop = screenSize.width >= 900;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+
+    final double dialogWidth = isDesktop
+        ? screenSize.width * 0.35
+        : (isTablet ? screenSize.width * 0.55 : screenSize.width * 0.85);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark
+            ? const Color.fromRGBO(60, 60, 60, 1)
+            : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          title,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+        ),
+        content: SizedBox(
+          width: dialogWidth,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Fórmula:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white70 : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.black26 : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDark ? Colors.white10 : Colors.grey[300]!,
+                    ),
+                  ),
+                  child: Text(
+                    formula,
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (breakdown != null) ...[
+                  Text(
+                    'Desglose:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...breakdown.entries.map((e) {
+                    final isNegative = e.key == 'Egresos' || e.value < 0;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            e.key,
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            currency.format(e.value),
+                            style: TextStyle(
+                              color: isNegative ? Colors.red : Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+                if (movimientos != null && movimientos.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Divider(color: isDark ? Colors.white24 : Colors.black12),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Transacciones (${movimientos.length}):',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white60 : Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: isDark ? Colors.white10 : Colors.grey[300]!,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.builder(
+                      itemCount: movimientos.length,
+                      itemBuilder: (context, index) {
+                        final mov = movimientos[index];
+                        return ListTile(
+                          dense: true,
+                          title: Text(
+                            mov.concepto,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          subtitle: Text(
+                            DateFormat(
+                              'dd/MM HH:mm',
+                            ).format(DateTime.parse(mov.fecha)),
+                            style: TextStyle(
+                              color: isDark ? Colors.white60 : Colors.black54,
+                            ),
+                          ),
+                          trailing: Text(
+                            currency.format(mov.monto),
+                            style: TextStyle(
+                              color: mov.tipo == 'Egreso'
+                                  ? Colors.red
+                                  : Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+                if (movimientos != null && movimientos.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: Text(
+                        'No hay transacciones registradas.',
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: isDark ? Colors.white60 : Colors.black54,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSummaryGrid({required int crossAxisCount}) {
     return GridView.count(
       crossAxisCount: crossAxisCount,
@@ -1471,24 +1650,90 @@ class _CajaScreenState extends State<CajaScreen>
           'Ventas Efectivo',
           _totalEfectivoVentas,
           Colors.green,
+          onInfoPressed: () => _showCalculationDetails(
+            title: 'Ventas en Efectivo',
+            formula: 'Suma de todas las ventas realizadas con Efectivo',
+            movimientos: _movimientos
+                .where((m) => m.tipo == 'Venta' && m.metodoPago == 'Efectivo')
+                .toList(),
+          ),
         ),
-        _buildSummaryCard('Ventas Tarjeta', _totalTarjeta, Colors.blue),
+        _buildSummaryCard(
+          'Ventas Tarjeta',
+          _totalTarjeta,
+          Colors.blue,
+          onInfoPressed: () => _showCalculationDetails(
+            title: 'Ventas con Tarjeta',
+            formula: 'Suma de todas las ventas realizadas con Tarjeta',
+            movimientos: _movimientos
+                .where((m) => m.tipo == 'Venta' && m.metodoPago == 'Tarjeta')
+                .toList(),
+          ),
+        ),
         _buildSummaryCard(
           'Ventas Transferencia',
           _totalTransferencia,
           Colors.orange,
+          onInfoPressed: () => _showCalculationDetails(
+            title: 'Ventas por Transferencia',
+            formula: 'Suma de todas las ventas realizadas por Transferencia',
+            movimientos: _movimientos
+                .where(
+                  (m) => m.tipo == 'Venta' && m.metodoPago == 'Transferencia',
+                )
+                .toList(),
+          ),
         ),
         _buildSummaryCard(
           'Total Ventas',
           _cajaActual!.totalVentas,
           Colors.indigo,
+          onInfoPressed: () => _showCalculationDetails(
+            title: 'Total de Ventas',
+            formula: 'Ventas Efectivo + Ventas Tarjeta + Ventas Transferencia',
+            breakdown: {
+              'Ventas Efectivo': _totalEfectivoVentas,
+              'Ventas Tarjeta': _totalTarjeta,
+              'Ventas Transferencia': _totalTransferencia,
+            },
+          ),
         ),
-        _buildSummaryCard('Ingresos', _cajaActual!.ingresos, Colors.teal),
-        _buildSummaryCard('Egresos', _cajaActual!.egresos, Colors.red),
+        _buildSummaryCard(
+          'Ingresos',
+          _cajaActual!.ingresos,
+          Colors.teal,
+          onInfoPressed: () => _showCalculationDetails(
+            title: 'Ingresos de Caja',
+            formula: 'Suma de todos los movimientos registrados como Ingreso',
+            movimientos: _movimientos
+                .where((m) => m.tipo == 'Ingreso')
+                .toList(),
+          ),
+        ),
+        _buildSummaryCard(
+          'Egresos',
+          _cajaActual!.egresos,
+          Colors.red,
+          onInfoPressed: () => _showCalculationDetails(
+            title: 'Egresos de Caja',
+            formula: 'Suma de todos los movimientos registrados como Egreso',
+            movimientos: _movimientos.where((m) => m.tipo == 'Egreso').toList(),
+          ),
+        ),
         _buildSummaryCard(
           'Efectivo en Caja',
           _cajaActual!.totalEfectivo,
           Colors.green.shade700,
+          onInfoPressed: () => _showCalculationDetails(
+            title: 'Efectivo en Caja',
+            formula: 'Monto Inicial + Ventas Efectivo + Ingresos - Egresos',
+            breakdown: {
+              'Monto Inicial': _cajaActual!.montoApertura,
+              'Ventas Efectivo': _totalEfectivoVentas,
+              'Ingresos': _cajaActual!.ingresos,
+              'Egresos': -_cajaActual!.egresos,
+            },
+          ),
         ),
       ],
     );
@@ -1512,17 +1757,38 @@ class _CajaScreenState extends State<CajaScreen>
             fontSize: 12,
           ),
         ),
-        trailing: Text(
-          currency.format(
-            _cajaActual!.totalVentas +
-                _cajaActual!.ingresos -
-                _cajaActual!.egresos,
-          ),
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black,
-          ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              currency.format(
+                _cajaActual!.totalVentas +
+                    _cajaActual!.ingresos -
+                    _cajaActual!.egresos,
+              ),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(
+                Icons.info_outline,
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
+              onPressed: () => _showCalculationDetails(
+                title: 'Balance Neto',
+                formula: 'Total Ventas + Ingresos - Egresos',
+                breakdown: {
+                  'Total Ventas': _cajaActual!.totalVentas,
+                  'Ingresos': _cajaActual!.ingresos,
+                  'Egresos': -_cajaActual!.egresos,
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1773,7 +2039,12 @@ class _CajaScreenState extends State<CajaScreen>
     );
   }
 
-  Widget _buildSummaryCard(String title, double amount, Color color) {
+  Widget _buildSummaryCard(
+    String title,
+    double amount,
+    Color color, {
+    VoidCallback? onInfoPressed,
+  }) {
     final isDark = Provider.of<TemaProveedor>(context).esModoOscuro;
     return Card(
       elevation: 2,
@@ -1782,30 +2053,49 @@ class _CajaScreenState extends State<CajaScreen>
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: color.withOpacity(0.5)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: isDark ? Colors.white70 : Colors.grey[700],
-                fontSize: 12,
-              ),
-              textAlign: TextAlign.center,
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.grey[700],
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  NumberFormat.currency(symbol: 'L. ').format(amount),
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 5),
-            Text(
-              NumberFormat.currency(symbol: 'L. ').format(amount),
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+          ),
+          if (onInfoPressed != null)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: IconButton(
+                icon: Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: color.withOpacity(0.7),
+                ),
+                onPressed: onInfoPressed,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
