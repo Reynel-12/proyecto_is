@@ -34,6 +34,12 @@ class _CajaScreenState extends State<CajaScreen>
   final _formKey = GlobalKey<FormState>();
   final List<String> _metodosPago = ['Efectivo', 'Tarjeta', 'Transferencia'];
   String _metodoPago = 'Efectivo';
+
+  // Totales por método de pago
+  double _totalTarjeta = 0.0;
+  double _totalTransferencia = 0.0;
+  double _totalEfectivoVentas = 0.0;
+  String _filtroMetodoPago = 'Todo';
   @override
   void initState() {
     super.initState();
@@ -47,15 +53,39 @@ class _CajaScreenState extends State<CajaScreen>
       final caja = await _cajaRepository.obtenerCajaAbierta();
       if (caja != null) {
         final movimientos = await _cajaRepository.obtenerMovimientos(caja.id!);
+
+        // Calcular totales por método de pago
+        double tarjeta = 0.0;
+        double transferencia = 0.0;
+        double efectivoVentas = 0.0;
+
+        for (var mov in movimientos) {
+          if (mov.tipo == 'Venta') {
+            if (mov.metodoPago == 'Tarjeta') {
+              tarjeta += mov.monto;
+            } else if (mov.metodoPago == 'Transferencia') {
+              transferencia += mov.monto;
+            } else if (mov.metodoPago == 'Efectivo') {
+              efectivoVentas += mov.monto;
+            }
+          }
+        }
+
         setState(() {
           _cajaActual = caja;
           _movimientos = movimientos;
+          _totalTarjeta = tarjeta;
+          _totalTransferencia = transferencia;
+          _totalEfectivoVentas = efectivoVentas;
           _isLoading = false;
         });
       } else {
         setState(() {
           _cajaActual = null;
           _movimientos = [];
+          _totalTarjeta = 0.0;
+          _totalTransferencia = 0.0;
+          _totalEfectivoVentas = 0.0;
           _isLoading = false;
         });
       }
@@ -1208,7 +1238,7 @@ class _CajaScreenState extends State<CajaScreen>
           unselectedLabelColor: Colors.grey,
           indicatorColor: Colors.blueAccent,
           tabs: const [
-            Tab(text: 'Caja Actual'),
+            Tab(text: 'Caja actual'),
             Tab(text: 'Historial'),
           ],
         ),
@@ -1438,17 +1468,28 @@ class _CajaScreenState extends State<CajaScreen>
       mainAxisSpacing: 10,
       children: [
         _buildSummaryCard(
-          'Total Ventas',
-          _cajaActual!.totalVentas,
-          Colors.blue,
-        ),
-        _buildSummaryCard(
-          'Total Efectivo',
-          _cajaActual!.totalEfectivo,
+          'Ventas Efectivo',
+          _totalEfectivoVentas,
           Colors.green,
         ),
-        _buildSummaryCard('Ingresos', _cajaActual!.ingresos, Colors.orange),
+        _buildSummaryCard('Ventas Tarjeta', _totalTarjeta, Colors.blue),
+        _buildSummaryCard(
+          'Ventas Transferencia',
+          _totalTransferencia,
+          Colors.orange,
+        ),
+        _buildSummaryCard(
+          'Total Ventas',
+          _cajaActual!.totalVentas,
+          Colors.indigo,
+        ),
+        _buildSummaryCard('Ingresos', _cajaActual!.ingresos, Colors.teal),
         _buildSummaryCard('Egresos', _cajaActual!.egresos, Colors.red),
+        _buildSummaryCard(
+          'Efectivo en Caja',
+          _cajaActual!.totalEfectivo,
+          Colors.green.shade700,
+        ),
       ],
     );
   }
@@ -1531,49 +1572,101 @@ class _CajaScreenState extends State<CajaScreen>
     final screenSize = MediaQuery.of(context).size;
     final bool isMobile = screenSize.width < 600;
 
-    return ListView.builder(
-      shrinkWrap: !scrollable,
-      physics: scrollable
-          ? const AlwaysScrollableScrollPhysics()
-          : const NeverScrollableScrollPhysics(),
-      itemCount: _movimientos.length,
-      itemBuilder: (context, index) {
-        final mov = _movimientos[index];
-        return Card(
-          color: isDark ? const Color.fromRGBO(40, 40, 40, 1) : Colors.white,
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    final filteredMovimientos = _movimientos.where((mov) {
+      if (_filtroMetodoPago == 'Todo') return true;
+      return mov.metodoPago == _filtroMetodoPago;
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _filterChipMetodo('Todo'),
+              const SizedBox(width: 8),
+              _filterChipMetodo('Efectivo'),
+              const SizedBox(width: 8),
+              _filterChipMetodo('Tarjeta'),
+              const SizedBox(width: 8),
+              _filterChipMetodo('Transferencia'),
+            ],
           ),
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: mov.tipo == 'Ingreso'
-                  ? Colors.green.withOpacity(0.2)
-                  : mov.tipo == 'Egreso'
-                  ? Colors.red.withOpacity(0.2)
-                  : Colors.blue.withOpacity(0.2),
-              child: Icon(
-                mov.tipo == 'Ingreso'
-                    ? Icons.arrow_upward
-                    : mov.tipo == 'Egreso'
-                    ? Icons.arrow_downward
-                    : Icons.shopping_cart,
-                color: mov.tipo == 'Ingreso'
-                    ? Colors.green
-                    : mov.tipo == 'Egreso'
-                    ? Colors.red
-                    : Colors.blue,
+        ),
+        const SizedBox(height: 12),
+        scrollable
+            ? Expanded(
+                child: ListView.builder(
+                  shrinkWrap: false,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: filteredMovimientos.length,
+                  itemBuilder: (context, index) {
+                    final mov = filteredMovimientos[index];
+                    return _buildMovimientoCard(
+                      mov,
+                      isDark,
+                      isMobile,
+                      currency,
+                    );
+                  },
+                ),
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredMovimientos.length,
+                itemBuilder: (context, index) {
+                  final mov = filteredMovimientos[index];
+                  return _buildMovimientoCard(mov, isDark, isMobile, currency);
+                },
               ),
-            ),
-            title: Text(
-              mov.concepto,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-            subtitle: Row(
+      ],
+    );
+  }
+
+  Widget _buildMovimientoCard(
+    MovimientoCaja mov,
+    bool isDark,
+    bool isMobile,
+    NumberFormat currency,
+  ) {
+    return Card(
+      color: isDark ? const Color.fromRGBO(40, 40, 40, 1) : Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: mov.tipo == 'Ingreso'
+              ? Colors.green.withOpacity(0.2)
+              : mov.tipo == 'Egreso'
+              ? Colors.red.withOpacity(0.2)
+              : Colors.blue.withOpacity(0.2),
+          child: Icon(
+            mov.tipo == 'Ingreso'
+                ? Icons.arrow_upward
+                : mov.tipo == 'Egreso'
+                ? Icons.arrow_downward
+                : Icons.shopping_cart,
+            color: mov.tipo == 'Ingreso'
+                ? Colors.green
+                : mov.tipo == 'Egreso'
+                ? Colors.red
+                : Colors.blue,
+          ),
+        ),
+        title: Text(
+          mov.concepto,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
                 Text(
                   DateFormat('dd/MM/yyyy').format(DateTime.parse(mov.fecha)),
@@ -1592,31 +1685,71 @@ class _CajaScreenState extends State<CajaScreen>
                 ),
               ],
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  currency.format(mov.monto),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: mov.tipo == 'Egreso' ? Colors.red : Colors.green,
-                  ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                mov.metodoPago,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.blue,
+                  fontWeight: FontWeight.bold,
                 ),
-                if (mov.tipo != 'Venta') ...[
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () => _editarMovimiento(mov),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _eliminarMovimiento(mov.id!),
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
-        );
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              currency.format(mov.monto),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: mov.tipo == 'Egreso' ? Colors.red : Colors.green,
+              ),
+            ),
+            if (mov.tipo != 'Venta') ...[
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.blue),
+                onPressed: () => _editarMovimiento(mov),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _eliminarMovimiento(mov.id!),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _filterChipMetodo(String label) {
+    final isSelected = _filtroMetodoPago == label;
+    final isDark = Provider.of<TemaProveedor>(context).esModoOscuro;
+
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _filtroMetodoPago = label;
+          });
+        }
       },
+      selectedColor: Colors.blueAccent,
+      labelStyle: TextStyle(
+        color: isSelected
+            ? Colors.white
+            : (isDark ? Colors.white70 : Colors.black87),
+      ),
+      backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
     );
   }
 

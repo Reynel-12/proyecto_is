@@ -137,7 +137,7 @@ class VentaRepository {
             'tipo': 'Venta',
             'concepto': 'Venta #$numeroFactura',
             'monto': venta.total,
-            'metodo_pago': 'Efectivo', // Asumimos efectivo por ahora
+            'metodo_pago': venta.metodoPago,
             'fecha': DateTime.now().toIso8601String(),
           });
 
