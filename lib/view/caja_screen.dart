@@ -39,6 +39,17 @@ class _CajaScreenState extends State<CajaScreen>
   double _totalTarjeta = 0.0;
   double _totalTransferencia = 0.0;
   double _totalEfectivoVentas = 0.0;
+
+  // Desglose de Ingresos
+  double _totalIngresosEfectivo = 0.0;
+  double _totalIngresosTarjeta = 0.0;
+  double _totalIngresosTransferencia = 0.0;
+
+  // Desglose de Egresos
+  double _totalEgresosEfectivo = 0.0;
+  double _totalEgresosTarjeta = 0.0;
+  double _totalEgresosTransferencia = 0.0;
+
   String _filtroMetodoPago = 'Todo';
   @override
   void initState() {
@@ -59,6 +70,14 @@ class _CajaScreenState extends State<CajaScreen>
         double transferencia = 0.0;
         double efectivoVentas = 0.0;
 
+        double ingresosEfectivo = 0.0;
+        double ingresosTarjeta = 0.0;
+        double ingresosTransferencia = 0.0;
+
+        double egresosEfectivo = 0.0;
+        double egresosTarjeta = 0.0;
+        double egresosTransferencia = 0.0;
+
         for (var mov in movimientos) {
           if (mov.tipo == 'Venta') {
             if (mov.metodoPago == 'Tarjeta') {
@@ -68,15 +87,58 @@ class _CajaScreenState extends State<CajaScreen>
             } else if (mov.metodoPago == 'Efectivo') {
               efectivoVentas += mov.monto;
             }
+          } else if (mov.tipo == 'Ingreso') {
+            if (mov.metodoPago == 'Tarjeta') {
+              ingresosTarjeta += mov.monto;
+            } else if (mov.metodoPago == 'Transferencia') {
+              ingresosTransferencia += mov.monto;
+            } else if (mov.metodoPago == 'Efectivo') {
+              ingresosEfectivo += mov.monto;
+            }
+          } else if (mov.tipo == 'Egreso') {
+            if (mov.metodoPago == 'Tarjeta') {
+              egresosTarjeta += mov.monto;
+            } else if (mov.metodoPago == 'Transferencia') {
+              egresosTransferencia += mov.monto;
+            } else if (mov.metodoPago == 'Efectivo') {
+              egresosEfectivo += mov.monto;
+            }
           }
         }
 
+        final double totalEfectivoCalculado =
+            caja.montoApertura +
+            efectivoVentas +
+            ingresosEfectivo -
+            egresosEfectivo;
+
         setState(() {
-          _cajaActual = caja;
+          _cajaActual = Caja(
+            id: caja.id,
+            fechaApertura: caja.fechaApertura,
+            montoApertura: caja.montoApertura,
+            fechaCierre: caja.fechaCierre,
+            montoCierre: caja.montoCierre,
+            totalVentas: caja.totalVentas,
+            totalEfectivo: totalEfectivoCalculado,
+            ingresos: caja.ingresos,
+            egresos: caja.egresos,
+            diferencia: caja.diferencia,
+            estado: caja.estado,
+          );
           _movimientos = movimientos;
           _totalTarjeta = tarjeta;
           _totalTransferencia = transferencia;
           _totalEfectivoVentas = efectivoVentas;
+
+          _totalIngresosEfectivo = ingresosEfectivo;
+          _totalIngresosTarjeta = ingresosTarjeta;
+          _totalIngresosTransferencia = ingresosTransferencia;
+
+          _totalEgresosEfectivo = egresosEfectivo;
+          _totalEgresosTarjeta = egresosTarjeta;
+          _totalEgresosTransferencia = egresosTransferencia;
+
           _isLoading = false;
         });
       } else {
@@ -86,6 +148,15 @@ class _CajaScreenState extends State<CajaScreen>
           _totalTarjeta = 0.0;
           _totalTransferencia = 0.0;
           _totalEfectivoVentas = 0.0;
+
+          _totalIngresosEfectivo = 0.0;
+          _totalIngresosTarjeta = 0.0;
+          _totalIngresosTransferencia = 0.0;
+
+          _totalEgresosEfectivo = 0.0;
+          _totalEgresosTarjeta = 0.0;
+          _totalEgresosTransferencia = 0.0;
+
           _isLoading = false;
         });
       }
@@ -1704,7 +1775,13 @@ class _CajaScreenState extends State<CajaScreen>
           Colors.teal,
           onInfoPressed: () => _showCalculationDetails(
             title: 'Ingresos de Caja',
-            formula: 'Suma de todos los movimientos registrados como Ingreso',
+            formula:
+                'Ingresos Efectivo + Ingresos Tarjeta + Ingresos Transferencia',
+            breakdown: {
+              'Ingresos Efectivo': _totalIngresosEfectivo,
+              'Ingresos Tarjeta': _totalIngresosTarjeta,
+              'Ingresos Transferencia': _totalIngresosTransferencia,
+            },
             movimientos: _movimientos
                 .where((m) => m.tipo == 'Ingreso')
                 .toList(),
@@ -1716,22 +1793,32 @@ class _CajaScreenState extends State<CajaScreen>
           Colors.red,
           onInfoPressed: () => _showCalculationDetails(
             title: 'Egresos de Caja',
-            formula: 'Suma de todos los movimientos registrados como Egreso',
+            formula:
+                'Egresos Efectivo + Egresos Tarjeta + Egresos Transferencia',
+            breakdown: {
+              'Egresos Efectivo': _totalEgresosEfectivo,
+              'Egresos Tarjeta': _totalEgresosTarjeta,
+              'Egresos Transferencia': _totalEgresosTransferencia,
+            },
             movimientos: _movimientos.where((m) => m.tipo == 'Egreso').toList(),
           ),
         ),
         _buildSummaryCard(
           'Efectivo en Caja',
-          _cajaActual!.totalEfectivo,
+          _cajaActual!.montoApertura +
+              _totalEfectivoVentas +
+              _totalIngresosEfectivo -
+              _totalEgresosEfectivo,
           Colors.green.shade700,
           onInfoPressed: () => _showCalculationDetails(
             title: 'Efectivo en Caja',
-            formula: 'Monto Inicial + Ventas Efectivo + Ingresos - Egresos',
+            formula:
+                'Monto Inicial + Ventas Efectivo + Ingresos Efectivo - Egresos Efectivo',
             breakdown: {
               'Monto Inicial': _cajaActual!.montoApertura,
               'Ventas Efectivo': _totalEfectivoVentas,
-              'Ingresos': _cajaActual!.ingresos,
-              'Egresos': -_cajaActual!.egresos,
+              'Ingresos Efectivo': _totalIngresosEfectivo,
+              'Egresos Efectivo': -_totalEgresosEfectivo,
             },
           ),
         ),
