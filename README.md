@@ -96,7 +96,10 @@ Este proyecto usa una versión específica de Flutter.
 ```bash
 # Instalar FVM si no lo tienes globalmente
 dart pub global activate fvm
+```
+*Nota: Asegúrate de tener el directorio de binarios de Dart en tu PATH (ej. `%USERPROFILE%\AppData\Local\Pub\Cache\bin`).*
 
+```bash
 # Instalar la versión configurada en .fvmrc
 fvm install
 fvm use
