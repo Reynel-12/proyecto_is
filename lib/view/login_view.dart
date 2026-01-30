@@ -7,6 +7,7 @@ import 'package:proyecto_is/controller/repository_user.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/view/principal.dart';
+import 'package:proyecto_is/view/nuevo_usuario.dart';
 import 'package:proyecto_is/view/reset_password.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -31,6 +32,34 @@ class _LoginState extends State<Login> {
     final bytes = utf8.encode(password);
     final digest = sha256.convert(bytes);
     return digest.toString();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFirstRun();
+    });
+  }
+
+  Future<void> _checkFirstRun() async {
+    final hasUsers = await repositoryUser.hasUsers();
+    if (!hasUsers) {
+      if (!mounted) return;
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => NuevoUsuario(isFirstRun: true)),
+      );
+
+      if (result == true) {
+        if (!mounted) return;
+        _mostrarMensaje(
+          "Configuración completada",
+          "Usuario administrador creado exitosamente. Inicie sesión.",
+          ContentType.success,
+        );
+      }
+    }
   }
 
   Future<void> _login() async {
@@ -88,6 +117,7 @@ class _LoginState extends State<Login> {
           ContentType.warning,
         );
       }
+      if (!mounted) return;
       setState(() {
         _isProcessing = false;
       });
@@ -96,6 +126,7 @@ class _LoginState extends State<Login> {
         errorMessage = e.toString();
       });
       _mostrarMensaje("Atención", errorMessage!, ContentType.failure);
+      if (!mounted) return;
       setState(() {
         _isProcessing = false;
       });
@@ -115,6 +146,7 @@ class _LoginState extends State<Login> {
       ),
     );
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(snackBar);

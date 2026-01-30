@@ -362,7 +362,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       dialogType: DialogType.warning,
       animType: AnimType.scale,
       title: 'Atención',
-      desc: '¿Está seguro que desea eliminar este producto?',
+      desc: '¿Está seguro que desea eliminar este usuario?',
       btnCancelText: 'No, cancelar',
       btnOkText: 'Si, eliminar',
       btnOkOnPress: () {

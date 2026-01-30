@@ -33,7 +33,10 @@ class NuevoUsuario extends StatefulWidget {
     this.estado = 'N/A',
     this.fechaCreacion = 'N/A',
     this.fechaActualizacion = 'N/A',
+    this.isFirstRun = false,
   });
+
+  final bool isFirstRun;
 
   @override
   State<NuevoUsuario> createState() => _NuevoUsuarioState();
@@ -73,6 +76,10 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
     super.initState();
     if (widget.isEdit) {
       _obtenerInformacion();
+    }
+    if (widget.isFirstRun) {
+      selectedTipo = 'Administrador';
+      selectedEstado = 'Activo';
     }
   }
 
@@ -234,7 +241,9 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                 ),
               )
             : Text(
-                'Crear usuario',
+                widget.isFirstRun
+                    ? 'Configurar Administrador'
+                    : 'Crear usuario',
                 style: TextStyle(
                   color: Provider.of<TemaProveedor>(context).esModoOscuro
                       ? Colors.white
@@ -297,7 +306,11 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      widget.isEdit ? 'Actualizar usuario' : 'Nuevo usuario',
+                      widget.isEdit
+                          ? 'Actualizar usuario'
+                          : (widget.isFirstRun
+                                ? 'Crear Administrador'
+                                : 'Nuevo usuario'),
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -311,7 +324,9 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                     Text(
                       widget.isEdit
                           ? 'Modifica los datos del usuario según sea necesario.'
-                          : 'Completa el formulario para agregar un nuevo usuario',
+                          : (widget.isFirstRun
+                                ? 'Configure la cuenta de administrador principal para el sistema.'
+                                : 'Completa el formulario para agregar un nuevo usuario'),
                       style: TextStyle(
                         fontSize: 16,
                         color: Provider.of<TemaProveedor>(context).esModoOscuro
@@ -391,6 +406,13 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                       ? Container()
                       : _buildTextField(_correo, 'Correo', isEmail: true),
                   widget.isEdit ? Container() : SizedBox(height: fieldSpacing),
+                  // widget.isEdit
+                  //     ? Container()
+                  //     : _buildTextField(
+                  //         _password,
+                  //         'Contraseña',
+                  //         isPassword: true,
+                  //       ),
                   widget.isEdit
                       ? Container()
                       : _buildTextField(
@@ -399,41 +421,45 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                           isPassword: true,
                         ),
                   widget.isEdit ? Container() : SizedBox(height: fieldSpacing),
-                  _buildDropdown(
-                    value: selectedTipo,
-                    items: tipo,
-                    label: 'Tipo',
-                    icon: Icons.person,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedTipo = value;
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Por favor, seleccione un tipo';
-                      }
-                      return null;
-                    },
-                  ),
+                  widget.isFirstRun
+                      ? _buildReadOnlyField('Tipo', 'Administrador')
+                      : _buildDropdown(
+                          value: selectedTipo,
+                          items: tipo,
+                          label: 'Tipo',
+                          icon: Icons.person,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedTipo = value;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null) {
+                              return 'Por favor, seleccione un tipo';
+                            }
+                            return null;
+                          },
+                        ),
                   SizedBox(height: fieldSpacing),
-                  _buildDropdown(
-                    value: selectedEstado,
-                    items: estado,
-                    label: 'Estado',
-                    icon: Icons.person,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedEstado = value;
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Por favor, seleccione un estado';
-                      }
-                      return null;
-                    },
-                  ),
+                  widget.isFirstRun
+                      ? _buildReadOnlyField('Estado', 'Activo')
+                      : _buildDropdown(
+                          value: selectedEstado,
+                          items: estado,
+                          label: 'Estado',
+                          icon: Icons.person,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedEstado = value;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null) {
+                              return 'Por favor, seleccione un estado';
+                            }
+                            return null;
+                          },
+                        ),
                 ],
               ),
 
@@ -717,6 +743,14 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
           horizontal: horizontalPadding,
         ),
       ),
+    );
+  }
+
+  Widget _buildReadOnlyField(String label, String value) {
+    return _buildTextField(
+      TextEditingController(text: value),
+      label,
+      isPrefijo: true,
     );
   }
 }

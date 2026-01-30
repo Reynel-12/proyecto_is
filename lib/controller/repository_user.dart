@@ -1,4 +1,5 @@
 import 'package:proyecto_is/controller/database.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/user.dart';
 
@@ -191,6 +192,23 @@ class RepositoryUser {
         error: e,
         stackTrace: st,
       );
+    }
+  }
+
+  Future<bool> hasUsers() async {
+    try {
+      final db = await dbHelper.database;
+      final count = Sqflite.firstIntValue(
+        await db.rawQuery('SELECT COUNT(*) FROM ${DBHelper.usuariosTable}'),
+      );
+      return (count ?? 0) > 0;
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al verificar existencia de usuarios',
+        error: e,
+        stackTrace: st,
+      );
+      return false; // Asumimos false para obligar a verificar o porque no hay conexión
     }
   }
 }
