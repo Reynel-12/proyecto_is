@@ -621,7 +621,7 @@ class _HistorialState extends State<Historial> {
                 SizedBox(height: 4),
                 _buildVentaInfoRow(
                   'Total:',
-                  'L. $total',
+                  'L. ${total.toStringAsFixed(2)}',
                   subtitleFontSize,
                   Icons.attach_money,
                 ),
@@ -659,6 +659,7 @@ class _HistorialState extends State<Historial> {
                   detalle.precio,
                   detalle.isv,
                   detalle.subtotal,
+                  detalle.descuento,
                   subtitleFontSize,
                   iconSize,
                   cardPadding,
@@ -707,6 +708,7 @@ class _HistorialState extends State<Historial> {
                       businessName: venta.razonSocialEmisor,
                       businessAddress: _empresa?.direccion ?? '',
                       businessPhone: _empresa?.telefono ?? '',
+                      businessEmail: _empresa?.correo ?? '',
                       invoiceNumber: numeroFactura,
                       date: fecha,
                       hora: hora,
@@ -718,6 +720,8 @@ class _HistorialState extends State<Historial> {
                               '${detalle.producto} - ${detalle.unidadMedida}',
                           quantity: detalle.cantidad,
                           unitPrice: detalle.precio,
+                          isvPercent: detalle.isv,
+                          discount: detalle.descuento,
                         );
                       }).toList(),
                       total: total,
@@ -809,6 +813,7 @@ class _HistorialState extends State<Historial> {
     double precio,
     double isv,
     double subtotal,
+    double descuento,
     double fontSize,
     double iconSize,
     double padding,
@@ -843,7 +848,7 @@ class _HistorialState extends State<Historial> {
             ),
           ),
           Text(
-            'Precio: L. $precio',
+            'Precio: L. ${precio.toStringAsFixed(2)}',
             style: TextStyle(
               color: Provider.of<TemaProveedor>(context).esModoOscuro
                   ? Color.fromRGBO(220, 220, 220, 1)
@@ -852,7 +857,7 @@ class _HistorialState extends State<Historial> {
             ),
           ),
           Text(
-            'ISV: L. $isv',
+            'ISV: $isv%',
             style: TextStyle(
               color: Provider.of<TemaProveedor>(context).esModoOscuro
                   ? Color.fromRGBO(220, 220, 220, 1)
@@ -861,7 +866,16 @@ class _HistorialState extends State<Historial> {
             ),
           ),
           Text(
-            'SubTotal: L. ${(subtotal + isv)}',
+            'Descuento: L. ${descuento.toStringAsFixed(2)}',
+            style: TextStyle(
+              color: Provider.of<TemaProveedor>(context).esModoOscuro
+                  ? Color.fromRGBO(220, 220, 220, 1)
+                  : Color.fromRGBO(60, 60, 60, 1),
+              fontSize: fontSize,
+            ),
+          ),
+          Text(
+            'SubTotal: L. ${(subtotal.toStringAsFixed(2))}',
             style: TextStyle(
               color: Provider.of<TemaProveedor>(context).esModoOscuro
                   ? Color.fromRGBO(220, 220, 220, 1)

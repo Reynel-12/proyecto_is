@@ -434,7 +434,7 @@ class _MiFABState extends State<MiFAB> {
                                                     ),
                                                   ),
                                                   subtitle: Text(
-                                                    '${producto.unidadMedida}\nCódigo: ${producto.id}\nPrecio: ${producto.precio.toStringAsFixed(2)}\nInventario: ${producto.stock.toString()}',
+                                                    '${producto.unidadMedida}\nCódigo: ${producto.id}\nPrecio: ${producto.precioVenta.toStringAsFixed(2)}\nInventario: ${producto.stock.toString()}',
                                                     style: TextStyle(
                                                       color:
                                                           Provider.of<
@@ -744,7 +744,7 @@ class _MiFABState extends State<MiFAB> {
                                                     ),
                                                   ),
                                                   subtitle: Text(
-                                                    '${producto.unidadMedida}\nPrecio: ${producto.precio.toStringAsFixed(2)}\nInventario: ${producto.stock.toString()}',
+                                                    '${producto.unidadMedida}\nPrecio: ${producto.precioVenta.toStringAsFixed(2)}\nInventario: ${producto.stock.toString()}',
                                                     style: TextStyle(
                                                       color:
                                                           Provider.of<
@@ -979,6 +979,8 @@ class _MiFABState extends State<MiFAB> {
                                         costo: 0,
                                         cantidad: 1,
                                         estado: 'Activo',
+                                        isv: 0,
+                                        precioVenta: 0,
                                       ),
                                     );
                                     Navigator.of(context).pop();

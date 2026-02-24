@@ -2,15 +2,25 @@ import 'package:proyecto_is/controller/database.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/caja.dart';
 import 'package:proyecto_is/model/movimiento_caja.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:proyecto_is/controller/repository_audit.dart';
 
 class CajaRepository {
   final dbHelper = DBHelper();
+  final RepositoryAudit _auditRepo = RepositoryAudit();
 
   Future<int> abrirCaja(double montoInicial) async {
     final logger = AppLogger.instance;
+    final prefs = await SharedPreferences.getInstance();
     try {
       final db = await dbHelper.database;
+      String? fullname = prefs.getString('user_fullname');
+      if (fullname == null) {
+        return -1;
+      }
       final caja = Caja(
+        cajeroAbre: fullname,
+        cajeroCierra: fullname,
         fechaApertura: DateTime.now().toIso8601String(),
         montoApertura: montoInicial,
         totalEfectivo: montoInicial,
@@ -51,8 +61,15 @@ class CajaRepository {
     final logger = AppLogger.instance;
     try {
       final db = await dbHelper.database;
+      final prefs = await SharedPreferences.getInstance();
+      String? fullname = prefs.getString('user_fullname');
+      if (fullname == null) {
+        return -1;
+      }
       final cajaCerrada = Caja(
         id: caja.id,
+        cajeroAbre: caja.cajeroAbre,
+        cajeroCierra: fullname,
         fechaApertura: caja.fechaApertura,
         montoApertura: caja.montoApertura,
         fechaCierre: DateTime.now().toIso8601String(),
@@ -171,6 +188,13 @@ class CajaRepository {
             DBHelper.movimientosCajaTable,
             where: 'id_movimiento = ?',
             whereArgs: [idMovimiento],
+          );
+
+          await _auditRepo.logDelete(
+            tabla: DBHelper.movimientosCajaTable,
+            registroId: idMovimiento.toString(),
+            oldData: mov.toMap(),
+            txn: txn,
           );
 
           // Actualizar caja
@@ -298,6 +322,14 @@ class CajaRepository {
               where: 'id_movimiento = ?',
               whereArgs: [movimiento.id],
             );
+
+            await _auditRepo.logUpdate(
+              tabla: DBHelper.movimientosCajaTable,
+              registroId: movimiento.id.toString(),
+              oldData: movAnterior.toMap(),
+              newData: movimiento.toMap(),
+              txn: txn,
+            );
           }
         }
       });
@@ -385,6 +417,43 @@ class CajaRepository {
         stackTrace: st,
       );
       return [];
+    }
+  }
+
+  Future<Map<String, Map<String, double>>> obtenerDesgloseCaja(
+    int idCaja,
+  ) async {
+    final logger = AppLogger.instance;
+    final Map<String, Map<String, double>> desglose = {
+      'Venta': {'Efectivo': 0.0, 'Tarjeta': 0.0, 'Transferencia': 0.0},
+      'Ingreso': {'Efectivo': 0.0, 'Tarjeta': 0.0, 'Transferencia': 0.0},
+      'Egreso': {'Efectivo': 0.0, 'Tarjeta': 0.0, 'Transferencia': 0.0},
+    };
+
+    try {
+      final db = await dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        DBHelper.movimientosCajaTable,
+        where: 'id_caja = ?',
+        whereArgs: [idCaja],
+      );
+
+      for (var map in maps) {
+        final mov = MovimientoCaja.fromMap(map);
+        if (desglose.containsKey(mov.tipo) &&
+            desglose[mov.tipo]!.containsKey(mov.metodoPago)) {
+          desglose[mov.tipo]![mov.metodoPago] =
+              (desglose[mov.tipo]![mov.metodoPago] ?? 0.0) + mov.monto;
+        }
+      }
+      return desglose;
+    } catch (e, st) {
+      logger.log.e(
+        'Error al obtener desglose de caja',
+        error: e,
+        stackTrace: st,
+      );
+      return desglose;
     }
   }
 }

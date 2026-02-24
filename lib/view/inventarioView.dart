@@ -1,3 +1,5 @@
+import 'package:proyecto_is/controller/repository_empresa.dart';
+import 'package:proyecto_is/view/productoForm.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,7 @@ import 'package:proyecto_is/view/perfilProductoView.dart';
 import 'package:proyecto_is/view/widgets/inventario_vacio.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:provider/provider.dart';
+import 'package:proyecto_is/view/widgets/inventory_pdf_preview.dart';
 import 'dart:io' show Platform;
 
 class Inventario extends StatefulWidget {
@@ -169,7 +172,25 @@ class _InventarioState extends State<Inventario> {
               ),
               actions: [
                 _productosFiltrados.isEmpty
-                    ? Container()
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.add,
+                          color:
+                              Provider.of<TemaProveedor>(context).esModoOscuro
+                              ? Colors.white
+                              : Colors.black,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => Nuevoproducto()),
+                          ).then((value) {
+                            if (value == true) {
+                              cargarDatos();
+                            }
+                          });
+                        },
+                      )
                     : PopupMenuButton(
                         color: Provider.of<TemaProveedor>(context).esModoOscuro
                             ? const Color.fromRGBO(30, 30, 30, 1)
@@ -184,6 +205,32 @@ class _InventarioState extends State<Inventario> {
                           size: isMobile ? 22.0 : 24.0,
                         ),
                         itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'agregar_producto',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.add,
+                                  color:
+                                      Provider.of<TemaProveedor>(
+                                        context,
+                                        listen: false,
+                                      ).esModoOscuro
+                                      ? Colors.white
+                                      : Colors.black,
+                                  // Tamaño responsivo del icono
+                                  size: isMobile ? 20.0 : 22.0,
+                                ),
+                                SizedBox(width: isMobile ? 6.0 : 8.0),
+                                Text(
+                                  'Agregar producto',
+                                  style: TextStyle(
+                                    fontSize: isMobile ? 14.0 : 16.0,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                           PopupMenuItem(
                             value: 'valor_inventario',
                             child: Row(
@@ -210,18 +257,52 @@ class _InventarioState extends State<Inventario> {
                               ],
                             ),
                           ),
+                          PopupMenuItem(
+                            value: 'exportar_pdf',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.picture_as_pdf,
+                                  color:
+                                      Provider.of<TemaProveedor>(
+                                        context,
+                                        listen: false,
+                                      ).esModoOscuro
+                                      ? Colors.white
+                                      : Colors.black,
+                                  size: isMobile ? 20.0 : 22.0,
+                                ),
+                                SizedBox(width: isMobile ? 6.0 : 8.0),
+                                Text(
+                                  'Exportar inventario PDF',
+                                  style: TextStyle(
+                                    fontSize: isMobile ? 14.0 : 16.0,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
-                        onSelected: (value) {
+                        onSelected: (value) async {
                           switch (value) {
+                            case 'exportar_pdf':
+                              final empresaRepo = RepositoryEmpresa();
+                              final empresa = await empresaRepo.getEmpresa();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => InventoryPdfPreview(
+                                    productos: _productosFiltrados,
+                                    empresa: empresa,
+                                  ),
+                                ),
+                              );
+                              break;
                             case 'valor_inventario':
                               String total = '0.0';
 
                               total = _productos
-                                  .map<double>(
-                                    (p) =>
-                                        (p.precio * p.stock) -
-                                        (p.costo * p.stock),
-                                  )
+                                  .map<double>((p) => (p.costo * p.stock))
                                   .reduce((a, b) => a + b)
                                   .toStringAsFixed(2);
                               showDialog(
@@ -330,6 +411,18 @@ class _InventarioState extends State<Inventario> {
                                   );
                                 },
                               );
+                              break;
+                            case 'agregar_producto':
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => Nuevoproducto(),
+                                ),
+                              ).then((value) {
+                                if (value == true) {
+                                  cargarDatos();
+                                }
+                              });
                               break;
                           }
                         },
@@ -486,10 +579,11 @@ class _InventarioState extends State<Inventario> {
           producto.nombre,
           producto.unidadMedida!,
           producto.stock,
-          producto.precio,
+          producto.precioVenta,
           producto.costo,
           producto.proveedorId!,
           producto.estado!,
+          producto.categoriaId!,
           elevation,
         );
       },
@@ -521,10 +615,11 @@ class _InventarioState extends State<Inventario> {
           producto.nombre,
           producto.unidadMedida!,
           producto.stock,
-          producto.precio,
+          producto.precioVenta,
           producto.costo,
           producto.proveedorId!,
           producto.estado!,
+          producto.categoriaId!,
           elevation,
         );
       },
@@ -540,6 +635,7 @@ class _InventarioState extends State<Inventario> {
     double costos,
     int proveedor,
     String estado,
+    int categoria,
     double elevation,
   ) {
     // Obtenemos el tamaño de la pantalla
@@ -575,7 +671,11 @@ class _InventarioState extends State<Inventario> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => PerfilProducto(docID: id, idProveedor: proveedor),
+            builder: (_) => PerfilProducto(
+              docID: id,
+              idProveedor: proveedor,
+              idCategoria: categoria,
+            ),
           ),
         ).then((value) {
           if (value == true) {
@@ -660,7 +760,7 @@ class _InventarioState extends State<Inventario> {
                           ),
                           SizedBox(width: isMobile ? 4.0 : 6.0),
                           Text(
-                            'Precio: L. $precio',
+                            'Precio: L. ${precio.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontSize: infoFontSize,
                               fontWeight: FontWeight.w500,
@@ -688,7 +788,7 @@ class _InventarioState extends State<Inventario> {
                           ),
                           SizedBox(width: isMobile ? 4.0 : 6.0),
                           Text(
-                            'Costo: L. $costos',
+                            'Costo: L. ${costos.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontSize: infoFontSize,
                               fontWeight: FontWeight.w500,

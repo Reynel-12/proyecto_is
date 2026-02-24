@@ -1,57 +1,57 @@
+import 'package:proyecto_is/controller/repository_categoria.dart';
+import 'package:proyecto_is/model/categorias.dart';
+import 'package:proyecto_is/view/categorias_form.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/repository_producto.dart';
-import 'package:proyecto_is/controller/repository_proveedor.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/producto.dart';
-import 'package:proyecto_is/model/proveedor.dart';
-import 'package:proyecto_is/view/proveedorForm.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:proyecto_is/view/widgets/inventario_vacio.dart';
 
-class ProveedorDetails extends StatefulWidget {
-  final Proveedor proveedor;
+class CategoriaDetails extends StatefulWidget {
+  final Categorias categoria;
 
-  const ProveedorDetails({super.key, required this.proveedor});
+  const CategoriaDetails({super.key, required this.categoria});
 
   @override
-  State<ProveedorDetails> createState() => _ProveedorDetailsState();
+  State<CategoriaDetails> createState() => _CategoriaDetailsState();
 }
 
-class _ProveedorDetailsState extends State<ProveedorDetails> {
+class _CategoriaDetailsState extends State<CategoriaDetails> {
   final _productoRepository = ProductoRepository();
-  final _proveedorRepository = ProveedorRepository();
+  final _categoriaRepository = RepositoryCategoria();
   final AppLogger _logger = AppLogger.instance;
   List<Producto> _productos = [];
   bool _isLoading = true;
-  late Proveedor _currentProveedor;
+  late Categorias _currentCategoria;
 
   @override
   void initState() {
     super.initState();
-    _currentProveedor = widget.proveedor;
+    _currentCategoria = widget.categoria;
     _loadData();
   }
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final productos = await _productoRepository.getProductosByProveedor(
-        _currentProveedor.id!,
+      final productos = await _productoRepository.getProductosByCategoria(
+        _currentCategoria.idCategoria!,
       );
       // Refresh provider data in case it was edited
-      final updatedProveedorList = await _proveedorRepository.getProveedorById(
-        _currentProveedor.id!,
+      final updatedProveedorList = await _categoriaRepository.getCategoriaById(
+        _currentCategoria.idCategoria!,
       );
 
       if (mounted) {
         setState(() {
           _productos = productos;
           if (updatedProveedorList.isNotEmpty) {
-            _currentProveedor = updatedProveedorList.first;
+            _currentCategoria = updatedProveedorList.first;
           }
           _isLoading = false;
         });
@@ -71,16 +71,17 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ProveedorForm(
+        builder: (context) => NuevaCategoria(
           isEdit: true,
-          id: _currentProveedor.id,
-          nombre: _currentProveedor.nombre,
-          direccion: _currentProveedor.direccion ?? '',
-          telefono: _currentProveedor.telefono ?? '',
-          correo: _currentProveedor.correo ?? '',
-          estado: _currentProveedor.estado ?? 'Activo',
-          fechaRegistro: _currentProveedor.fechaRegistro ?? '',
-          fechaActualizacion: _currentProveedor.fechaActualizacion ?? '',
+          isEditNombre: true,
+          isEditDescripcion: true,
+          isEditEstado: true,
+          codigo: _currentCategoria.idCategoria!,
+          nombre: _currentCategoria.nombre!,
+          descripcion: _currentCategoria.descripcion!,
+          estado: _currentCategoria.estado!,
+          fechaCreacion: _currentCategoria.fechaCreacion!,
+          fechaActualizacion: _currentCategoria.fechaActualizacion!,
         ),
       ),
     ).then((value) {
@@ -105,26 +106,28 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
       context: context,
       dialogType: DialogType.warning,
       animType: AnimType.scale,
-      title: 'Eliminar proveedor',
+      title: 'Eliminar categoria',
       desc:
-          '¿Está seguro que desea eliminar a ${_currentProveedor.nombre}? Esta acción no se puede deshacer.',
+          '¿Está seguro que desea eliminar a ${_currentCategoria.nombre}? Esta acción no se puede deshacer.',
       btnCancelText: 'No, cancelar',
       btnOkText: 'Sí, eliminar',
       btnCancelOnPress: () {},
       btnOkOnPress: () async {
         try {
-          await _proveedorRepository.deleteProveedor(_currentProveedor.id!);
+          await _categoriaRepository.deleteCategoria(
+            _currentCategoria.idCategoria!,
+          );
           if (mounted) {
             Navigator.pop(context, true); // Return true to refresh list
           }
         } catch (e, stackTrace) {
           _logger.log.e(
-            'Error al eliminar proveedor',
+            'Error al eliminar categoria',
             error: e,
             stackTrace: stackTrace,
           );
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al eliminar proveedor: $e')),
+            SnackBar(content: Text('Error al eliminar categoria: $e')),
           );
         }
       },
@@ -172,7 +175,7 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
           : const Color.fromRGBO(244, 243, 243, 1),
       appBar: AppBar(
         title: Text(
-          'Detalles del proveedor',
+          'Detalles de la categoria',
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
@@ -208,11 +211,11 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
                     if (value == 'delete') _confirmDelete();
                   },
                   itemBuilder: (context) => [
-                    _buildPopupMenuItem('edit', Icons.edit, 'Editar proveedor'),
+                    _buildPopupMenuItem('edit', Icons.edit, 'Editar categoria'),
                     _buildPopupMenuItem(
                       'delete',
                       Icons.delete,
-                      'Eliminar proveedor',
+                      'Eliminar categoria',
                     ),
                   ],
                 ),
@@ -299,7 +302,7 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
             radius: 50,
             backgroundColor: Colors.blueAccent,
             child: Text(
-              _currentProveedor.nombre.substring(0, 1).toUpperCase(),
+              _currentCategoria.nombre!.substring(0, 1).toUpperCase(),
               style: const TextStyle(
                 fontSize: 40,
                 color: Colors.white,
@@ -309,7 +312,7 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
           ),
           const SizedBox(height: 16),
           Text(
-            _currentProveedor.nombre,
+            _currentCategoria.nombre!,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -321,15 +324,15 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _currentProveedor.estado == 'Activo'
+              color: _currentCategoria.estado == 'Activo'
                   ? Colors.green.withOpacity(0.2)
                   : Colors.red.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              _currentProveedor.estado ?? 'Desconocido',
+              _currentCategoria.estado ?? 'Desconocido',
               style: TextStyle(
-                color: _currentProveedor.estado == 'Activo'
+                color: _currentCategoria.estado == 'Activo'
                     ? Colors.green
                     : Colors.red,
                 fontWeight: FontWeight.bold,
@@ -351,23 +354,9 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
         child: Column(
           children: [
             _buildInfoRow(
-              Icons.location_on,
-              'Dirección',
-              _currentProveedor.direccion ?? 'No registrada',
-              isDark,
-            ),
-            const Divider(),
-            _buildInfoRow(
-              Icons.phone,
-              'Teléfono',
-              _currentProveedor.telefono ?? 'No registrado',
-              isDark,
-            ),
-            const Divider(),
-            _buildInfoRow(
-              Icons.info,
-              'Correo / Información',
-              _currentProveedor.correo ?? 'No registrado',
+              Icons.description,
+              'Descripción',
+              _currentCategoria.descripcion ?? 'No registrada',
               isDark,
             ),
             const Divider(),
@@ -376,7 +365,7 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
               'Fecha de registro',
               DateFormat('dd/MM/yyyy HH:mm:ss').format(
                 DateTime.parse(
-                  _currentProveedor.fechaRegistro ??
+                  _currentCategoria.fechaCreacion ??
                       DateTime.now().toIso8601String(),
                 ),
               ),
@@ -388,7 +377,7 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
               'Fecha de actualización',
               DateFormat('dd/MM/yyyy HH:mm:ss').format(
                 DateTime.parse(
-                  _currentProveedor.fechaActualizacion ??
+                  _currentCategoria.fechaActualizacion ??
                       DateTime.now().toIso8601String(),
                 ),
               ),

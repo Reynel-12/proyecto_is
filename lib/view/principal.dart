@@ -1,3 +1,5 @@
+import 'package:proyecto_is/view/categorias_view.dart';
+import 'package:proyecto_is/view/audit_log_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proyecto_is/model/preferences.dart';
@@ -7,11 +9,13 @@ import 'package:proyecto_is/view/dashBoardCard.dart';
 import 'package:proyecto_is/view/historialView.dart';
 import 'package:proyecto_is/view/inventarioView.dart';
 import 'package:proyecto_is/view/login_view.dart';
-import 'package:proyecto_is/view/productoForm.dart';
 import 'package:proyecto_is/view/proveedoresView.dart';
 import 'package:proyecto_is/view/usuarios_view.dart';
 import 'package:proyecto_is/view/ventasView.dart';
 import 'package:proyecto_is/view/configuracion_sar_view.dart';
+import 'package:proyecto_is/view/widgets/notification_banner.dart';
+import 'package:proyecto_is/view/estadisticas_view.dart';
+import 'package:proyecto_is/view/devoluciones_view.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -28,6 +32,12 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     obtenerTipo();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<NotificationProvider>(
+        context,
+        listen: false,
+      ).loadNotifications();
+    });
   }
 
   String tipo = '';
@@ -90,6 +100,22 @@ class _MyHomePageState extends State<MyHomePage> {
           MaterialPageRoute(builder: (_) => const Historial()),
         ),
       ),
+      DashboardCardData(
+        icon: Icons.assignment_return,
+        title: 'Devoluciones',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const DevolucionesView()),
+        ),
+      ),
+      DashboardCardData(
+        icon: Icons.bar_chart,
+        title: 'Estadísticas',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const EstadisticasView()),
+        ),
+      ),
       if (isAdmin)
         DashboardCardData(
           icon: Icons.inventory,
@@ -99,15 +125,15 @@ class _MyHomePageState extends State<MyHomePage> {
             MaterialPageRoute(builder: (_) => const Inventario()),
           ),
         ),
-      if (isAdmin)
-        DashboardCardData(
-          icon: Icons.production_quantity_limits,
-          title: 'Nuevo producto',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => Nuevoproducto()),
-          ),
-        ),
+      // if (isAdmin)
+      //   DashboardCardData(
+      //     icon: Icons.production_quantity_limits,
+      //     title: 'Nuevo producto',
+      //     onTap: () => Navigator.push(
+      //       context,
+      //       MaterialPageRoute(builder: (_) => Nuevoproducto()),
+      //     ),
+      //   ),
       if (isAdmin)
         DashboardCardData(
           icon: Icons.shopping_bag,
@@ -124,6 +150,24 @@ class _MyHomePageState extends State<MyHomePage> {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const ProveedoresView()),
+          ),
+        ),
+      if (isAdmin)
+        DashboardCardData(
+          icon: Icons.category,
+          title: 'Categorias',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CategoriasView()),
+          ),
+        ),
+      if (isAdmin)
+        DashboardCardData(
+          icon: Icons.security,
+          title: 'Auditoría',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AuditLogScreen()),
           ),
         ),
       if (isAdmin)
@@ -322,7 +366,12 @@ class _MyHomePageState extends State<MyHomePage> {
         color: Provider.of<TemaProveedor>(context).esModoOscuro
             ? Colors.black
             : Color.fromRGBO(244, 243, 243, 1),
-        child: DashboardGrid(cards: cards),
+        child: Column(
+          children: [
+            const NotificationBanner(),
+            Expanded(child: DashboardGrid(cards: cards)),
+          ],
+        ),
       ),
     );
   }

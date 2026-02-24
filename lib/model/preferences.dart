@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:proyecto_is/controller/notification_service.dart';
+import 'package:proyecto_is/model/notifications.dart';
 
 class PreferencesService {
   static const String _keyTemaOscuro = "es_tema_oscuro";
@@ -80,4 +82,54 @@ class MisTemas {
       bodyMedium: TextStyle(color: Colors.white),
     ),
   );
+}
+
+class NotificationProvider extends ChangeNotifier {
+  List<NotificationItem> _notifications = [];
+  final NotificationService _notificationService = NotificationService();
+  Set<String> _dismissedProductIds = {};
+
+  List<NotificationItem> get notifications => _notifications;
+
+  NotificationProvider() {
+    _loadDismissedIds();
+  }
+
+  Future<void> _loadDismissedIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String>? dismissed = prefs.getStringList('dismissed_notifications');
+    if (dismissed != null) {
+      _dismissedProductIds = dismissed.toSet();
+    }
+  }
+
+  Future<void> _saveDismissedIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('dismissed_notifications', _dismissedProductIds.toList());
+  }
+
+  Future<void> loadNotifications() async {
+    _notifications = await _notificationService.getLowStockNotifications(_dismissedProductIds);
+    notifyListeners();
+  }
+
+  void dismissNotification(String productId) {
+    _dismissedProductIds.add(productId);
+    _saveDismissedIds();
+    loadNotifications(); // Recargar para filtrar
+  }
+
+  void dismissAllNotifications() {
+    for (var notification in _notifications) {
+      // Extraer productId del message, asumiendo formato "El producto \"nombre\" tiene stock bajo..."
+      final RegExp regExp = RegExp(r'El producto "([^"]+)"');
+      final match = regExp.firstMatch(notification.message);
+      if (match != null) {
+        final productId = notification.id.replaceFirst('low_stock_', '');
+        _dismissedProductIds.add(productId);
+      }
+    }
+    _saveDismissedIds();
+    loadNotifications();
+  }
 }

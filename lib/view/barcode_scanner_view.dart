@@ -29,9 +29,16 @@ class _BarcodeScannerViewState extends State<BarcodeScannerView> {
 
   @override
   Widget build(BuildContext context) {
+    // Obtenemos el tamaño de la pantalla
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+
+    // Ajustamos tamaños según el dispositivo
+    final double titleFontSize = isMobile ? 18.0 : (isTablet ? 20.0 : 22.0);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escáner Rápido'),
+        title: Text('Escáner', style: TextStyle(fontSize: titleFontSize)),
         actions: [
           // Control para el Flash (linterna)
           IconButton(

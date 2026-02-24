@@ -242,7 +242,7 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
               )
             : Text(
                 widget.isFirstRun
-                    ? 'Configurar Administrador'
+                    ? 'Configurar administrador'
                     : 'Crear usuario',
                 style: TextStyle(
                   color: Provider.of<TemaProveedor>(context).esModoOscuro
@@ -309,7 +309,7 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                       widget.isEdit
                           ? 'Actualizar usuario'
                           : (widget.isFirstRun
-                                ? 'Crear Administrador'
+                                ? 'Crear administrador'
                                 : 'Nuevo usuario'),
                       style: TextStyle(
                         fontSize: 28,
@@ -399,7 +399,7 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                   SizedBox(height: fieldSpacing),
                   _buildTextField(_apellido, 'Apellido'),
                   SizedBox(height: fieldSpacing),
-                  _buildTextField(_telefono, 'Teléfono', isNumber: true),
+                  _buildTextField(_telefono, 'Teléfono', isTelefono: true),
                   widget.isEdit ? SizedBox(height: fieldSpacing) : Container(),
                   widget.isEdit ? Container() : SizedBox(height: fieldSpacing),
                   widget.isEdit
@@ -528,6 +528,7 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
     bool isEmail = false,
     bool isPassword = false,
     bool isPrefijo = false,
+    bool isTelefono = false,
   }) {
     // Obtenemos el tamaño de la pantalla
     final screenSize = MediaQuery.of(context).size;
@@ -554,7 +555,7 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
           ? TextInputType.number
           : isEmail
           ? TextInputType.emailAddress
-          : TextInputType.text,
+          : isTelefono ? TextInputType.phone : TextInputType.text,
       inputFormatters: isNumber
           ? <TextInputFormatter>[
               FilteringTextInputFormatter.digitsOnly, // Permite solo dígitos

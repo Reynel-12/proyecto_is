@@ -1,10 +1,12 @@
 import 'package:proyecto_is/controller/database.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/proveedor.dart';
+import 'package:proyecto_is/controller/repository_audit.dart';
 
 class ProveedorRepository {
   final dbHelper = DBHelper();
   final AppLogger _logger = AppLogger.instance;
+  final RepositoryAudit _auditRepo = RepositoryAudit();
 
   Future<int> insertProveedor(Proveedor proveedor) async {
     try {
@@ -50,13 +52,28 @@ class ProveedorRepository {
 
   Future<int> updateProveedor(Proveedor proveedor) async {
     try {
+      if (proveedor.id == null) return -1;
+      final oldProveedorList = await getProveedorById(proveedor.id!);
+      if (oldProveedorList.isEmpty) return -1;
+      final oldProveedor = oldProveedorList.first;
+
       final db = await dbHelper.database;
-      return await db.update(
+      final result = await db.update(
         'proveedores',
         proveedor.toMap(),
         where: 'id_proveedor = ?',
         whereArgs: [proveedor.id],
       );
+
+      if (result > 0) {
+        await _auditRepo.logUpdate(
+          tabla: 'proveedores',
+          registroId: proveedor.id.toString(),
+          oldData: oldProveedor.toMap(),
+          newData: proveedor.toMap(),
+        );
+      }
+      return result;
     } catch (e, st) {
       _logger.log.e('Error al actualizar proveedor', error: e, stackTrace: st);
       return -1;
@@ -65,12 +82,25 @@ class ProveedorRepository {
 
   Future<int> deleteProveedor(int id) async {
     try {
+      final oldProveedorList = await getProveedorById(id);
+      if (oldProveedorList.isEmpty) return -1;
+      final oldProveedor = oldProveedorList.first;
+
       final db = await dbHelper.database;
-      return await db.delete(
+      final result = await db.delete(
         'proveedores',
         where: 'id_proveedor = ?',
         whereArgs: [id],
       );
+
+      if (result > 0) {
+        await _auditRepo.logDelete(
+          tabla: 'proveedores',
+          registroId: id.toString(),
+          oldData: oldProveedor.toMap(),
+        );
+      }
+      return result;
     } catch (e, st) {
       _logger.log.e('Error al eliminar proveedor', error: e, stackTrace: st);
       return -1;

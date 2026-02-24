@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/sar_service.dart';
@@ -216,6 +217,14 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
   Widget build(BuildContext context) {
     final isDark = Provider.of<TemaProveedor>(context).esModoOscuro;
 
+    // Obtenemos el tamaño de la pantalla
+    final screenSize = MediaQuery.of(context).size;
+    final bool isMobile = screenSize.width < 600;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+
+    // Ajustamos tamaños según el dispositivo
+    final double titleFontSize = isMobile ? 18.0 : (isTablet ? 20.0 : 22.0);
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -225,6 +234,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
             style: TextStyle(
               color: isDark ? Colors.white : Colors.black,
               fontWeight: FontWeight.bold,
+              fontSize: titleFontSize,
             ),
           ),
           centerTitle: true,
@@ -283,6 +293,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
                     isDark: isDark,
                     validator: (v) =>
                         v?.isEmpty ?? true ? 'Campo requerido' : null,
+                    isRango: true,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -292,6 +303,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
                     isDark: isDark,
                     validator: (v) =>
                         v?.isEmpty ?? true ? 'Campo requerido' : null,
+                    isRango: true,
                   ),
                   const SizedBox(height: 16),
                   GestureDetector(
@@ -362,13 +374,17 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
                     label: 'RTN',
                     icon: Icons.badge,
                     isDark: isDark,
-                    validator: (v) =>
-                        v?.isEmpty ?? true ? 'Campo requerido' : null,
+                    isNumber: true,
+                    validator: (v) => v?.isEmpty ?? true
+                        ? 'Campo requerido'
+                        : v!.length < 14
+                        ? 'RTN inválido'
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
                     controller: _razonSocialController,
-                    label: 'Razón Social',
+                    label: 'Razón social',
                     icon: Icons.business,
                     isDark: isDark,
                     validator: (v) =>
@@ -377,7 +393,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
                   const SizedBox(height: 16),
                   _buildTextField(
                     controller: _nombreComercialController,
-                    label: 'Nombre Comercial',
+                    label: 'Nombre comercial',
                     icon: Icons.store,
                     isDark: isDark,
                   ),
@@ -394,14 +410,15 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
                     label: 'Teléfono',
                     icon: Icons.phone,
                     isDark: isDark,
-                    isNumber: true,
+                    isPhone: true,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
                     controller: _correoController,
-                    label: 'Correo Electrónico',
+                    label: 'Correo electrónico',
                     icon: Icons.email,
                     isDark: isDark,
+                    isEmail: true,
                     validator: (v) {
                       if (v != null && v.isNotEmpty) {
                         if (!v.contains('@')) return 'Correo inválido';
@@ -468,11 +485,27 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
     required IconData icon,
     required bool isDark,
     bool isNumber = false,
+    bool isRango = false,
+    bool isPhone = false,
+    bool isEmail = false,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      keyboardType: isNumber
+          ? TextInputType.number
+          : isRango
+          ? TextInputType.number
+          : isPhone
+          ? TextInputType.phone
+          : isEmail
+          ? TextInputType.emailAddress
+          : TextInputType.text,
+      inputFormatters: isNumber
+          ? [FilteringTextInputFormatter.digitsOnly]
+          : isRango
+          ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9-]'))]
+          : null,
       style: TextStyle(color: isDark ? Colors.white : Colors.black),
       validator: validator,
       decoration: InputDecoration(

@@ -145,7 +145,7 @@ class _ProveedorFormState extends State<ProveedorForm> {
       context: context,
       dialogType: DialogType.warning,
       animType: AnimType.scale,
-      title: 'Eliminar Proveedor',
+      title: 'Eliminar proveedor',
       desc: '¿Está seguro que desea eliminar a este proveedor?',
       btnCancelText: 'No, cancelar',
       btnOkText: 'Si, eliminar',
@@ -175,8 +175,8 @@ class _ProveedorFormState extends State<ProveedorForm> {
       },
       dialogBackgroundColor:
           Provider.of<TemaProveedor>(context, listen: false).esModoOscuro
-          ? const Color.fromRGBO(60, 60, 60, 1)
-          : Colors.white,
+          ? Color.fromRGBO(60, 60, 60, 1)
+          : Color.fromRGBO(220, 220, 220, 1),
     ).show();
   }
 
@@ -197,7 +197,7 @@ class _ProveedorFormState extends State<ProveedorForm> {
           : const Color.fromRGBO(244, 243, 243, 1),
       appBar: AppBar(
         title: Text(
-          widget.isEdit ? 'Editar Proveedor' : 'Nuevo Proveedor',
+          widget.isEdit ? 'Editar proveedor' : 'Nuevo proveedor',
           style: TextStyle(
             color: Provider.of<TemaProveedor>(context).esModoOscuro
                 ? Colors.white
@@ -254,8 +254,8 @@ class _ProveedorFormState extends State<ProveedorForm> {
                     const SizedBox(height: 24),
                     Text(
                       widget.isEdit
-                          ? 'Actualizar Proveedor'
-                          : 'Nuevo Proveedor',
+                          ? 'Actualizar proveedor'
+                          : 'Nuevo proveedor',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -329,7 +329,7 @@ class _ProveedorFormState extends State<ProveedorForm> {
           child: Column(
             children: [
               // Nombre
-              _buildTextField(_nombre, 'Nombre del Proveedor'),
+              _buildTextField(_nombre, 'Nombre del proveedor'),
               SizedBox(height: fieldSpacing),
 
               // Dirección
@@ -337,11 +337,11 @@ class _ProveedorFormState extends State<ProveedorForm> {
               SizedBox(height: fieldSpacing),
 
               // Teléfono
-              _buildTextField(_telefono, 'Teléfono', isNumber: true),
+              _buildTextField(_telefono, 'Teléfono', isTelefono: true),
               SizedBox(height: fieldSpacing),
 
               // Correo / Información adicional
-              _buildTextField(_correo, 'Correo / Información'),
+              _buildTextField(_correo, 'Correo / Información', isCorreo: true),
 
               // Estado
               Column(
@@ -427,7 +427,8 @@ class _ProveedorFormState extends State<ProveedorForm> {
   Widget _buildTextField(
     TextEditingController controller,
     String label, {
-    bool isNumber = false,
+    bool isTelefono = false,
+    bool isCorreo = false,
   }) {
     // Obtenemos el tamaño de la pantalla
     final screenSize = MediaQuery.of(context).size;
@@ -443,10 +444,11 @@ class _ProveedorFormState extends State<ProveedorForm> {
 
     return TextFormField(
       controller: controller,
-      keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
-      inputFormatters: isNumber
-          ? <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]
-          : null,
+      keyboardType: isTelefono
+          ? TextInputType.phone
+          : isCorreo
+          ? TextInputType.emailAddress
+          : TextInputType.text,
       style: TextStyle(
         fontSize: inputFontSize,
         color: Provider.of<TemaProveedor>(context).esModoOscuro

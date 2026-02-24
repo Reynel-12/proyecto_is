@@ -132,19 +132,23 @@ class VentaCompleta {
 }
 
 class DetalleItem {
+  final String id;
   final String producto;
   final String unidadMedida;
   final int cantidad;
   final double precio;
   final double isv;
   final double subtotal;
+  final double descuento;
 
   DetalleItem({
+    required this.id,
     required this.producto,
     required this.unidadMedida,
     required this.cantidad,
     required this.precio,
     required this.isv,
     required this.subtotal,
+    required this.descuento,
   });
 }

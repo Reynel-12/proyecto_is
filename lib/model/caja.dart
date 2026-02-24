@@ -1,5 +1,7 @@
 class Caja {
   final int? id;
+  final String cajeroAbre;
+  final String cajeroCierra;
   final String fechaApertura;
   final double montoApertura;
   final String? fechaCierre;
@@ -13,6 +15,8 @@ class Caja {
 
   Caja({
     this.id,
+    required this.cajeroAbre,
+    required this.cajeroCierra,
     required this.fechaApertura,
     required this.montoApertura,
     this.fechaCierre,
@@ -28,6 +32,8 @@ class Caja {
   Map<String, dynamic> toMap() {
     return {
       'id_caja': id,
+      'cajero_abre': cajeroAbre,
+      'cajero_cierra': cajeroCierra,
       'fecha_apertura': fechaApertura,
       'monto_apertura': montoApertura,
       'fecha_cierre': fechaCierre,
@@ -44,6 +50,8 @@ class Caja {
   factory Caja.fromMap(Map<String, dynamic> map) {
     return Caja(
       id: map['id_caja'],
+      cajeroAbre: map['cajero_abre'],
+      cajeroCierra: map['cajero_cierra'],
       fechaApertura: map['fecha_apertura'],
       montoApertura: map['monto_apertura'],
       fechaCierre: map['fecha_cierre'],
@@ -54,6 +62,38 @@ class Caja {
       egresos: map['egresos'] ?? 0.0,
       diferencia: map['diferencia'],
       estado: map['estado'],
+    );
+  }
+
+  Caja copyWith({
+    int? id,
+    String? cajeroAbre,
+    String? cajeroCierra,
+    String? fechaApertura,
+    double? montoApertura,
+    String? fechaCierre,
+    double? montoCierre,
+    double? totalVentas,
+    double? totalEfectivo,
+    double? ingresos,
+    double? egresos,
+    double? diferencia,
+    String? estado,
+  }) {
+    return Caja(
+      id: id ?? this.id,
+      cajeroAbre: cajeroAbre ?? this.cajeroAbre,
+      cajeroCierra: cajeroCierra ?? this.cajeroCierra,
+      fechaApertura: fechaApertura ?? this.fechaApertura,
+      montoApertura: montoApertura ?? this.montoApertura,
+      fechaCierre: fechaCierre ?? this.fechaCierre,
+      montoCierre: montoCierre ?? this.montoCierre,
+      totalVentas: totalVentas ?? this.totalVentas,
+      totalEfectivo: totalEfectivo ?? this.totalEfectivo,
+      ingresos: ingresos ?? this.ingresos,
+      egresos: egresos ?? this.egresos,
+      diferencia: diferencia ?? this.diferencia,
+      estado: estado ?? this.estado,
     );
   }
 }

@@ -7,6 +7,7 @@ class DetalleVenta {
   final double subtotal;
   final double descuento;
   final String descripcion;
+  final double isv;
 
   DetalleVenta({
     this.id,
@@ -17,6 +18,7 @@ class DetalleVenta {
     required this.subtotal,
     this.descuento = 0.0,
     required this.descripcion,
+    this.isv = 0.0,
   });
 
   // Map → DetalleVenta
@@ -30,6 +32,7 @@ class DetalleVenta {
       subtotal: map['subtotal'],
       descuento: map['descuento'] ?? 0.0,
       descripcion: map['descripcion'],
+      isv: map['isv'] != null ? (map['isv'] as num).toDouble() : 0.0,
     );
   }
 
@@ -44,6 +47,7 @@ class DetalleVenta {
       'subtotal': subtotal,
       'descuento': descuento,
       'descripcion': descripcion,
+      'isv': isv,
     };
   }
 }

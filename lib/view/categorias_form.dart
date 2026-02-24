@@ -1,164 +1,61 @@
 import 'dart:io';
-
 import 'package:proyecto_is/controller/repository_categoria.dart';
 import 'package:proyecto_is/model/categorias.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:proyecto_is/controller/repository_producto.dart';
-import 'package:proyecto_is/controller/repository_proveedor.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
-import 'package:proyecto_is/model/producto.dart';
-import 'package:proyecto_is/model/proveedor.dart';
 import 'package:provider/provider.dart';
-
 import 'package:proyecto_is/view/barcode_scanner_view.dart';
 
 // ignore: must_be_immutable
-class Nuevoproducto extends StatefulWidget {
+class NuevaCategoria extends StatefulWidget {
   bool isEdit;
   bool isEditNombre;
-  bool isEditUnidad;
-  bool isEditPrecio;
-  bool isEditStockMinimo;
-  bool isEditCosto;
-  bool isEditProveedor;
   bool isEditEstado;
-  bool isEditCategoria;
-  bool isEditISV;
-  String codigo;
-  int inventario;
-  int stockMinimo;
+  bool isEditDescripcion;
+  int codigo;
   String nombre;
-  double precio;
-  double costo;
-  String unidadMedida;
-  int stock;
-  int proveedorId;
-  int categoriaId;
+  String descripcion;
   String estado;
-  double isv;
   String fechaCreacion;
   String fechaActualizacion;
-  Nuevoproducto({
+  NuevaCategoria({
     super.key,
     this.isEdit = false,
     this.isEditNombre = false,
-    this.isEditPrecio = false,
-    this.isEditStockMinimo = false,
-    this.isEditUnidad = false,
-    this.isEditCosto = false,
-    this.isEditProveedor = false,
     this.isEditEstado = false,
-    this.isEditCategoria = false,
-    this.isEditISV = false,
-    this.codigo = '',
-    this.inventario = 0,
-    this.stockMinimo = 0,
+    this.isEditDescripcion = false,
+    this.codigo = 0,
     this.nombre = '',
-    this.precio = 0,
-    this.costo = 0,
-    this.unidadMedida = '',
-    this.stock = 0,
-    this.proveedorId = 0,
-    this.categoriaId = 0,
+    this.descripcion = '',
     this.estado = '',
-    this.isv = 0,
     this.fechaCreacion = '',
     this.fechaActualizacion = '',
   });
 
   @override
-  State<Nuevoproducto> createState() => _NuevoproductoState();
+  State<NuevaCategoria> createState() => _NuevaCategoriaState();
 }
 
-class _NuevoproductoState extends State<Nuevoproducto> {
-  final TextEditingController _codigo = TextEditingController();
+class _NuevaCategoriaState extends State<NuevaCategoria> {
+  final TextEditingController _descripcion = TextEditingController();
   final TextEditingController _nombre = TextEditingController();
-  final TextEditingController _tipo = TextEditingController();
-  final TextEditingController _inventario = TextEditingController();
-  final TextEditingController _stockMinimo = TextEditingController();
-  final TextEditingController _precio = TextEditingController();
-  final TextEditingController _costo = TextEditingController();
-  final TextEditingController _isv = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String? selectedProveedor;
-
-  final ProductoRepository _productoRepository = ProductoRepository();
-  final ProveedorRepository _proveedorRepository = ProveedorRepository();
-  final RepositoryCategoria _categoriaRepository = RepositoryCategoria();
   final AppLogger _logger = AppLogger.instance;
 
-  Proveedor? _selectedItem;
-  List<Proveedor> _items = [];
-
-  Categorias? _selectedItemCategoria;
-  List<Categorias> _itemsCategoria = [];
+  final RepositoryCategoria _categoriaRepository = RepositoryCategoria();
 
   List<String> estado = ['Activo', 'Inactivo'];
   String? selectedEstado;
 
-  void cargarProveedores() async {
-    try {
-      final items = await _proveedorRepository.getProveedoresByEstado('Activo');
-      setState(() {
-        _items = items;
-      });
-      if (widget.isEdit) {
-        if (_items.isNotEmpty) {
-          _selectedItem = _items.firstWhere(
-            (item) => item.id == widget.proveedorId,
-            orElse: () => _items.first,
-          );
-        }
-      }
-    } catch (e, stackTrace) {
-      _logger.log.e(
-        'Error al obtener proveedores',
-        error: e,
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  void cargarCategorias() async {
-    try {
-      final items = await _categoriaRepository.getCategoriasByEstado('Activo');
-      setState(() {
-        _itemsCategoria = items;
-      });
-      if (widget.isEdit) {
-        if (_itemsCategoria.isNotEmpty) {
-          _selectedItemCategoria = _itemsCategoria.firstWhere(
-            (item) => item.idCategoria == widget.categoriaId,
-            orElse: () => _itemsCategoria.first,
-          );
-        }
-      }
-    } catch (e, stackTrace) {
-      _logger.log.e(
-        'Error al obtener categorias',
-        error: e,
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
   @override
   void initState() {
     super.initState();
-    cargarProveedores();
-    cargarCategorias();
     if (widget.isEdit) {
-      _codigo.text = widget.codigo;
+      _descripcion.text = widget.descripcion;
       _nombre.text = widget.nombre;
-      _tipo.text = widget.unidadMedida;
-      _inventario.text = widget.inventario.toString();
-      _stockMinimo.text = widget.stockMinimo.toString();
-      _precio.text = widget.precio.toString();
-      _costo.text = widget.costo.toString();
-      _isv.text = widget.isv.toString();
       if (estado.isNotEmpty) {
         selectedEstado = estado.firstWhere(
           (item) => item == widget.estado,
@@ -188,44 +85,30 @@ class _NuevoproductoState extends State<Nuevoproducto> {
       ..showSnackBar(snackBar);
   }
 
-  Future<void> _updateProduct() async {
-    String codigo = _codigo.text;
+  Future<void> _updateCategoria() async {
     String nombre = _nombre.text;
-    int stockMinimo = int.tryParse(_stockMinimo.text) ?? 0;
-    String tipo = _tipo.text;
-    double precio = double.tryParse(_precio.text) ?? 0.0;
-    double costo = double.tryParse(_costo.text) ?? 0.0;
-    double isv = double.tryParse(_isv.text) ?? 0.0;
-    double precioVenta = (precio * isv / 100) + precio;
+    String descripcion = _descripcion.text;
 
     try {
-      final producto = Producto(
-        id: codigo,
+      final categoria = Categorias(
+        idCategoria: widget.codigo,
+        descripcion: descripcion,
         nombre: nombre,
-        precio: precio,
-        costo: costo,
-        unidadMedida: tipo,
-        stock: int.tryParse(_inventario.text) ?? 0,
-        stockMinimo: stockMinimo,
         fechaActualizacion: DateTime.now().toIso8601String(),
         fechaCreacion: widget.fechaCreacion,
-        proveedorId: _selectedItem?.id ?? 0,
-        categoriaId: _selectedItemCategoria?.idCategoria ?? 0,
         estado: selectedEstado,
-        isv: isv,
-        precioVenta: precioVenta,
       );
-      await _productoRepository.updateProducto(producto);
+      await _categoriaRepository.updateCategoria(categoria);
       _mostrarMensaje(
         'Éxito',
-        'Producto actualizado correctamente',
+        'Categoria actualizada correctamente',
         ContentType.success,
       );
       Navigator.pop(context, true);
     } catch (e, stackTrace) {
       _mostrarMensaje('Error', 'Error inesperado', ContentType.failure);
       _logger.log.e(
-        'Error al actualizar el producto',
+        'Error al actualizar la categoria',
         error: e,
         stackTrace: stackTrace,
       );
@@ -233,55 +116,29 @@ class _NuevoproductoState extends State<Nuevoproducto> {
     }
   }
 
-  void agregarProducto() async {
+  void agregarCategoria() async {
     try {
-      String codigo = _codigo.text.trim();
       String nombre = _nombre.text.trim();
-      String tipo = _tipo.text.trim();
-      double precio = double.tryParse(_precio.text) ?? 0;
-      int inventario = int.tryParse(_inventario.text) ?? 0;
-      int stockMinimo = int.tryParse(_stockMinimo.text) ?? 0;
-      double costo = double.tryParse(_costo.text) ?? 0;
+      String descripcion = _descripcion.text.trim();
       String fechaCreacion = DateTime.now().toIso8601String();
-      int proveedorId = _selectedItem?.id ?? 0;
-      int categoriaId = _selectedItemCategoria?.idCategoria ?? 0;
-      double isv = double.tryParse(_isv.text) ?? 0;
-      double precioVenta = (precio * isv / 100) + precio;
-      final producto = Producto(
-        id: codigo,
+      final categoria = Categorias(
         nombre: nombre,
-        precio: precio,
-        costo: costo,
-        unidadMedida: tipo,
-        stock: inventario,
-        stockMinimo: stockMinimo,
+        descripcion: descripcion,
         fechaCreacion: fechaCreacion,
         fechaActualizacion: DateTime.now().toIso8601String(),
-        proveedorId: proveedorId,
-        categoriaId: categoriaId,
         estado: selectedEstado,
-        isv: isv,
-        precioVenta: precioVenta,
       );
-      final result = await _productoRepository.insertProducto(producto);
-      if (result == -1) {
-        _mostrarMensaje(
-          'Error',
-          'Error al agregar el producto',
-          ContentType.failure,
-        );
-        return;
-      }
+      await _categoriaRepository.insertCategoria(categoria);
       _mostrarMensaje(
         'Éxito',
-        'Producto creado correctamente',
+        'Categoria creada correctamente',
         ContentType.success,
       );
       Navigator.pop(context, true);
     } catch (e, stackTrace) {
       _mostrarMensaje('Error', 'Error inesperado', ContentType.failure);
       _logger.log.e(
-        'Error al agregar el producto',
+        'Error al agregar la categoria',
         error: e,
         stackTrace: stackTrace,
       );
@@ -306,7 +163,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
           : const Color.fromRGBO(244, 243, 243, 1),
       appBar: AppBar(
         title: Text(
-          widget.isEdit ? 'Editar producto' : 'Agregar producto',
+          widget.isEdit ? 'Editar categoria' : 'Agregar categoria',
           style: TextStyle(
             color: Provider.of<TemaProveedor>(context).esModoOscuro
                 ? Colors.white
@@ -356,7 +213,9 @@ class _NuevoproductoState extends State<Nuevoproducto> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      widget.isEdit ? 'Actualizar producto' : 'Nuevo producto',
+                      widget.isEdit
+                          ? 'Actualizar categoria'
+                          : 'Nueva categoria',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -369,8 +228,8 @@ class _NuevoproductoState extends State<Nuevoproducto> {
                     const SizedBox(height: 16),
                     Text(
                       widget.isEdit
-                          ? 'Modifica los datos del producto según sea necesario.'
-                          : 'Completa el formulario para agregar un nuevo producto al inventario.',
+                          ? 'Modifica los datos de la categoria según sea necesario.'
+                          : 'Completa el formulario para agregar una nueva categoria.',
                       style: TextStyle(
                         fontSize: 16,
                         color: Provider.of<TemaProveedor>(context).esModoOscuro
@@ -429,10 +288,6 @@ class _NuevoproductoState extends State<Nuevoproducto> {
           key: _formKey,
           child: Column(
             children: [
-              // Código
-              if (!widget.isEdit)
-                _buildTextField(_codigo, 'Código', code: true),
-
               // Nombre
               if ((widget.isEdit && widget.isEditNombre) || !widget.isEdit)
                 Column(
@@ -442,128 +297,15 @@ class _NuevoproductoState extends State<Nuevoproducto> {
                   ],
                 ),
 
-              // Unidad/Tipo
-              if ((widget.isEdit && widget.isEditUnidad) || !widget.isEdit)
-                Column(
-                  children: [
-                    SizedBox(height: fieldSpacing),
-                    _buildTextField(_tipo, widget.isEdit ? 'Unidad' : 'Tipo'),
-                  ],
-                ),
-
-              // Inventario (solo en modo agregar)
-              if (!widget.isEdit)
+              // Descripcion
+              if ((widget.isEdit && widget.isEditDescripcion) || !widget.isEdit)
                 Column(
                   children: [
                     SizedBox(height: fieldSpacing),
                     _buildTextField(
-                      _inventario,
-                      'Stock inicial',
-                      isNumber: true,
-                    ),
-                  ],
-                ),
-
-              // Stock mínimo (solo en modo agregar)
-              if ((widget.isEdit && widget.isEditStockMinimo) || !widget.isEdit)
-                Column(
-                  children: [
-                    SizedBox(height: fieldSpacing),
-                    _buildTextField(
-                      _stockMinimo,
-                      'Stock mínimo',
-                      isNumber: true,
-                    ),
-                  ],
-                ),
-
-              // Precio
-              if ((widget.isEdit && widget.isEditPrecio) || !widget.isEdit)
-                Column(
-                  children: [
-                    SizedBox(height: fieldSpacing),
-                    _buildTextField(_precio, 'Precio', isNumber: true),
-                  ],
-                ),
-
-              // Costo
-              if ((widget.isEdit && widget.isEditCosto) || !widget.isEdit)
-                Column(
-                  children: [
-                    SizedBox(height: fieldSpacing),
-                    _buildTextField(_costo, 'Costo base', isNumber: true),
-                  ],
-                ),
-
-              // ISV
-              if ((widget.isEdit && widget.isEditISV) || !widget.isEdit)
-                Column(
-                  children: [
-                    SizedBox(height: fieldSpacing),
-                    _buildTextField(_isv, 'ISV %', isNumber: true),
-                  ],
-                ),
-
-              // Categoria
-              if ((widget.isEdit && widget.isEditCategoria) || !widget.isEdit)
-                Column(
-                  children: [
-                    SizedBox(height: fieldSpacing),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildDropdownCategorias(
-                            value: _selectedItemCategoria,
-                            items: _itemsCategoria,
-                            label: 'Seleccionar categoria',
-                            icon: Icons.category,
-                            onChanged: (Categorias? newValue) {
-                              setState(() {
-                                _selectedItemCategoria = newValue;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null) {
-                                return 'Por favor selecciona una opción';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        SizedBox(width: isMobile ? 8.0 : 12.0),
-                      ],
-                    ),
-                  ],
-                ),
-
-              // Proveedor
-              if ((widget.isEdit && widget.isEditProveedor) || !widget.isEdit)
-                Column(
-                  children: [
-                    SizedBox(height: fieldSpacing),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildDropdown(
-                            value: _selectedItem,
-                            items: _items,
-                            label: 'Seleccionar proveedor',
-                            icon: Icons.category,
-                            onChanged: (Proveedor? newValue) {
-                              setState(() {
-                                _selectedItem = newValue;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null) {
-                                return 'Por favor selecciona una opción';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        SizedBox(width: isMobile ? 8.0 : 12.0),
-                      ],
+                      _descripcion,
+                      widget.isEdit ? 'Descripción' : 'Descripción',
+                      maxLines: 3,
                     ),
                   ],
                 ),
@@ -605,7 +347,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
-                    widget.isEdit ? _updateProduct() : agregarProducto();
+                    widget.isEdit ? _updateCategoria() : agregarCategoria();
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -660,6 +402,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
     bool isNumber = false,
     bool code = false,
     bool readOnly = false,
+    int maxLines = 1,
   }) {
     // Obtenemos el tamaño de la pantalla
     final screenSize = MediaQuery.of(context).size;
@@ -676,13 +419,12 @@ class _NuevoproductoState extends State<Nuevoproducto> {
 
     return TextFormField(
       controller: controller,
+      maxLines: maxLines,
       readOnly: readOnly,
-      keyboardType: isNumber
-          ? TextInputType.numberWithOptions(decimal: true)
-          : TextInputType.text,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
       inputFormatters: isNumber
           ? <TextInputFormatter>[
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+              FilteringTextInputFormatter.digitsOnly, // Permite solo dígitos
             ]
           : null,
       style: TextStyle(
@@ -755,7 +497,7 @@ class _NuevoproductoState extends State<Nuevoproducto> {
                     );
 
                     if (scannedCode != null && widget.isEdit) {
-                      controller.text = widget.codigo;
+                      controller.text = widget.codigo.toString();
                     } else if (scannedCode == null) {
                       _mostrarMensaje(
                         'Atención',
@@ -778,174 +520,6 @@ class _NuevoproductoState extends State<Nuevoproducto> {
         }
         return null;
       },
-    );
-  }
-
-  Widget _buildDropdown({
-    required Proveedor? value,
-    required List<Proveedor> items,
-    required String label,
-    required IconData icon,
-    required Function(Proveedor?) onChanged,
-    String? Function(Proveedor?)? validator,
-  }) {
-    // Obtenemos el tamaño de la pantalla
-    final screenSize = MediaQuery.of(context).size;
-    final bool isMobile = screenSize.width < 600;
-    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
-    final bool isDesktop = screenSize.width >= 900;
-
-    // Ajustamos tamaños según el dispositivo
-    final double labelFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
-    final double inputFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
-    final double verticalPadding = isMobile ? 15.0 : (isTablet ? 16.0 : 18.0);
-    final double horizontalPadding = isMobile ? 10.0 : (isTablet ? 12.0 : 14.0);
-
-    final temaOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
-
-    return DropdownButtonFormField<Proveedor>(
-      dropdownColor: temaOscuro ? Colors.black : Colors.white,
-      value: value,
-      items: items.map<DropdownMenuItem<Proveedor>>((Proveedor item) {
-        return DropdownMenuItem<Proveedor>(
-          value: item,
-          child: Text(
-            item.nombre, // usamos la propiedad del objeto
-          ),
-        );
-      }).toList(),
-      onChanged: onChanged,
-      validator: validator,
-      style: TextStyle(
-        fontSize: inputFontSize,
-        color: temaOscuro ? Colors.white : Colors.black,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: temaOscuro ? Colors.white : Colors.black,
-          fontSize: labelFontSize,
-        ),
-        filled: true,
-        fillColor: temaOscuro
-            ? const Color.fromRGBO(30, 30, 30, 1)
-            : Colors.white,
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-          borderSide: BorderSide(
-            color: temaOscuro ? Colors.white : Colors.black,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            color: temaOscuro ? Colors.white : Colors.black,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
-        ),
-        errorStyle: TextStyle(
-          color: Colors.redAccent,
-          fontWeight: FontWeight.w500,
-          fontSize: isMobile ? 12.0 : 13.0,
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          vertical: verticalPadding,
-          horizontal: horizontalPadding,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdownCategorias({
-    required Categorias? value,
-    required List<Categorias> items,
-    required String label,
-    required IconData icon,
-    required Function(Categorias?) onChanged,
-    String? Function(Categorias?)? validator,
-  }) {
-    // Obtenemos el tamaño de la pantalla
-    final screenSize = MediaQuery.of(context).size;
-    final bool isMobile = screenSize.width < 600;
-    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
-    final bool isDesktop = screenSize.width >= 900;
-
-    // Ajustamos tamaños según el dispositivo
-    final double labelFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
-    final double inputFontSize = isMobile ? 14.0 : (isTablet ? 15.0 : 16.0);
-    final double verticalPadding = isMobile ? 15.0 : (isTablet ? 16.0 : 18.0);
-    final double horizontalPadding = isMobile ? 10.0 : (isTablet ? 12.0 : 14.0);
-
-    final temaOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
-
-    return DropdownButtonFormField<Categorias>(
-      dropdownColor: temaOscuro ? Colors.black : Colors.white,
-      value: value,
-      items: items.map<DropdownMenuItem<Categorias>>((Categorias item) {
-        return DropdownMenuItem<Categorias>(
-          value: item,
-          child: Text(
-            item.nombre!, // usamos la propiedad del objeto
-          ),
-        );
-      }).toList(),
-      onChanged: onChanged,
-      validator: validator,
-      style: TextStyle(
-        fontSize: inputFontSize,
-        color: temaOscuro ? Colors.white : Colors.black,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: temaOscuro ? Colors.white : Colors.black,
-          fontSize: labelFontSize,
-        ),
-        filled: true,
-        fillColor: temaOscuro
-            ? const Color.fromRGBO(30, 30, 30, 1)
-            : Colors.white,
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-          borderSide: BorderSide(
-            color: temaOscuro ? Colors.white : Colors.black,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            color: temaOscuro ? Colors.white : Colors.black,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
-        ),
-        errorStyle: TextStyle(
-          color: Colors.redAccent,
-          fontWeight: FontWeight.w500,
-          fontSize: isMobile ? 12.0 : 13.0,
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          vertical: verticalPadding,
-          horizontal: horizontalPadding,
-        ),
-      ),
     );
   }
 

@@ -1,3 +1,5 @@
+import 'package:proyecto_is/view/widgets/modal_print_movil.dart';
+import 'package:proyecto_is/view/widgets/discount_dialog.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:diacritic/diacritic.dart';
@@ -112,6 +114,23 @@ class _VentasState extends State<Ventas> {
     } catch (e, st) {
       _logger.log.e('Error al actualizar inventario', error: e, stackTrace: st);
     }
+  }
+
+  // Helper para verificar si el stock es insuficiente
+  bool _isStockInsufficient(Producto producto) {
+    // Calcular cuánto stock ya está siendo usado en el carrito
+    int cantidadEnCarrito = 0;
+    for (var p in _productosSeleccionados) {
+      if (p.id == producto.id) {
+        cantidadEnCarrito += p.cantidad;
+      }
+    }
+
+    // Stock disponible = stock total - cantidad ya en carrito
+    int stockDisponible = producto.stock - cantidadEnCarrito + 1;
+
+    // Insuficiente si: stock es 0 o menor, O si no hay suficiente stock disponible
+    return producto.stock <= 0 || stockDisponible <= 0;
   }
 
   void handleOnAddNewProduct(Producto value) {
@@ -236,21 +255,23 @@ class _VentasState extends State<Ventas> {
                                     style: TextStyle(
                                       fontSize: contentFontSize,
                                       fontWeight: FontWeight.w600,
-                                      color:
-                                          Provider.of<TemaProveedor>(
-                                            context,
-                                          ).esModoOscuro
+                                      color: _isStockInsufficient(producto)
+                                          ? Colors.red
+                                          : Provider.of<TemaProveedor>(
+                                              context,
+                                            ).esModoOscuro
                                           ? Colors.white
                                           : Colors.black,
                                     ),
                                   ),
                                   subtitle: Text(
-                                    '${producto.unidadMedida}\nPrecio: ${producto.precio.toStringAsFixed(2)}\nInventario: ${producto.stock.toString()}',
+                                    '${producto.unidadMedida}\nPrecio: ${(producto.precioVenta).toStringAsFixed(2)}\nInventario: ${producto.stock.toString()}',
                                     style: TextStyle(
-                                      color:
-                                          Provider.of<TemaProveedor>(
-                                            context,
-                                          ).esModoOscuro
+                                      color: _isStockInsufficient(producto)
+                                          ? Colors.red
+                                          : Provider.of<TemaProveedor>(
+                                              context,
+                                            ).esModoOscuro
                                           ? Colors.white
                                           : Colors.black,
                                       fontSize: contentFontSize - 2,
@@ -401,7 +422,7 @@ class _VentasState extends State<Ventas> {
 
       // Actualizar el TextFormField del resultado
       setState(() {
-        _cambioController.text = resultado.toString();
+        _cambioController.text = resultado.toStringAsFixed(2);
       });
     } else {
       // Si el valor es nulo (no es un número válido), limpiar el campo de resultado
@@ -481,12 +502,13 @@ class _VentasState extends State<Ventas> {
       double subtotal = 0.0;
       double total = 0.0;
 
-      subtotal = _productosSeleccionados.fold(
-        0.0,
-        (sum, item) => sum + (item.precio * item.cantidad),
-      );
+      subtotal = _productosSeleccionados.fold(0.0, (sum, item) {
+        double descuentoMonto =
+            item.precioVenta * (item.descuentoProducto / 100);
+        return sum + ((item.precioVenta - descuentoMonto) * item.cantidad);
+      });
 
-      isv = subtotal * SarService.tasaISV;
+      // isv = subtotal * SarService.tasaISV;
       total = subtotal + isv;
 
       final prefs = await SharedPreferences.getInstance();
@@ -507,31 +529,62 @@ class _VentasState extends State<Ventas> {
         rtnEmisor: _empresa!.rtn,
         razonSocialEmisor: _empresa!.razonSocial,
         rangoAutorizado:
-            '${_sarConfig!.rangoInicial} - ${_sarConfig!.rangoFinal}',
+            '${_sarConfig!.rangoInicial} a ${_sarConfig!.rangoFinal}',
         fechaLimiteCai: _sarConfig!.fechaLimite,
         cajero: cajero!,
         metodoPago: _metodoPago,
       );
       final detalleVenta = _productosSeleccionados.map((producto) {
+        double descuentoUnitario =
+            producto.precioVenta * (producto.descuentoProducto / 100);
+        double precioFinal = producto.precioVenta - descuentoUnitario;
+
         return DetalleVenta(
           productoId: producto.id,
           descripcion: '${producto.nombre} - ${producto.unidadMedida}',
           cantidad: producto.cantidad,
-          precioUnitario: producto.precio,
-          subtotal: producto.precio * producto.cantidad,
-          descuento: 0.0,
+          precioUnitario: producto.precioVenta,
+          subtotal: precioFinal * producto.cantidad,
+          descuento: descuentoUnitario * producto.cantidad,
+          isv: producto.isv,
         );
       }).toList();
-      await repositoryVenta.registrarVentaConDetalles(venta, detalleVenta);
+      int result = await repositoryVenta.registrarVentaConDetalles(
+        venta,
+        detalleVenta,
+      );
+      if (result == -2) {
+        _mostrarMensaje(
+          'Error',
+          'Stock insuficiente para el producto ${detalleVenta.first.descripcion}',
+          ContentType.warning,
+        );
+        return;
+      }
       await _sarService.actualizarCorrelativo(); // Actualizar correlativo SAR
 
       final data = _crearInvoiceData(detalleVenta, venta);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ThermalInvoicePreview(data: data, paperWidthMm: 88),
-        ),
+
+      // Mostrar el modal y esperar la respuesta
+      final bool? shouldPrint = await EnhancedConfirmationModalPrintMovil.show(
+        context: context,
+        title: '¿Deseas generar factura?',
+        confirmText: 'Confirmar',
+        cancelText: 'Cancelar',
+        icon: Icons.print,
+        accentColor: Colors.blueAccent,
       );
+
+      // Si el usuario confirmó, navegar a la pantalla de impresión
+      if (shouldPrint == true) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ThermalInvoicePreview(data: data, paperWidthMm: 88),
+          ),
+        );
+      }
+
       actualizarInventario();
       setState(() {
         _productosSeleccionados.clear();
@@ -545,6 +598,11 @@ class _VentasState extends State<Ventas> {
         'Venta registrada con éxito',
         ContentType.success,
       );
+      // Refrescar notificaciones de stock bajo
+      Provider.of<NotificationProvider>(
+        context,
+        listen: false,
+      ).loadNotifications();
     } catch (e, st) {
       _mostrarMensaje(
         'Error',
@@ -567,6 +625,7 @@ class _VentasState extends State<Ventas> {
       businessName: _empresa?.razonSocial ?? '',
       businessAddress: _empresa?.direccion ?? '',
       businessPhone: _empresa?.telefono ?? '',
+      businessEmail: _empresa?.correo ?? '',
       invoiceNumber: venta.numeroFactura,
       date: fecha,
       hora: hora,
@@ -577,6 +636,8 @@ class _VentasState extends State<Ventas> {
           description: item.descripcion,
           quantity: item.cantidad,
           unitPrice: item.precioUnitario,
+          discount: item.descuento,
+          isvPercent: item.isv,
         );
       }).toList(),
       total: venta.total,
@@ -598,11 +659,14 @@ class _VentasState extends State<Ventas> {
     _total = _productosSeleccionados.fold(
       0.0,
       (sum, item) =>
-          sum + (item.precio * item.cantidad * (1 + SarService.tasaISV)),
+          sum +
+          (item.precioVenta *
+              item.cantidad *
+              (1 - item.descuentoProducto / 100)),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        _totalController.text = _total.toString();
+        _totalController.text = _total.toStringAsFixed(2);
       });
     });
   }
@@ -745,7 +809,7 @@ class _VentasState extends State<Ventas> {
               flex: 3,
               child: Card(
                 color: Provider.of<TemaProveedor>(context).esModoOscuro
-                    ? const Color.fromRGBO(20, 20, 20, 1)
+                    ? const Color.fromRGBO(30, 30, 30, 1)
                     : Colors.white.withOpacity(0.9),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -989,9 +1053,14 @@ class _VentasState extends State<Ventas> {
                                                 fontSize: contentFontSize,
                                                 fontWeight: FontWeight.w600,
                                                 color:
-                                                    Provider.of<TemaProveedor>(
-                                                      context,
-                                                    ).esModoOscuro
+                                                    _isStockInsufficient(
+                                                      producto,
+                                                    )
+                                                    ? Colors.red
+                                                    : Provider.of<
+                                                            TemaProveedor
+                                                          >(context)
+                                                          .esModoOscuro
                                                     ? Colors.white
                                                     : Colors.black,
                                               ),
@@ -1000,9 +1069,14 @@ class _VentasState extends State<Ventas> {
                                               'Inventario: ${producto.stock}',
                                               style: TextStyle(
                                                 color:
-                                                    Provider.of<TemaProveedor>(
-                                                      context,
-                                                    ).esModoOscuro
+                                                    _isStockInsufficient(
+                                                      producto,
+                                                    )
+                                                    ? Colors.red
+                                                    : Provider.of<
+                                                            TemaProveedor
+                                                          >(context)
+                                                          .esModoOscuro
                                                     ? Colors.white
                                                     : Colors.black,
                                                 fontSize: contentFontSize - 2,
@@ -1076,7 +1150,7 @@ class _VentasState extends State<Ventas> {
                             ),
                             SizedBox(height: padding),
                             resumenVenta(
-                              'Total Productos:',
+                              'Total productos:',
                               _productosSeleccionados.length.toString(),
                             ),
                             SizedBox(height: 8),
@@ -1085,36 +1159,47 @@ class _VentasState extends State<Ventas> {
                               _productosSeleccionados.isNotEmpty
                                   ? _productosSeleccionados
                                         .map<double>(
-                                          (p) => p.precio * p.cantidad,
+                                          (p) => p.precioVenta * p.cantidad,
                                         )
                                         .reduce((a, b) => a + b)
                                         .toStringAsFixed(2)
                                   : '0.00',
                             ),
                             resumenVenta(
-                              'ISV:',
+                              'Descuento:',
                               _productosSeleccionados.isNotEmpty
                                   ? _productosSeleccionados
                                         .map<double>(
                                           (p) =>
-                                              p.precio *
-                                              p.cantidad *
-                                              SarService.tasaISV,
+                                              (p.precioVenta * p.cantidad) *
+                                              (p.descuentoProducto / 100),
                                         )
                                         .reduce((a, b) => a + b)
                                         .toStringAsFixed(2)
                                   : '0.00',
                             ),
+                            // resumenVenta(
+                            //   'ISV:',
+                            //   _productosSeleccionados.isNotEmpty
+                            //       ? _productosSeleccionados
+                            //             .map<double>(
+                            //               (p) =>
+                            //                   p.precioVenta *
+                            //                   p.cantidad *
+                            //                   SarService.tasaISV,
+                            //             )
+                            //             .reduce((a, b) => a + b)
+                            //             .toStringAsFixed(2)
+                            //       : '0.00',
+                            // ),
                             resumenVenta(
-                              'Total a Pagar:',
+                              'Total a pagar:',
                               _productosSeleccionados.isNotEmpty
                                   ? _productosSeleccionados
                                         .map<double>(
                                           (p) =>
-                                              (p.precio *
-                                                  p.cantidad *
-                                                  SarService.tasaISV) +
-                                              (p.precio * p.cantidad),
+                                              (p.precioVenta * p.cantidad) *
+                                              (1 - (p.descuentoProducto / 100)),
                                         )
                                         .reduce((a, b) => a + b)
                                         .toStringAsFixed(2)
@@ -1182,30 +1267,30 @@ class _VentasState extends State<Ventas> {
             'Subtotal:',
             _productosSeleccionados.isNotEmpty
                 ? _productosSeleccionados
-                      .map<double>((p) => p.precio * p.cantidad)
+                      .map<double>((p) => p.precioVenta * p.cantidad)
                       .reduce((a, b) => a + b)
                       .toStringAsFixed(2)
                 : '0.00',
           ),
-          resumenVenta(
-            'ISV:',
-            _productosSeleccionados.isNotEmpty
-                ? _productosSeleccionados
-                      .map<double>(
-                        (p) => p.precio * p.cantidad * SarService.tasaISV,
-                      )
-                      .reduce((a, b) => a + b)
-                      .toStringAsFixed(2)
-                : '0.00',
-          ),
+          // resumenVenta(
+          //   'ISV:',
+          //   _productosSeleccionados.isNotEmpty
+          //       ? _productosSeleccionados
+          //             .map<double>(
+          //               (p) => p.precioVenta * p.cantidad * SarService.tasaISV,
+          //             )
+          //             .reduce((a, b) => a + b)
+          //             .toStringAsFixed(2)
+          //       : '0.00',
+          // ),
           resumenVenta(
             'Total a Pagar:',
             _productosSeleccionados.isNotEmpty
                 ? _productosSeleccionados
                       .map<double>(
                         (p) =>
-                            (p.precio * p.cantidad * SarService.tasaISV) +
-                            (p.precio * p.cantidad),
+                            // (p.precioVenta * p.cantidad * SarService.tasaISV) +
+                            (p.precioVenta * p.cantidad),
                       )
                       .reduce((a, b) => a + b)
                       .toStringAsFixed(2)
@@ -1248,7 +1333,7 @@ class _VentasState extends State<Ventas> {
                 size: isMobile ? 20.0 : 24.0,
               ),
               label: Text(
-                'Finalizar Venta',
+                'Finalizar venta',
                 style: TextStyle(
                   fontSize: isMobile ? 16.0 : 18.0,
                   fontWeight: FontWeight.bold,
@@ -1297,7 +1382,7 @@ class _VentasState extends State<Ventas> {
                 size: isMobile ? 20.0 : 24.0,
               ),
               label: Text(
-                'Finalizar Venta',
+                'Finalizar venta',
                 style: TextStyle(
                   fontSize: isMobile ? 16.0 : 18.0,
                   fontWeight: FontWeight.bold,
@@ -1364,7 +1449,7 @@ class _VentasState extends State<Ventas> {
 
     return Card(
       color: Provider.of<TemaProveedor>(context).esModoOscuro
-          ? Colors.black
+          ? const Color.fromRGBO(30, 30, 30, 1)
           : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 3,
@@ -1383,7 +1468,9 @@ class _VentasState extends State<Ventas> {
                     style: TextStyle(
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.bold,
-                      color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      color: _isStockInsufficient(producto)
+                          ? Colors.red
+                          : Provider.of<TemaProveedor>(context).esModoOscuro
                           ? Colors.white
                           : Colors.black,
                     ),
@@ -1395,28 +1482,65 @@ class _VentasState extends State<Ventas> {
                     producto.unidadMedida ?? '',
                     style: TextStyle(
                       fontSize: subtitleFontSize,
-                      color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      color: _isStockInsufficient(producto)
+                          ? Colors.red
+                          : Provider.of<TemaProveedor>(context).esModoOscuro
                           ? Colors.white
                           : Colors.black,
                     ),
                   ),
                   SizedBox(height: 8),
-                  // Precio y descuento si aplica
+                  // ISV
                   Text(
-                    'Precio: L. ${producto.precio}',
+                    'ISV: ${(producto.isv).toStringAsFixed(2)}%',
                     style: TextStyle(
                       fontSize: priceFontSize,
-                      color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      color: _isStockInsufficient(producto)
+                          ? Colors.red
+                          : Provider.of<TemaProveedor>(context).esModoOscuro
                           ? const Color.fromRGBO(220, 220, 220, 1)
                           : const Color.fromRGBO(60, 60, 60, 1),
                     ),
                   ),
                   SizedBox(height: 8),
+                  // Precio y descuento si aplica
+                  if (producto.descuentoProducto > 0) ...[
+                    Text(
+                      'Precio: L. ${(producto.precioVenta).toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: priceFontSize - 2,
+                        decoration: TextDecoration.lineThrough,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    Text(
+                      'Desc: ${producto.descuentoProducto.toStringAsFixed(0)}% -> L. ${(producto.precioVenta * (1 - producto.descuentoProducto / 100)).toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: priceFontSize,
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ] else
+                    Text(
+                      'Precio: L. ${producto.precioVenta.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: priceFontSize,
+                        color: _isStockInsufficient(producto)
+                            ? Colors.red
+                            : Provider.of<TemaProveedor>(context).esModoOscuro
+                            ? const Color.fromRGBO(220, 220, 220, 1)
+                            : const Color.fromRGBO(60, 60, 60, 1),
+                      ),
+                    ),
+                  SizedBox(height: 8),
                   Text(
-                    'SubTotal: L. ${(producto.precio * producto.cantidad).toStringAsFixed(2)}',
+                    'SubTotal: L. ${(producto.cantidad * (producto.precioVenta * (1 - producto.descuentoProducto / 100))).toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: priceFontSize,
-                      color: Provider.of<TemaProveedor>(context).esModoOscuro
+                      color: _isStockInsufficient(producto)
+                          ? Colors.red
+                          : Provider.of<TemaProveedor>(context).esModoOscuro
                           ? const Color.fromRGBO(220, 220, 220, 1)
                           : const Color.fromRGBO(60, 60, 60, 1),
                     ),
@@ -1460,6 +1584,30 @@ class _VentasState extends State<Ventas> {
                         producto.cantidad--;
                       }
                     });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.local_offer,
+                    color: producto.descuentoProducto > 0
+                        ? Colors.orange
+                        : Colors.grey,
+                    size: iconSize,
+                  ),
+                  onPressed: () async {
+                    final result = await showDialog<double>(
+                      context: context,
+                      builder: (context) => DescuentoProductoDialog(
+                        precioOriginal: producto.precioVenta,
+                        descuentoActual: producto.descuentoProducto,
+                      ),
+                    );
+
+                    if (result != null) {
+                      setState(() {
+                        producto.descuentoProducto = result;
+                      });
+                    }
                   },
                 ),
               ],
@@ -1589,6 +1737,7 @@ class _VentasState extends State<Ventas> {
                           _totalController,
                           'Total',
                           Icons.monetization_on_outlined,
+                          isNumber: true,
                           readOnly: true,
                           validator: (value) {
                             if (value!.isEmpty) {
@@ -1615,6 +1764,7 @@ class _VentasState extends State<Ventas> {
                           'RTN (Opcional)',
                           Icons.badge,
                           isNumber: true,
+                          isRTN: true,
                         ),
                         SizedBox(height: isMobile ? 12.0 : 16.0),
 
@@ -1641,6 +1791,7 @@ class _VentasState extends State<Ventas> {
                           'Cambio',
                           Icons.money_off_csred_outlined,
                           readOnly: true,
+                          isNumber: true,
                           validator: (value) {
                             if (value!.isEmpty) {
                               return 'Por favor, ingrese el cambio';
@@ -1757,6 +1908,7 @@ class _VentasState extends State<Ventas> {
     IconData icon, {
     bool readOnly = false,
     bool isNumber = false,
+    bool isRTN = false,
     String? Function(String?)? validator,
   }) {
     final bool isMobile = MediaQuery.of(context).size.width < 600;
@@ -1811,9 +1963,13 @@ class _VentasState extends State<Ventas> {
           horizontal: isMobile ? 8.0 : 10.0,
         ),
       ),
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      keyboardType: isNumber
+          ? TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
       inputFormatters: isNumber
-          ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
+          ? [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))]
+          : isRTN
+          ? [FilteringTextInputFormatter.digitsOnly]
           : null,
       style: TextStyle(
         fontSize: isMobile ? 14.0 : 16.0,

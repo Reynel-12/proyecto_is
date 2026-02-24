@@ -1,3 +1,4 @@
+import 'package:proyecto_is/view/widgets/modal_print_movil.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,8 @@ import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/caja.dart';
 import 'package:proyecto_is/model/movimiento_caja.dart';
 import 'package:proyecto_is/model/preferences.dart';
+import 'package:proyecto_is/controller/repository_empresa.dart';
+import 'package:proyecto_is/view/widgets/caja_pdf_preview.dart';
 
 class CajaScreen extends StatefulWidget {
   const CajaScreen({super.key});
@@ -40,6 +43,11 @@ class _CajaScreenState extends State<CajaScreen>
   double _totalTransferencia = 0.0;
   double _totalEfectivoVentas = 0.0;
 
+  // Desglose de devoluciones
+  double _totalDevolucionesEfectivo = 0.0;
+  double _totalDevolucionesTarjeta = 0.0;
+  double _totalDevolucionesTransferencia = 0.0;
+
   // Desglose de Ingresos
   double _totalIngresosEfectivo = 0.0;
   double _totalIngresosTarjeta = 0.0;
@@ -69,6 +77,10 @@ class _CajaScreenState extends State<CajaScreen>
         double tarjeta = 0.0;
         double transferencia = 0.0;
         double efectivoVentas = 0.0;
+
+        double devolucionesEfectivo = 0.0;
+        double devolucionesTarjeta = 0.0;
+        double devolucionesTransferencia = 0.0;
 
         double ingresosEfectivo = 0.0;
         double ingresosTarjeta = 0.0;
@@ -104,6 +116,16 @@ class _CajaScreenState extends State<CajaScreen>
               egresosEfectivo += mov.monto;
             }
           }
+
+          if (mov.tipo == 'Devolucion') {
+            if (mov.metodoPago == 'Tarjeta') {
+              devolucionesTarjeta += mov.monto;
+            } else if (mov.metodoPago == 'Transferencia') {
+              devolucionesTransferencia += mov.monto;
+            } else if (mov.metodoPago == 'Efectivo') {
+              devolucionesEfectivo += mov.monto;
+            }
+          }
         }
 
         final double totalEfectivoCalculado =
@@ -115,6 +137,8 @@ class _CajaScreenState extends State<CajaScreen>
         setState(() {
           _cajaActual = Caja(
             id: caja.id,
+            cajeroAbre: caja.cajeroAbre,
+            cajeroCierra: caja.cajeroCierra,
             fechaApertura: caja.fechaApertura,
             montoApertura: caja.montoApertura,
             fechaCierre: caja.fechaCierre,
@@ -130,6 +154,10 @@ class _CajaScreenState extends State<CajaScreen>
           _totalTarjeta = tarjeta;
           _totalTransferencia = transferencia;
           _totalEfectivoVentas = efectivoVentas;
+
+          _totalDevolucionesEfectivo = devolucionesEfectivo;
+          _totalDevolucionesTarjeta = devolucionesTarjeta;
+          _totalDevolucionesTransferencia = devolucionesTransferencia;
 
           _totalIngresosEfectivo = ingresosEfectivo;
           _totalIngresosTarjeta = ingresosTarjeta;
@@ -250,10 +278,14 @@ class _CajaScreenState extends State<CajaScreen>
                 children: [
                   TextFormField(
                     controller: montoController,
-                    keyboardType: TextInputType.number,
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d{0,2}'),
+                      ),
                     ],
                     decoration: InputDecoration(
                       labelText: 'Monto inicial',
@@ -482,10 +514,12 @@ class _CajaScreenState extends State<CajaScreen>
                         const SizedBox(height: 10),
                         TextFormField(
                           controller: montoRealController,
-                          keyboardType: TextInputType.number,
+                          keyboardType: TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           inputFormatters: [
                             FilteringTextInputFormatter.allow(
-                              RegExp(r'[0-9.]'),
+                              RegExp(r'^\d*\.?\d{0,2}'),
                             ),
                           ],
                           style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
@@ -610,8 +644,65 @@ class _CajaScreenState extends State<CajaScreen>
                           montoFinal,
                           diferencia,
                         );
-                        Navigator.pop(context);
+                        // Guardamos referencia para el reporte
+                        final cajaCerrada = _cajaActual!.copyWith(
+                          montoCierre: montoFinal,
+                          fechaCierre: DateTime.now().toIso8601String(),
+                          diferencia: diferencia,
+                          estado: 'Cerrada',
+                        );
+
                         _cargarDatos();
+
+                        if (context.mounted) {
+                          // Mostrar el modal y esperar la respuesta
+                          final bool? shouldPrint =
+                              await EnhancedConfirmationModalPrintMovil.show(
+                                context: context,
+                                title:
+                                    'Reporte de cierre \n¿Deseas generar PDF?',
+                                confirmText: 'Confirmar',
+                                cancelText: 'Cancelar',
+                                icon: Icons.print,
+                                accentColor: Colors.blueAccent,
+                              );
+
+                          // Si el usuario confirmó, navegar a la pantalla de impresión
+                          if (shouldPrint == true) {
+                            try {
+                              // Navigator.pop(context); // This was already done at 634
+                              final movimientos = await _cajaRepository
+                                  .obtenerMovimientos(cajaCerrada.id!);
+                              final empresaRepo = RepositoryEmpresa();
+                              final empresa = await empresaRepo.getEmpresa();
+
+                              if (context.mounted) {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CajaPdfPreview(
+                                      caja: cajaCerrada,
+                                      movimientos: movimientos,
+                                      empresa: empresa,
+                                    ),
+                                  ),
+                                );
+                              }
+                              if (context.mounted) Navigator.pop(context);
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Error al preparar vista previa: $e',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        }
                       } catch (e, st) {
                         _logger.log.e(
                           'Error al cerrar caja',
@@ -789,7 +880,9 @@ class _CajaScreenState extends State<CajaScreen>
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: montoController,
-                    keyboardType: TextInputType.number,
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
                     decoration: InputDecoration(
                       labelText: 'Monto',
@@ -849,7 +942,9 @@ class _CajaScreenState extends State<CajaScreen>
                       ),
                     ),
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d{0,2}'),
+                      ),
                     ],
                     validator: (value) {
                       if (value!.isEmpty) {
@@ -1286,6 +1381,13 @@ class _CajaScreenState extends State<CajaScreen>
     final themeProvider = Provider.of<TemaProveedor>(context);
     final isDark = themeProvider.esModoOscuro;
 
+    // Obtenemos el tamaño de la pantalla
+    final bool isMobile = screenSize.width < 600;
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+
+    // Ajustamos tamaños según el dispositivo
+    final double titleFontSize = isMobile ? 18.0 : (isTablet ? 20.0 : 22.0);
+
     return Scaffold(
       backgroundColor: isDark
           ? Colors.black
@@ -1296,6 +1398,7 @@ class _CajaScreenState extends State<CajaScreen>
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
+            fontSize: titleFontSize,
           ),
         ),
         centerTitle: true,
@@ -1350,7 +1453,7 @@ class _CajaScreenState extends State<CajaScreen>
             onPressed: _abrirCaja,
             icon: const Icon(Icons.lock_open, color: Colors.white),
             label: const Text(
-              'Abrir Caja',
+              'Abrir caja',
               style: TextStyle(color: Colors.white),
             ),
             style: ElevatedButton.styleFrom(
@@ -1451,7 +1554,7 @@ class _CajaScreenState extends State<CajaScreen>
                     Divider(color: isDark ? Colors.white24 : Colors.black12),
                     const SizedBox(height: 10),
                     Text(
-                      'Movimientos Recientes',
+                      'Movimientos recientes',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -1475,6 +1578,7 @@ class _CajaScreenState extends State<CajaScreen>
     final fechaApertura = DateTime.parse(_cajaActual!.fechaApertura);
     final formattedDate = DateFormat('dd/MM/yyyy HH:mm').format(fechaApertura);
     final isDark = Provider.of<TemaProveedor>(context).esModoOscuro;
+    final usuario = _cajaActual!.cajeroAbre;
 
     return Card(
       elevation: 4,
@@ -1483,45 +1587,55 @@ class _CajaScreenState extends State<CajaScreen>
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Caja Abierta',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
+            // Columna izquierda (usuario y fecha)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Caja abierta por $usuario',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                    maxLines: 2, // <-- ahora sí puede romperse
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  'Apertura: $formattedDate',
-                  style: TextStyle(
-                    color: isDark ? Colors.white70 : Colors.black87,
+                  Text(
+                    'Apertura: $formattedDate',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'Monto Inicial',
-                  style: TextStyle(
-                    color: isDark ? Colors.white70 : Colors.black87,
+
+            // Columna derecha (monto)
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Monto Inicial',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
                   ),
-                ),
-                Text(
-                  currency.format(_cajaActual!.montoApertura),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black,
+                  Text(
+                    currency.format(_cajaActual!.montoApertura),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                    overflow:
+                        TextOverflow.ellipsis, // <-- controla overflow aquí
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -1709,6 +1823,10 @@ class _CajaScreenState extends State<CajaScreen>
   }
 
   Widget _buildSummaryGrid({required int crossAxisCount}) {
+    double _totalDevoluciones =
+        _totalDevolucionesEfectivo +
+        _totalDevolucionesTarjeta +
+        _totalDevolucionesTransferencia;
     return GridView.count(
       crossAxisCount: crossAxisCount,
       shrinkWrap: true,
@@ -1719,11 +1837,15 @@ class _CajaScreenState extends State<CajaScreen>
       children: [
         _buildSummaryCard(
           'Ventas Efectivo',
-          _totalEfectivoVentas,
+          _totalEfectivoVentas - _totalDevolucionesEfectivo,
           Colors.green,
           onInfoPressed: () => _showCalculationDetails(
             title: 'Ventas en Efectivo',
-            formula: 'Suma de todas las ventas realizadas con Efectivo',
+            formula: 'Ventas Efectivo - Devoluciones Efectivo',
+            breakdown: {
+              'Ventas Efectivo': _totalEfectivoVentas,
+              'Devoluciones Efectivo': _totalDevolucionesEfectivo,
+            },
             movimientos: _movimientos
                 .where((m) => m.tipo == 'Venta' && m.metodoPago == 'Efectivo')
                 .toList(),
@@ -1731,11 +1853,15 @@ class _CajaScreenState extends State<CajaScreen>
         ),
         _buildSummaryCard(
           'Ventas Tarjeta',
-          _totalTarjeta,
+          _totalTarjeta - _totalDevolucionesTarjeta,
           Colors.blue,
           onInfoPressed: () => _showCalculationDetails(
             title: 'Ventas con Tarjeta',
-            formula: 'Suma de todas las ventas realizadas con Tarjeta',
+            formula: 'Ventas con Tarjeta - Devoluciones con Tarjeta',
+            breakdown: {
+              'Ventas con Tarjeta': _totalTarjeta,
+              'Devoluciones con Tarjeta': _totalDevolucionesTarjeta,
+            },
             movimientos: _movimientos
                 .where((m) => m.tipo == 'Venta' && m.metodoPago == 'Tarjeta')
                 .toList(),
@@ -1743,11 +1869,16 @@ class _CajaScreenState extends State<CajaScreen>
         ),
         _buildSummaryCard(
           'Ventas Transferencia',
-          _totalTransferencia,
+          _totalTransferencia - _totalDevolucionesTransferencia,
           Colors.orange,
           onInfoPressed: () => _showCalculationDetails(
             title: 'Ventas por Transferencia',
-            formula: 'Suma de todas las ventas realizadas por Transferencia',
+            formula:
+                'Ventas por Transferencia - Devoluciones por Transferencia',
+            breakdown: {
+              'Ventas por Transferencia': _totalTransferencia,
+              'Devoluciones por Transferencia': _totalDevolucionesTransferencia,
+            },
             movimientos: _movimientos
                 .where(
                   (m) => m.tipo == 'Venta' && m.metodoPago == 'Transferencia',
@@ -1757,16 +1888,38 @@ class _CajaScreenState extends State<CajaScreen>
         ),
         _buildSummaryCard(
           'Total Ventas',
-          _cajaActual!.totalVentas,
+          _cajaActual!.totalVentas - _totalDevoluciones,
           Colors.indigo,
           onInfoPressed: () => _showCalculationDetails(
             title: 'Total de Ventas',
-            formula: 'Ventas Efectivo + Ventas Tarjeta + Ventas Transferencia',
+            formula:
+                'Ventas Efectivo + Ventas Tarjeta + Ventas Transferencia - Devoluciones Efectivo - Devoluciones Tarjeta - Devoluciones Transferencia',
             breakdown: {
               'Ventas Efectivo': _totalEfectivoVentas,
               'Ventas Tarjeta': _totalTarjeta,
               'Ventas Transferencia': _totalTransferencia,
+              'Devoluciones Efectivo': _totalDevolucionesEfectivo,
+              'Devoluciones Tarjeta': _totalDevolucionesTarjeta,
+              'Devoluciones Transferencia': _totalDevolucionesTransferencia,
             },
+          ),
+        ),
+        _buildSummaryCard(
+          'Devoluciones',
+          _totalDevoluciones,
+          Colors.teal,
+          onInfoPressed: () => _showCalculationDetails(
+            title: 'Devoluciones de productos',
+            formula:
+                'Devoluciones Efectivo + Devoluciones Tarjeta + Devoluciones Transferencia',
+            breakdown: {
+              'Devoluciones Efectivo': _totalDevolucionesEfectivo,
+              'Devoluciones Tarjeta': _totalDevolucionesTarjeta,
+              'Devoluciones Transferencia': _totalDevolucionesTransferencia,
+            },
+            movimientos: _movimientos
+                .where((m) => m.tipo == 'Devolucion')
+                .toList(),
           ),
         ),
         _buildSummaryCard(
@@ -1789,7 +1942,7 @@ class _CajaScreenState extends State<CajaScreen>
         ),
         _buildSummaryCard(
           'Egresos',
-          _cajaActual!.egresos,
+          _cajaActual!.egresos - _totalDevoluciones,
           Colors.red,
           onInfoPressed: () => _showCalculationDetails(
             title: 'Egresos de Caja',
@@ -1808,7 +1961,8 @@ class _CajaScreenState extends State<CajaScreen>
           _cajaActual!.montoApertura +
               _totalEfectivoVentas +
               _totalIngresosEfectivo -
-              _totalEgresosEfectivo,
+              _totalEgresosEfectivo -
+              _totalDevolucionesEfectivo,
           Colors.green.shade700,
           onInfoPressed: () => _showCalculationDetails(
             title: 'Efectivo en Caja',
@@ -1816,7 +1970,8 @@ class _CajaScreenState extends State<CajaScreen>
                 'Monto Inicial + Ventas Efectivo + Ingresos Efectivo - Egresos Efectivo',
             breakdown: {
               'Monto Inicial': _cajaActual!.montoApertura,
-              'Ventas Efectivo': _totalEfectivoVentas,
+              'Ventas Efectivo':
+                  _totalEfectivoVentas - _totalDevolucionesEfectivo,
               'Ingresos Efectivo': _totalIngresosEfectivo,
               'Egresos Efectivo': -_totalEgresosEfectivo,
             },
@@ -1993,18 +2148,18 @@ class _CajaScreenState extends State<CajaScreen>
         leading: CircleAvatar(
           backgroundColor: mov.tipo == 'Ingreso'
               ? Colors.green.withOpacity(0.2)
-              : mov.tipo == 'Egreso'
+              : mov.tipo == 'Egreso' || mov.tipo == 'Devolucion'
               ? Colors.red.withOpacity(0.2)
               : Colors.blue.withOpacity(0.2),
           child: Icon(
             mov.tipo == 'Ingreso'
                 ? Icons.arrow_upward
-                : mov.tipo == 'Egreso'
+                : mov.tipo == 'Egreso' || mov.tipo == 'Devolucion'
                 ? Icons.arrow_downward
                 : Icons.shopping_cart,
             color: mov.tipo == 'Ingreso'
                 ? Colors.green
-                : mov.tipo == 'Egreso'
+                : mov.tipo == 'Egreso' || mov.tipo == 'Devolucion'
                 ? Colors.red
                 : Colors.blue,
           ),
@@ -2063,10 +2218,12 @@ class _CajaScreenState extends State<CajaScreen>
               currency.format(mov.monto),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: mov.tipo == 'Egreso' ? Colors.red : Colors.green,
+                color: mov.tipo == 'Egreso' || mov.tipo == 'Devolucion'
+                    ? Colors.red
+                    : Colors.green,
               ),
             ),
-            if (mov.tipo != 'Venta') ...[
+            if (mov.tipo != 'Venta' && mov.tipo != 'Devolucion') ...[
               IconButton(
                 icon: const Icon(Icons.edit, color: Colors.blue),
                 onPressed: () => _editarMovimiento(mov),
@@ -2239,103 +2396,11 @@ class _CajaScreenState extends State<CajaScreen>
         // List
         Expanded(
           child: ListView.builder(
+            padding: const EdgeInsets.all(8.0),
             itemCount: _historialCajas.length,
             itemBuilder: (context, index) {
               final caja = _historialCajas[index];
-              final inicio = DateTime.parse(caja.fechaApertura);
-              final fin = caja.fechaCierre != null
-                  ? DateTime.parse(caja.fechaCierre!)
-                  : null;
-              final duracion = fin != null
-                  ? fin.difference(inicio)
-                  : Duration.zero;
-              final currency = NumberFormat.currency(symbol: 'L. ');
-
-              return Card(
-                color: isDark
-                    ? const Color.fromRGBO(30, 30, 30, 1)
-                    : Colors.white,
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                child: ExpansionTile(
-                  iconColor: isDark ? Colors.white : Colors.black,
-                  collapsedIconColor: isDark ? Colors.white70 : Colors.black54,
-                  title: Text(
-                    'Caja #${caja.id} - ${DateFormat('dd/MM/yyyy').format(inicio)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Estado: ${caja.estado} | ${currency.format(caja.totalVentas)} Ventas',
-                    style: TextStyle(
-                      color: isDark ? Colors.white70 : Colors.black87,
-                    ),
-                  ),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          _rowDetail(
-                            'Apertura',
-                            DateFormat('HH:mm').format(inicio),
-                          ),
-                          if (fin != null)
-                            _rowDetail(
-                              'Cierre',
-                              DateFormat('HH:mm').format(fin),
-                            ),
-                          _rowDetail(
-                            'Duración',
-                            '${duracion.inHours}h ${duracion.inMinutes.remainder(60)}m',
-                          ),
-                          Divider(
-                            color: isDark ? Colors.white24 : Colors.black12,
-                          ),
-                          _rowDetail(
-                            'Monto Inicial',
-                            currency.format(caja.montoApertura),
-                          ),
-                          _rowDetail(
-                            'Ventas',
-                            currency.format(caja.totalVentas),
-                          ),
-                          _rowDetail(
-                            'Ingresos',
-                            currency.format(caja.ingresos),
-                          ),
-                          _rowDetail('Egresos', currency.format(caja.egresos)),
-                          Divider(
-                            color: isDark ? Colors.white24 : Colors.black12,
-                          ),
-                          _rowDetail(
-                            'Total Efectivo',
-                            currency.format(caja.totalEfectivo),
-                          ),
-                          if (caja.montoCierre != null)
-                            _rowDetail(
-                              'Monto Cierre',
-                              currency.format(caja.montoCierre!),
-                            ),
-                          if (caja.diferencia != null)
-                            _rowDetail(
-                              'Diferencia',
-                              currency.format(caja.diferencia!),
-                              color: caja.diferencia! == 0
-                                  ? Colors.green
-                                  : Colors.red,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
+              return CajaHistoryCard(caja: caja);
             },
           ),
         ),
@@ -2370,32 +2435,6 @@ class _CajaScreenState extends State<CajaScreen>
             _cargarHistorial();
           }
         },
-      ),
-    );
-  }
-
-  Widget _rowDetail(String label, String value, {Color? color}) {
-    final isDark = Provider.of<TemaProveedor>(context).esModoOscuro;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              color: isDark ? Colors.white70 : Colors.black87,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: color ?? (isDark ? Colors.white : Colors.black),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -2475,6 +2514,499 @@ class _CajaScreenState extends State<CajaScreen>
           vertical: verticalPadding,
           horizontal: horizontalPadding,
         ),
+      ),
+    );
+  }
+}
+
+class CajaHistoryCard extends StatefulWidget {
+  final Caja caja;
+  const CajaHistoryCard({super.key, required this.caja});
+
+  @override
+  State<CajaHistoryCard> createState() => _CajaHistoryCardState();
+}
+
+class _CajaHistoryCardState extends State<CajaHistoryCard> {
+  final CajaRepository _repository = CajaRepository();
+  late Future<Map<String, Map<String, double>>> _desgloseFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _desgloseFuture = _repository.obtenerDesgloseCaja(widget.caja.id!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Provider.of<TemaProveedor>(context);
+    final isDark = theme.esModoOscuro;
+    final currency = NumberFormat.currency(symbol: 'L. ');
+    final inicio = DateTime.parse(widget.caja.fechaApertura);
+    final fin = DateTime.parse(widget.caja.fechaCierre!);
+
+    return Card(
+      color: isDark ? const Color.fromRGBO(30, 30, 30, 1) : Colors.white,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ExpansionTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.transparent,
+        collapsedBackgroundColor: Colors.transparent,
+        iconColor: isDark ? Colors.white : Colors.black,
+        collapsedIconColor: isDark ? Colors.white70 : Colors.black54,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.receipt_long, color: Colors.blueAccent, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Caja #${widget.caja.id}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: widget.caja.estado == 'Abierta'
+                        ? Colors.green.withOpacity(0.2)
+                        : Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    widget.caja.estado,
+                    style: TextStyle(
+                      color: widget.caja.estado == 'Abierta'
+                          ? Colors.green
+                          : Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Abierta: ${DateFormat('dd/MM/yyyy HH:mm').format(inicio)}',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    fontSize: 14,
+                  ),
+                ),
+                if (widget.caja.estado == 'Cerrada')
+                  IconButton(
+                    icon: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                    tooltip: 'Generar Reporte PDF',
+                    onPressed: () async {
+                      try {
+                        final movimientos = await _repository
+                            .obtenerMovimientos(widget.caja.id!);
+                        final empresaRepo = RepositoryEmpresa();
+                        final empresa = await empresaRepo.getEmpresa();
+
+                        if (context.mounted) {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CajaPdfPreview(
+                                caja: widget.caja,
+                                movimientos: movimientos,
+                                empresa: empresa,
+                              ),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Error al preparar vista previa: $e',
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Cerrada: ${DateFormat('dd/MM/yyyy HH:mm').format(fin)}',
+              style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black54,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total Ventas: ${currency.format(widget.caja.totalVentas)}',
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: FutureBuilder<Map<String, Map<String, double>>>(
+              future: _desgloseFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return const Text('Error al cargar detalles');
+                }
+
+                final desglose = snapshot.data ?? {};
+                return Column(
+                  children: [
+                    const Divider(),
+                    _buildUserSection(isDark),
+                    const Divider(),
+                    _buildBreakdownSection(desglose, isDark, currency),
+                    const Divider(),
+                    _buildTotalsSection(isDark, currency),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserSection(bool isDark) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.lock_open, size: 16, color: Colors.green),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Abrió:',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                widget.caja.cajeroAbre,
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Cerró:',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.lock, size: 16, color: Colors.red),
+                ],
+              ),
+              Text(
+                widget.caja.cajeroCierra,
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBreakdownSection(
+    Map<String, Map<String, double>> desglose,
+    bool isDark,
+    NumberFormat currency,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 600) {
+          // Mobile: Stack vertically
+          return Column(
+            children: [
+              _buildCategoryBlock(
+                'Ventas',
+                desglose['Venta']!,
+                Colors.blue,
+                isDark,
+                currency,
+              ),
+              const SizedBox(height: 12),
+              _buildCategoryBlock(
+                'Ingresos',
+                desglose['Ingreso']!,
+                Colors.green,
+                isDark,
+                currency,
+              ),
+              const SizedBox(height: 12),
+              _buildCategoryBlock(
+                'Egresos',
+                desglose['Egreso']!,
+                Colors.red,
+                isDark,
+                currency,
+              ),
+            ],
+          );
+        } else {
+          // Desktop/Tablet: Row
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildCategoryBlock(
+                  'Ventas',
+                  desglose['Venta']!,
+                  Colors.blue,
+                  isDark,
+                  currency,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildCategoryBlock(
+                  'Ingresos',
+                  desglose['Ingreso']!,
+                  Colors.green,
+                  isDark,
+                  currency,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildCategoryBlock(
+                  'Egresos',
+                  desglose['Egreso']!,
+                  Colors.red,
+                  isDark,
+                  currency,
+                ),
+              ),
+            ],
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildCategoryBlock(
+    String title,
+    Map<String, double> items,
+    Color color,
+    bool isDark,
+    NumberFormat currency,
+  ) {
+    final total = items.values.fold(0.0, (sum, val) => sum + val);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              Text(
+                currency.format(total),
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 16),
+          ...items.entries.map((e) {
+            if (e.value == 0) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    e.key,
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black87,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    currency.format(e.value),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalsSection(bool isDark, NumberFormat currency) {
+    return Column(
+      children: [
+        _rowDetail(
+          'Monto Apertura',
+          currency.format(widget.caja.montoApertura),
+          isDark,
+        ),
+        _rowDetail(
+          'Total Efectivo Calculado',
+          currency.format(widget.caja.totalEfectivo),
+          isDark,
+        ),
+        if (widget.caja.montoCierre != null)
+          _rowDetail(
+            'Monto de Cierre Real',
+            currency.format(widget.caja.montoCierre!),
+            isDark,
+          ),
+        if (widget.caja.diferencia != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            margin: const EdgeInsets.only(top: 8),
+            decoration: BoxDecoration(
+              color: widget.caja.diferencia == 0
+                  ? Colors.green.withOpacity(0.1)
+                  : (widget.caja.diferencia! > 0
+                        ? Colors.blue.withOpacity(0.1)
+                        : Colors.red.withOpacity(0.1)),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: widget.caja.diferencia == 0
+                    ? Colors.green
+                    : (widget.caja.diferencia! > 0 ? Colors.blue : Colors.red),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Diferencia',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: widget.caja.diferencia == 0
+                        ? Colors.green
+                        : (widget.caja.diferencia! > 0
+                              ? Colors.blue
+                              : Colors.red),
+                  ),
+                ),
+                Text(
+                  currency.format(widget.caja.diferencia),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: widget.caja.diferencia == 0
+                        ? Colors.green
+                        : (widget.caja.diferencia! > 0
+                              ? Colors.blue
+                              : Colors.red),
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _rowDetail(String label, String value, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black,
+            ),
+          ),
+        ],
       ),
     );
   }

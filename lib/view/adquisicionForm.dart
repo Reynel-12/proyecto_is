@@ -50,6 +50,14 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
     _cargarDatos();
   }
 
+  void clearForm() {
+    _carritoCompra.clear();
+    _proveedorSeleccionado = null;
+    _metodoPago = 'Efectivo';
+    _formKey.currentState?.reset();
+    _cargarDatos();
+  }
+
   Future<void> _cargarDatos() async {
     try {
       final proveedores = await _proveedorRepo.getProveedoresByEstado('Activo');
@@ -148,7 +156,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
                     const SizedBox(height: 16),
                     _buildTextField(
                       costoController,
-                      'Costo Unitario',
+                      'Costo unitario',
                       isNumber: true,
                     ),
                   ],
@@ -268,6 +276,13 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
           )
           .toList();
 
+      for (var item in detalles) {
+        await _productoRepo.updateProductoPrecio(
+          item.costoUnitario,
+          item.productoId,
+        );
+      }
+
       final movimiento = MovimientoCaja(
         idCaja: _cajaSeleccionada!.id!,
         tipo: 'Egreso',
@@ -286,6 +301,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
         ContentType.success,
       );
       Navigator.pop(context, true);
+      clearForm();
     } catch (e, st) {
       _mostrarMensaje(
         'Error',
@@ -293,8 +309,10 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
         ContentType.failure,
       );
       _logger.log.e('Error al registrar compra', error: e, stackTrace: st);
+      print('Error al registrar compra: $e');
     } finally {
       setState(() => _isLoading = false);
+      clearForm();
     }
   }
 
@@ -321,6 +339,11 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
     final esModoOscuro = Provider.of<TemaProveedor>(context).esModoOscuro;
     final colorTexto = esModoOscuro ? Colors.white : Colors.black;
 
+    final bool isTablet = screenSize.width >= 600 && screenSize.width < 900;
+
+    // Ajustamos tamaños según el dispositivo
+    final double titleFontSize = isMobile ? 18.0 : (isTablet ? 20.0 : 22.0);
+
     return Scaffold(
       backgroundColor: esModoOscuro
           ? Colors.black
@@ -331,7 +354,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
           style: TextStyle(
             color: colorTexto,
             fontWeight: FontWeight.bold,
-            fontSize: isMobile ? 18 : 22,
+            fontSize: titleFontSize,
           ),
         ),
         centerTitle: true,
@@ -810,9 +833,11 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
 
     return TextFormField(
       controller: controller,
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      keyboardType: isNumber
+          ? TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
       inputFormatters: isNumber
-          ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
+          ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))]
           : null,
       style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
       decoration: InputDecoration(

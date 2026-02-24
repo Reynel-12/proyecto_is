@@ -1,3 +1,4 @@
+import 'package:proyecto_is/controller/repository_categoria.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +20,13 @@ import 'package:proyecto_is/view/widgets/loading.dart';
 class PerfilProducto extends StatefulWidget {
   String docID;
   int idProveedor;
-  PerfilProducto({super.key, required this.docID, required this.idProveedor});
+  int idCategoria;
+  PerfilProducto({
+    super.key,
+    required this.docID,
+    required this.idProveedor,
+    required this.idCategoria,
+  });
 
   @override
   State<PerfilProducto> createState() => _PerfilProductoState();
@@ -28,10 +35,12 @@ class PerfilProducto extends StatefulWidget {
 class _PerfilProductoState extends State<PerfilProducto> {
   final repositoryProveedor = ProveedorRepository();
   final repositoryProducto = ProductoRepository();
+  final repositoryCategoria = RepositoryCategoria();
   final TextEditingController _cantidad = TextEditingController();
   final TextEditingController _inventarioController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   String nombreProveedor = '';
+  String nombreCategoria = '';
   final _movimientoRepo = CajaRepository();
   final AppLogger _logger = AppLogger.instance;
   final _ventaRepo = VentaRepository();
@@ -45,8 +54,11 @@ class _PerfilProductoState extends State<PerfilProducto> {
   String unidad = '';
   double precio = 0.0;
   double costos = 0.0;
+  double isv = 0.0;
+  double precioVenta = 0.0;
   int idProveedor = 0;
   int inventario = 0;
+  int stockMinimo = 0;
   String estado = '';
   String fechaCreacion = '';
   String fechaActualizacion = '';
@@ -69,12 +81,16 @@ class _PerfilProductoState extends State<PerfilProducto> {
       final proveedor = await repositoryProveedor.getProveedorById(
         widget.idProveedor,
       );
+      final categoria = await repositoryCategoria.getCategoriaById(
+        widget.idCategoria,
+      );
       final caja = await _movimientoRepo.obtenerCajaAbierta();
       final total = await _ventaRepo.getTotalVentasByProducto(widget.docID);
       final ultimas = await _ventaRepo.getUltimasVentasByProducto(widget.docID);
 
       setState(() {
         nombreProveedor = proveedor[0].nombre;
+        nombreCategoria = categoria[0].nombre!;
         _cajaSeleccionada = caja;
         totalVentas = total;
         ultimasVentas = ultimas;
@@ -99,16 +115,17 @@ class _PerfilProductoState extends State<PerfilProducto> {
       setState(() {
         isLoading = true;
       });
-      final producto = await repositoryProducto.getProductoByID(
-        int.parse(widget.docID),
-      );
+      final producto = await repositoryProducto.getProductoByID(widget.docID);
       setState(() {
         nombre = producto!.nombre;
         unidad = producto.unidadMedida!;
         precio = producto.precio;
         costos = producto.costo;
+        isv = producto.isv;
+        precioVenta = producto.precioVenta;
         widget.idProveedor = producto.proveedorId!;
         inventario = producto.stock;
+        stockMinimo = producto.stockMinimo;
         estado = producto.estado!;
         fechaCreacion = producto.fechaCreacion!;
         fechaActualizacion = producto.fechaActualizacion!;
@@ -158,6 +175,9 @@ class _PerfilProductoState extends State<PerfilProducto> {
     bool isEditProveedor,
     bool isEditCosto,
     bool isEditEstado,
+    bool isEditCategoria,
+    bool isEditStockMinimo,
+    bool isEditISV,
   ) {
     Navigator.push(
       context,
@@ -171,14 +191,19 @@ class _PerfilProductoState extends State<PerfilProducto> {
           isEditProveedor: isEditProveedor,
           isEditCosto: isEditCosto,
           isEditEstado: isEditEstado,
+          isEditCategoria: isEditCategoria,
+          isEditStockMinimo: isEditStockMinimo,
+          isEditISV: isEditISV,
           inventario: inventario,
           nombre: nombre,
           precio: precio,
           costo: costos,
           unidadMedida: unidad,
           stock: inventario,
+          stockMinimo: stockMinimo,
           proveedorId: widget.idProveedor,
           estado: estado,
+          isv: isv,
           fechaCreacion: fechaCreacion,
           fechaActualizacion: fechaActualizacion,
         ),
@@ -373,6 +398,9 @@ class _PerfilProductoState extends State<PerfilProducto> {
                       case 'editar_producto':
                         _navigateToEdit(
                           context,
+                          true,
+                          true,
+                          true,
                           true,
                           true,
                           true,
@@ -607,7 +635,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
                         ),
                         _buildStatRow(
                           'Valor en inventario',
-                          'L. ${inventario * precio}',
+                          'L. ${inventario * costos}',
                         ),
                         if (ultimasVentas.isNotEmpty) ...[
                           SizedBox(height: 16),
@@ -739,7 +767,7 @@ class _PerfilProductoState extends State<PerfilProducto> {
                     ).format(DateTime.parse(ultimasVentas[0]['fecha']))
                   : 'N/A',
             ),
-            _buildStatRow('Valor en inventario', 'L. ${inventario * precio}'),
+            _buildStatRow('Valor en inventario', 'L. ${inventario * costos}'),
             if (ultimasVentas.isNotEmpty) ...[
               SizedBox(height: 16),
               Text(
@@ -874,13 +902,21 @@ class _PerfilProductoState extends State<PerfilProducto> {
             _infoRow('Código', widget.docID, infoFontSize),
             _infoRow('Unidad', unidad, infoFontSize),
             _infoRow('Stock', inventario.toString(), infoFontSize),
+            _infoRow('Stock mínimo', stockMinimo.toString(), infoFontSize),
             _infoRow('Precio', 'L. $precio', infoFontSize),
             _infoRow('Costo', 'L. $costos', infoFontSize),
+            _infoRow('ISV', '$isv %', infoFontSize),
+            _infoRow(
+              'Precio con ISV',
+              'L. ${precioVenta.toStringAsFixed(2)}',
+              infoFontSize,
+            ),
             _infoRow(
               'Porcentaje de ganancia',
               '${((precio - costos) / costos * 100).toStringAsFixed(2)} %',
               infoFontSize,
             ),
+            _infoRow('Categoria', nombreCategoria, infoFontSize),
             _infoRow('Proveedor', nombreProveedor, infoFontSize),
             _infoRow('Estado', estado, infoFontSize),
             _infoRow(

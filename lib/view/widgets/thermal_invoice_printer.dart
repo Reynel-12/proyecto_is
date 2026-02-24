@@ -135,6 +135,12 @@ class ThermalInvoicePrinter {
               maxWidth,
               align: pw.TextAlign.center,
             ),
+          if (data.businessEmail.isNotEmpty)
+            _regularText(
+              "Correo electrónico: ${data.businessEmail}",
+              maxWidth,
+              align: pw.TextAlign.center,
+            ),
 
           // === DATOS SAR ===
           if (data.cai.isNotEmpty) ...[
@@ -215,30 +221,112 @@ class ThermalInvoicePrinter {
       decimalDigits: 2,
     );
 
+    // Calcular desglose de impuestos
+    double totalExento = 0.0;
+    double totalGravado15 = 0.0;
+    double isv15 = 0.0;
+    double totalGravado18 = 0.0;
+    double isv18 = 0.0;
+
+    for (var item in data.items) {
+      if (item.isvPercent == 0) {
+        totalExento += item.total;
+      } else if (item.isvPercent == 15) {
+        double base = item.total / 1.15;
+        totalGravado15 += base;
+        isv15 += (item.total - base);
+      } else if (item.isvPercent == 18) {
+        double base = item.total / 1.18;
+        totalGravado18 += base;
+        isv18 += (item.total - base);
+      } else {
+        // Fallback para otros porcentajes, tratarlos como Gravado Genérico
+        double factor = 1 + (item.isvPercent / 100);
+        double base = item.total / factor;
+        // Podríamos agregarlo a 15 o separarlo. Por ahora se asume 15/18 son los principales.
+        // Si hay otro, lo sumamos al base 15 como default o creamos otro bucket.
+        // Asumiremos que todo lo demás va a 15 por simplicidad si no es 18.
+        totalGravado15 += base;
+        isv15 += (item.total - base);
+      }
+    }
+
+    // Fallback para facturas históricas sin desglose por ítem (Solo si hay ISV global pero no calculable)
+    bool useLegacyMode =
+        (totalGravado15 == 0 && totalGravado18 == 0 && data.isv > 0);
+
     return pw.Align(
       alignment: pw.Alignment.centerRight,
       child: pw.Container(
-        width: maxWidth * 0.6,
+        width: maxWidth * 0.75, // Un poco más ancho para textos largos
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
-            _divider(maxWidth * 0.6),
+            _divider(maxWidth * 0.75),
+
+            if (useLegacyMode) ...[
+              _totalRow(
+                "Subtotal:",
+                currency.format(data.subtotal),
+                maxWidth * 0.75,
+              ),
+              _totalRow("ISV:", currency.format(data.isv), maxWidth * 0.75),
+            ] else ...[
+              // Subtotal (Suma de bases + exento)
+              _totalRow(
+                "Subtotal:",
+                currency.format(totalExento + totalGravado15 + totalGravado18),
+                maxWidth * 0.75,
+              ),
+
+              if (totalExento > 0)
+                _totalRow(
+                  "Importe Exento:",
+                  currency.format(totalExento),
+                  maxWidth * 0.75,
+                ),
+
+              if (totalGravado15 > 0) ...[
+                _totalRow(
+                  "Importe Gravado 15%:",
+                  currency.format(totalGravado15),
+                  maxWidth * 0.75,
+                ),
+                _totalRow("ISV 15%:", currency.format(isv15), maxWidth * 0.75),
+              ],
+
+              if (totalGravado18 > 0) ...[
+                _totalRow(
+                  "Importe Gravado 18%:",
+                  currency.format(totalGravado18),
+                  maxWidth * 0.75,
+                ),
+                _totalRow("ISV 18%:", currency.format(isv18), maxWidth * 0.75),
+              ],
+            ],
+
+            pw.SizedBox(height: 4),
+            _divider(maxWidth * 0.75),
+            pw.SizedBox(height: 4),
+
             _totalRow(
-              "Subtotal:",
-              currency.format(data.subtotal),
-              maxWidth * 0.6,
+              "TOTAL A PAGAR:",
+              currency.format(data.total),
+              maxWidth * 0.75,
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 12,
             ),
-            _totalRow("ISV 15%:", currency.format(data.isv), maxWidth * 0.6),
-            _totalRow("TOTAL:", currency.format(data.total), maxWidth * 0.6),
+
+            pw.SizedBox(height: 4),
             _totalRow(
               "Recibido:",
               currency.format(data.recibido),
-              maxWidth * 0.6,
+              maxWidth * 0.75,
             ),
             _totalRow(
               "Cambio:",
               currency.format(data.recibido - data.total),
-              maxWidth * 0.6,
+              maxWidth * 0.75,
             ),
           ],
         ),
@@ -252,10 +340,11 @@ class ThermalInvoicePrinter {
     String text,
     double maxWidth, {
     pw.TextAlign align = pw.TextAlign.left,
+    double? fontSize,
   }) {
     return pw.Text(
       text,
-      style: pw.TextStyle(fontSize: 9, lineSpacing: _lineSpacing),
+      style: pw.TextStyle(fontSize: fontSize ?? 9, lineSpacing: _lineSpacing),
       textAlign: align,
     );
   }
@@ -300,10 +389,15 @@ class ThermalInvoicePrinter {
               ? "${item.description.substring(0, 18)}.."
               : item.description;
 
+          final isvText = item.isvPercent == 0
+              ? "(E)"
+              : "(${item.isvPercent.toStringAsFixed(0)}%)";
+
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _boldText(desc, maxWidth, fontSize: 9),
+              _boldText("$desc $isvText", maxWidth, fontSize: 9),
+
               pw.Row(
                 children: [
                   _regularText("${item.quantity}x", maxWidth * 0.2),
@@ -324,6 +418,15 @@ class ThermalInvoicePrinter {
                   ),
                 ],
               ),
+              if (item.discount > 0)
+                pw.Align(
+                  alignment: pw.Alignment.centerRight,
+                  child: _regularText(
+                    "Desc: -${NumberFormat.currency(symbol: 'L. ', decimalDigits: 2).format(item.discount)}",
+                    maxWidth,
+                    fontSize: 8,
+                  ),
+                ),
               pw.SizedBox(height: 4),
             ],
           );
@@ -361,7 +464,21 @@ class ThermalInvoicePrinter {
               children: [
                 pw.Padding(
                   padding: const pw.EdgeInsets.all(3),
-                  child: _regularText(item.description, 100),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _regularText(
+                        "${item.description} ${item.isvPercent == 0 ? '(E)' : '(${item.isvPercent.toStringAsFixed(0)}%)'}",
+                        100,
+                      ),
+                      if (item.discount > 0)
+                        _regularText(
+                          "Desc: -${NumberFormat.currency(symbol: 'L.', decimalDigits: 2).format(item.discount)}",
+                          100,
+                          fontSize: 7,
+                        ),
+                    ],
+                  ),
                 ),
                 pw.Padding(
                   padding: const pw.EdgeInsets.all(3),
@@ -401,12 +518,22 @@ class ThermalInvoicePrinter {
     }
   }
 
-  pw.Widget _totalRow(String label, String value, double width) {
+  pw.Widget _totalRow(
+    String label,
+    String value,
+    double width, {
+    pw.FontWeight fontWeight = pw.FontWeight.normal,
+    double fontSize = 9,
+  }) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        _regularText(label, width * 0.5),
-        _boldText(value, width * 0.5, align: pw.TextAlign.right),
+        _regularText(label, width * 0.6),
+        pw.Text(
+          value,
+          style: pw.TextStyle(fontSize: fontSize, fontWeight: fontWeight),
+          textAlign: pw.TextAlign.right,
+        ),
       ],
     );
   }
@@ -420,6 +547,7 @@ class InvoiceData {
   final String businessRtn;
   final String businessAddress;
   final String businessPhone;
+  final String businessEmail;
   final String typeOrder;
   final String invoiceNumber;
   final String date;
@@ -447,6 +575,7 @@ class InvoiceData {
     required this.businessRtn,
     this.businessAddress = '',
     this.businessPhone = '',
+    this.businessEmail = '',
     required this.typeOrder,
     required this.invoiceNumber,
     required this.date,
@@ -474,13 +603,17 @@ class InvoiceItem {
   final String description;
   final int quantity;
   final double unitPrice;
+  final double discount;
   final double total;
+  final double isvPercent;
 
   InvoiceItem({
     required this.description,
     required this.quantity,
     required this.unitPrice,
-  }) : total = quantity * unitPrice;
+    this.discount = 0.0,
+    this.isvPercent = 0.0,
+  }) : total = (quantity * unitPrice) - discount;
 }
 
 class ThermalInvoicePreview extends StatelessWidget {

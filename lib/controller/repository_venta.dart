@@ -81,10 +81,10 @@ class VentaRepository {
           final int stockActual = result.first['stock'] as int;
 
           if (stockActual < detalle.cantidad) {
-            throw Exception(
-              "Stock insuficiente para el producto '${detalle.productoId}'. "
-              "Stock actual: $stockActual, requerido: ${detalle.cantidad}",
+            _logger.log.w(
+              'Stock insuficiente para el producto ${detalle.productoId}. Stock actual: $stockActual, requerido: ${detalle.cantidad}',
             );
+            return -2;
           }
         }
 
@@ -187,6 +187,9 @@ class VentaRepository {
       dv.cantidad,
       dv.precio_unitario,
       dv.subtotal,
+      dv.isv AS isv_detalle,
+      dv.descuento,
+      p.id_producto,
       p.nombre AS producto_nombre,
       p.unidad_medida
     FROM ventas v
@@ -239,12 +242,14 @@ class VentaRepository {
 
         ventasMap[idVenta]!.detalles.add(
           DetalleItem(
+            id: row['id_producto'],
             producto: row['producto_nombre'],
             unidadMedida: row['unidad_medida'],
             cantidad: row['cantidad'],
             precio: row['precio_unitario'],
-            isv: row['isv'],
+            isv: row['isv_detalle'],
             subtotal: row['subtotal'],
+            descuento: row['descuento'],
           ),
         );
       }
@@ -314,6 +319,312 @@ class VentaRepository {
         stackTrace: st,
       );
       return [];
+    }
+  }
+
+  // --- Mètodos para Estadísticas ---
+
+  Future<List<Map<String, dynamic>>> getTopProductosVendidos({
+    int limit = 10,
+  }) async {
+    try {
+      final db = await dbHelper.database;
+      return await db.rawQuery(
+        '''
+        SELECT 
+          p.nombre,
+          p.unidad_medida,
+          SUM(dv.cantidad) as total_vendido,
+          SUM(dv.subtotal) as total_ingresos
+        FROM ${DBHelper.detalleVentasTable} dv
+        INNER JOIN ${DBHelper.productosTable} p ON dv.producto_id = p.id_producto
+        GROUP BY dv.producto_id
+        ORDER BY total_vendido DESC
+        LIMIT ?
+      ''',
+        [limit],
+      );
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al obtener top productos vendidos',
+        error: e,
+        stackTrace: st,
+      );
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getTopCategoriasVendidas({
+    int limit = 5,
+  }) async {
+    try {
+      final db = await dbHelper.database;
+      return await db.rawQuery(
+        '''
+        SELECT 
+          c.nombre,
+          SUM(dv.cantidad) as total_vendido
+        FROM ${DBHelper.detalleVentasTable} dv
+        INNER JOIN ${DBHelper.productosTable} p ON dv.producto_id = p.id_producto
+        INNER JOIN ${DBHelper.categoriasTable} c ON p.categoria_id = c.id_categoria
+        GROUP BY c.id_categoria
+        ORDER BY total_vendido DESC
+        LIMIT ?
+      ''',
+        [limit],
+      );
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al obtener top categorias vendidas',
+        error: e,
+        stackTrace: st,
+      );
+      return [];
+    }
+  }
+
+  Future<Map<String, double>> getResumenVentas() async {
+    try {
+      final db = await dbHelper.database;
+      final now = DateTime.now();
+
+      // Fechas para hoy
+      final startToday = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).toIso8601String();
+      final endToday = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        23,
+        59,
+        59,
+      ).toIso8601String();
+
+      // Fechas para semana actual (Lunes a Domingo)
+      // En Dart weekday 1 = Lunes, 7 = Domingo
+      final startWeekDate = now.subtract(Duration(days: now.weekday - 1));
+      final startWeek = DateTime(
+        startWeekDate.year,
+        startWeekDate.month,
+        startWeekDate.day,
+      ).toIso8601String();
+
+      // Fechas para mes actual
+      final startMonth = DateTime(now.year, now.month, 1).toIso8601String();
+
+      // Consultas
+      final resHoy = await db.rawQuery(
+        "SELECT SUM(total) as total FROM ${DBHelper.ventasTable} WHERE fecha BETWEEN ? AND ?",
+        [startToday, endToday],
+      );
+
+      final resSemana = await db.rawQuery(
+        "SELECT SUM(total) as total FROM ${DBHelper.ventasTable} WHERE fecha >= ?",
+        [startWeek],
+      );
+
+      final resMes = await db.rawQuery(
+        "SELECT SUM(total) as total FROM ${DBHelper.ventasTable} WHERE fecha >= ?",
+        [startMonth],
+      );
+
+      return {
+        'hoy': (resHoy.first['total'] as num?)?.toDouble() ?? 0.0,
+        'semana': (resSemana.first['total'] as num?)?.toDouble() ?? 0.0,
+        'mes': (resMes.first['total'] as num?)?.toDouble() ?? 0.0,
+      };
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al obtener resumen de ventas',
+        error: e,
+        stackTrace: st,
+      );
+      return {'hoy': 0.0, 'semana': 0.0, 'mes': 0.0};
+    }
+  }
+
+  // Método para obtener una venta completa por ID (específico para Devoluciones)
+  Future<VentaCompleta?> getVentaCompletaById(int ventaId) async {
+    try {
+      final db = await dbHelper.database;
+
+      // Reutilizamos la query de detallado pero flitramos por ID
+      final res = await db.rawQuery(
+        '''
+    SELECT 
+      v.id_venta AS venta_id,
+      v.fecha,
+      v.total AS venta_total,
+      v.estado_fiscal,
+      v.cambio,
+      v.monto_pagado,
+      v.numero_factura,
+      v.cai,
+      v.rtn_cliente,
+      v.nombre_cliente,
+      v.rango_autorizado,
+      v.rtn_emisor,
+      v.razon_social_emisor,
+      v.fecha_limite_cai,
+      v.isv,
+      v.subtotal,
+      v.metodo_pago,
+      dv.cantidad,
+      dv.precio_unitario,
+      dv.subtotal,
+      dv.isv AS isv_detalle,
+      dv.descuento,
+      p.id_producto,
+      p.nombre AS producto_nombre,
+      p.unidad_medida
+    FROM ventas v
+    INNER JOIN detalle_ventas dv ON v.id_venta = dv.venta_id
+    INNER JOIN productos p ON dv.producto_id = p.id_producto
+    WHERE v.id_venta = ?
+  ''',
+        [ventaId],
+      );
+
+      if (res.isEmpty) return null;
+
+      // Mapeamos el primero para cabecera
+      final firstRow = res.first;
+
+      final venta = VentaCompleta(
+        id: firstRow['venta_id'] as int,
+        fecha: firstRow['fecha'] as String,
+        total: (firstRow['venta_total'] as num).toDouble(),
+        estado: firstRow['estado_fiscal'] as String,
+        cambio: (firstRow['cambio'] as num?)?.toDouble() ?? 0.0,
+        montoPagado: (firstRow['monto_pagado'] as num?)?.toDouble() ?? 0.0,
+        numeroFactura: firstRow['numero_factura'] as String,
+        cai: firstRow['cai'] as String,
+        rtnCliente: firstRow['rtn_cliente'] as String? ?? 'N/A',
+        nombreCliente:
+            firstRow['nombre_cliente'] as String? ?? 'Consumidor Final',
+        rangoAutorizado: firstRow['rango_autorizado'] as String,
+        rtnEmisor: firstRow['rtn_emisor'] as String,
+        razonSocialEmisor: firstRow['razon_social_emisor'] as String,
+        fechaLimiteCai: firstRow['fecha_limite_cai'] as String,
+        isv: (firstRow['isv'] as num).toDouble(),
+        subtotal: (firstRow['subtotal'] as num).toDouble(),
+        metodoPago: firstRow['metodo_pago'] as String? ?? 'EFECTIVO',
+        detalles: [],
+      );
+
+      for (var row in res) {
+        venta.detalles.add(
+          DetalleItem(
+            id: row['id_producto'] as String,
+            producto: row['producto_nombre'] as String,
+            unidadMedida: row['unidad_medida'] as String,
+            cantidad: row['cantidad'] as int,
+            precio: (row['precio_unitario'] as num).toDouble(),
+            isv: (row['isv_detalle'] as num).toDouble(),
+            subtotal: (row['subtotal'] as num).toDouble(),
+            descuento: (row['descuento'] as num).toDouble(),
+          ),
+        );
+      }
+
+      return venta;
+    } catch (e, st) {
+      _logger.log.e('Error al obtener venta por ID', error: e, stackTrace: st);
+      return null;
+    }
+  }
+
+  // Método para obtener una venta completa por Factura (específico para Devoluciones)
+  Future<VentaCompleta?> getVentaCompletaByFactura(String facturaId) async {
+    try {
+      final db = await dbHelper.database;
+
+      // Reutilizamos la query de detallado pero flitramos por facturaId
+      final res = await db.rawQuery(
+        '''
+    SELECT 
+      v.id_venta AS venta_id,
+      v.fecha,
+      v.total AS venta_total,
+      v.estado_fiscal,
+      v.cambio,
+      v.monto_pagado,
+      v.numero_factura,
+      v.cai,
+      v.rtn_cliente,
+      v.nombre_cliente,
+      v.rango_autorizado,
+      v.rtn_emisor,
+      v.razon_social_emisor,
+      v.fecha_limite_cai,
+      v.isv,
+      v.subtotal,
+      v.metodo_pago,
+      dv.cantidad,
+      dv.precio_unitario,
+      dv.subtotal,
+      dv.isv AS isv_detalle,
+      dv.descuento,
+      p.id_producto,
+      p.nombre AS producto_nombre,
+      p.unidad_medida
+    FROM ventas v
+    INNER JOIN detalle_ventas dv ON v.id_venta = dv.venta_id
+    INNER JOIN productos p ON dv.producto_id = p.id_producto
+    WHERE v.numero_factura = ?
+  ''',
+        [facturaId],
+      );
+
+      if (res.isEmpty) return null;
+
+      // Mapeamos el primero para cabecera
+      final firstRow = res.first;
+
+      final venta = VentaCompleta(
+        id: firstRow['venta_id'] as int,
+        fecha: firstRow['fecha'] as String,
+        total: (firstRow['venta_total'] as num).toDouble(),
+        estado: firstRow['estado_fiscal'] as String,
+        cambio: (firstRow['cambio'] as num?)?.toDouble() ?? 0.0,
+        montoPagado: (firstRow['monto_pagado'] as num?)?.toDouble() ?? 0.0,
+        numeroFactura: firstRow['numero_factura'] as String,
+        cai: firstRow['cai'] as String,
+        rtnCliente: firstRow['rtn_cliente'] as String? ?? 'N/A',
+        nombreCliente:
+            firstRow['nombre_cliente'] as String? ?? 'Consumidor Final',
+        rangoAutorizado: firstRow['rango_autorizado'] as String,
+        rtnEmisor: firstRow['rtn_emisor'] as String,
+        razonSocialEmisor: firstRow['razon_social_emisor'] as String,
+        fechaLimiteCai: firstRow['fecha_limite_cai'] as String,
+        isv: (firstRow['isv'] as num).toDouble(),
+        subtotal: (firstRow['subtotal'] as num).toDouble(),
+        metodoPago: firstRow['metodo_pago'] as String? ?? 'EFECTIVO',
+        detalles: [],
+      );
+
+      for (var row in res) {
+        venta.detalles.add(
+          DetalleItem(
+            id: row['id_producto'] as String,
+            producto: row['producto_nombre'] as String,
+            unidadMedida: row['unidad_medida'] as String,
+            cantidad: row['cantidad'] as int,
+            precio: (row['precio_unitario'] as num).toDouble(),
+            isv: (row['isv_detalle'] as num).toDouble(),
+            subtotal: (row['subtotal'] as num).toDouble(),
+            descuento: (row['descuento'] as num).toDouble(),
+          ),
+        );
+      }
+
+      return venta;
+    } catch (e, st) {
+      _logger.log.e('Error al obtener venta por ID', error: e, stackTrace: st);
+      return null;
     }
   }
 }

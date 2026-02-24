@@ -2,10 +2,12 @@ import 'package:proyecto_is/controller/database.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/user.dart';
+import 'package:proyecto_is/controller/repository_audit.dart';
 
 class RepositoryUser {
   final dbHelper = DBHelper();
   final AppLogger _logger = AppLogger.instance;
+  final RepositoryAudit _auditRepo = RepositoryAudit();
 
   Future<int> insertUser(User user) async {
     try {
@@ -78,13 +80,31 @@ class RepositoryUser {
 
   Future<int> updateUser(int id, Map<String, dynamic> user) async {
     try {
+      final oldUser = await getUserById(id);
+      if (oldUser == null) return -1;
+
       final db = await dbHelper.database;
-      return await db.update(
+      final result = await db.update(
         DBHelper.usuariosTable,
         user,
         where: 'id_usuario = ?',
         whereArgs: [id],
       );
+
+      if (result > 0) {
+        final newUserMap = Map<String, dynamic>.from(oldUser.toMap());
+        user.forEach((key, value) {
+          newUserMap[key] = value;
+        });
+
+        await _auditRepo.logUpdate(
+          tabla: DBHelper.usuariosTable,
+          registroId: id.toString(),
+          oldData: oldUser.toMap(),
+          newData: newUserMap,
+        );
+      }
+      return result;
     } catch (e, st) {
       _logger.log.e('Error al actualizar usuario', error: e, stackTrace: st);
       return -1;
@@ -93,12 +113,24 @@ class RepositoryUser {
 
   Future<int> deleteUser(int id) async {
     try {
+      final oldUser = await getUserById(id);
+      if (oldUser == null) return -1;
+
       final db = await dbHelper.database;
-      return await db.delete(
+      final result = await db.delete(
         DBHelper.usuariosTable,
         where: 'id_usuario = ?',
         whereArgs: [id],
       );
+
+      if (result > 0) {
+        await _auditRepo.logDelete(
+          tabla: DBHelper.usuariosTable,
+          registroId: id.toString(),
+          oldData: oldUser.toMap(),
+        );
+      }
+      return result;
     } catch (e, st) {
       _logger.log.e('Error al eliminar usuario', error: e, stackTrace: st);
       return -1;

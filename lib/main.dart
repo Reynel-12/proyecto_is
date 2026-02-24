@@ -74,6 +74,9 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(
           create: (context) => TemaProveedor(PreferencesService()),
         ),
+        ChangeNotifierProvider(
+          create: (context) => NotificationProvider(),
+        ),
       ],
       child: Consumer<TemaProveedor>(
         builder: (context, temaProveedor, child) {

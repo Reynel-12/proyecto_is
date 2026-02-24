@@ -1,10 +1,12 @@
 import 'package:proyecto_is/controller/database.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/producto.dart';
+import 'package:proyecto_is/controller/repository_audit.dart';
 
 class ProductoRepository {
   final dbHelper = DBHelper();
   final AppLogger _logger = AppLogger.instance;
+  final RepositoryAudit _auditRepo = RepositoryAudit();
 
   Future<int> insertProducto(Producto producto) async {
     try {
@@ -68,7 +70,27 @@ class ProductoRepository {
     }
   }
 
-  Future<Producto?> getProductoByID(int id) async {
+  Future<List<Producto>> getProductosByCategoria(int idCategoria) async {
+    try {
+      final db = await dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'productos',
+        where: 'categoria_id = ?',
+        whereArgs: [idCategoria],
+      );
+
+      return maps.map((map) => Producto.fromMap(map)).toList();
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al obtener productos por categoria',
+        error: e,
+        stackTrace: st,
+      );
+      return [];
+    }
+  }
+
+  Future<Producto?> getProductoByID(String id) async {
     try {
       final db = await dbHelper.database;
       final List<Map<String, dynamic>> maps = await db.query(
@@ -90,27 +112,87 @@ class ProductoRepository {
 
   Future<int> updateProducto(Producto producto) async {
     try {
+      final oldProduct = await getProductoByID(producto.id);
+      if (oldProduct == null) return -1;
+
       final db = await dbHelper.database;
-      return await db.update(
+      final result = await db.update(
         'productos',
         producto.toMap(),
         where: 'id_producto = ?',
         whereArgs: [producto.id],
       );
+
+      if (result > 0) {
+        await _auditRepo.logUpdate(
+          tabla: 'productos',
+          registroId: producto.id,
+          oldData: oldProduct.toMap(),
+          newData: producto.toMap(),
+        );
+      }
+      return result;
     } catch (e, st) {
       _logger.log.e('Error al actualizar producto', error: e, stackTrace: st);
       return -1;
     }
   }
 
+  Future<int> updateProductoPrecio(double costoUnitario, String id) async {
+    try {
+      final oldProduct = await getProductoByID(id);
+      if (oldProduct == null) return -1;
+
+      final db = await dbHelper.database;
+      final result = await db.update(
+        'productos',
+        {'costo': costoUnitario},
+        where: 'id_producto = ?',
+        whereArgs: [id],
+      );
+
+      if (result > 0) {
+        final newProduct = await getProductoByID(id);
+        if (newProduct != null) {
+          await _auditRepo.logUpdate(
+            tabla: 'productos',
+            registroId: id,
+            oldData: oldProduct.toMap(),
+            newData: newProduct.toMap(),
+          );
+        }
+      }
+      return result;
+    } catch (e, st) {
+      _logger.log.e(
+        'Error al actualizar precio del producto',
+        error: e,
+        stackTrace: st,
+      );
+      return -1;
+    }
+  }
+
   Future<int> deleteProducto(String id) async {
     try {
+      final oldProduct = await getProductoByID(id);
+      if (oldProduct == null) return -1;
+
       final db = await dbHelper.database;
-      return await db.delete(
+      final result = await db.delete(
         'productos',
         where: 'id_producto = ?',
         whereArgs: [id],
       );
+
+      if (result > 0) {
+        await _auditRepo.logDelete(
+          tabla: 'productos',
+          registroId: id,
+          oldData: oldProduct.toMap(),
+        );
+      }
+      return result;
     } catch (e, st) {
       _logger.log.e('Error al eliminar producto', error: e, stackTrace: st);
       return -1;
@@ -131,13 +213,29 @@ class ProductoRepository {
 
   Future<int> editInventario(String id, int cantidad) async {
     try {
+      final oldProduct = await getProductoByID(id);
+      if (oldProduct == null) return -1;
+
       final db = await dbHelper.database;
-      return await db.update(
+      final result = await db.update(
         'productos',
         {'stock': cantidad},
         where: 'id_producto = ?',
         whereArgs: [id],
       );
+
+      if (result > 0) {
+        final newProduct = await getProductoByID(id);
+        if (newProduct != null) {
+          await _auditRepo.logUpdate(
+            tabla: 'productos',
+            registroId: id,
+            oldData: oldProduct.toMap(),
+            newData: newProduct.toMap(),
+          );
+        }
+      }
+      return result;
     } catch (e, st) {
       _logger.log.e('Error al editar inventario', error: e, stackTrace: st);
       return -1;
