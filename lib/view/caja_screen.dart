@@ -384,9 +384,39 @@ class _CajaScreenState extends State<CajaScreen>
               final monto = double.tryParse(montoController.text);
               if (monto != null) {
                 try {
-                  await _cajaRepository.abrirCaja(monto);
-                  Navigator.pop(context);
-                  _cargarDatos();
+                  final resultado = await _cajaRepository.abrirCaja(monto);
+                  if (resultado == -2) {
+                    // El usuario ya tiene una caja abierta
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      AwesomeDialog(
+                        context: context,
+                        dialogType: DialogType.warning,
+                        animType: AnimType.scale,
+                        title: 'Caja ya abierta',
+                        desc:
+                            'Ya tienes una caja abierta. No puedes abrir más de una caja a la vez.',
+                        btnOkText: 'Entendido',
+                        btnOkOnPress: () {},
+                      ).show();
+                    }
+                  } else if (resultado == -1) {
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      AwesomeDialog(
+                        context: context,
+                        dialogType: DialogType.error,
+                        animType: AnimType.scale,
+                        title: 'Error',
+                        desc: 'No se pudo abrir la caja. Verifica tu sesión.',
+                        btnOkText: 'Aceptar',
+                        btnOkOnPress: () {},
+                      ).show();
+                    }
+                  } else {
+                    if (context.mounted) Navigator.pop(context);
+                    _cargarDatos();
+                  }
                 } catch (e, st) {
                   _logger.log.e(
                     'Error al abrir caja',

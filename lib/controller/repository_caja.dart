@@ -9,21 +9,36 @@ class CajaRepository {
   final dbHelper = DBHelper();
   final RepositoryAudit _auditRepo = RepositoryAudit();
 
+  // Retorna -2 si el usuario ya tiene una caja abierta
   Future<int> abrirCaja(double montoInicial) async {
     final logger = AppLogger.instance;
     final prefs = await SharedPreferences.getInstance();
     try {
       final db = await dbHelper.database;
       String? fullname = prefs.getString('user_fullname');
-      if (fullname == null) {
+      String? usuarioId = prefs.getString('user');
+      if (fullname == null || usuarioId == null) {
         return -1;
       }
+
+      // Validar que el usuario no tenga ya una caja abierta
+      final cajaExistente = await db.query(
+        DBHelper.cajaTable,
+        where: "estado = ? AND usuario_id = ?",
+        whereArgs: ['Abierta', usuarioId],
+        limit: 1,
+      );
+      if (cajaExistente.isNotEmpty) {
+        return -2; // Ya tiene una caja abierta
+      }
+
       final caja = Caja(
         cajeroAbre: fullname,
         cajeroCierra: fullname,
         fechaApertura: DateTime.now().toIso8601String(),
         montoApertura: montoInicial,
         totalEfectivo: montoInicial,
+        usuarioId: usuarioId,
       );
       return await db.insert(DBHelper.cajaTable, caja.toMap());
     } catch (e, stackTrace) {
@@ -32,14 +47,19 @@ class CajaRepository {
     }
   }
 
+  // Devuelve la caja abierta del usuario actual (filtrado por usuario_id)
   Future<Caja?> obtenerCajaAbierta() async {
     final logger = AppLogger.instance;
+    final prefs = await SharedPreferences.getInstance();
     try {
       final db = await dbHelper.database;
+      final String? usuarioId = prefs.getString('user');
+      if (usuarioId == null) return null;
+
       final List<Map<String, dynamic>> maps = await db.query(
         DBHelper.cajaTable,
-        where: 'estado = ?',
-        whereArgs: ['Abierta'],
+        where: "estado = ? AND usuario_id = ?",
+        whereArgs: ['Abierta', usuarioId],
         orderBy: 'id_caja DESC',
         limit: 1,
       );
@@ -338,6 +358,7 @@ class CajaRepository {
     }
   }
 
+  // Historial global: muestra TODAS las cajas (de todos los usuarios)
   Future<List<Caja>> obtenerHistorialCajas({
     String filtro = 'Todo',
     DateTime? fechaInicio,
@@ -346,6 +367,7 @@ class CajaRepository {
     final logger = AppLogger.instance;
     try {
       final db = await dbHelper.database;
+      // Sin filtro por usuario: se muestran todas las cajas cerradas de todos los cajeros
       String whereClause = "estado = 'Cerrada'";
       List<dynamic> whereArgs = [];
 

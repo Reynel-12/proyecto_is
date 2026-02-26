@@ -139,27 +139,248 @@ class _NuevaDevolucionViewState extends State<NuevaDevolucionView> {
 
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Confirmar Devolución"),
-        content: const Text(
-          "¿Desea procesar esta devolución? El inventario y la caja serán actualizados.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Cancelar"),
+      barrierDismissible: false,
+      builder: (ctx) {
+        final screenSize = MediaQuery.of(ctx).size;
+        final bool isMobileCtx = screenSize.width < 600;
+        final bool isTabletCtx =
+            screenSize.width >= 600 && screenSize.width < 900;
+        final double dialogWidth = isMobileCtx
+            ? screenSize.width * 0.92
+            : (isTabletCtx ? 480.0 : 520.0);
+
+        final isDark = Provider.of<TemaProveedor>(
+          ctx,
+          listen: false,
+        ).esModoOscuro;
+        final bgCard = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+        final bgDialog = isDark
+            ? const Color(0xFF2C2C2C)
+            : const Color(0xFFDCDCDC);
+        final txtColor = isDark ? Colors.white : Colors.black;
+        final subTxtColor = isDark ? Colors.white60 : Colors.black54;
+
+        final int itemsADevolver = _cantidadesDevolver.values
+            .where((v) => v > 0)
+            .length;
+
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: isMobileCtx ? 16 : (screenSize.width - dialogWidth) / 2,
+            vertical: 24,
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text(
-              "Confirmar",
-              style: TextStyle(color: Colors.white),
+          child: Container(
+            width: dialogWidth,
+            decoration: BoxDecoration(
+              color: bgDialog,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Header con gradiente ──────────────────────────────────
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 28,
+                    horizontal: 24,
+                  ),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.20),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.assignment_return_rounded,
+                          color: Colors.white,
+                          size: 36,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      const Text(
+                        'Confirmar Devolución',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Esta acción actualizará el inventario y la caja',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.85),
+                          fontSize: 13,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Cuerpo con resumen ────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Tarjeta de resumen
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: bgCard,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? Colors.white12 : Colors.black12,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            _dialogInfoRow(
+                              icon: Icons.receipt_long,
+                              label: 'Factura',
+                              value: _ventaSeleccionada!.numeroFactura,
+                              iconColor: Colors.blueAccent,
+                              txtColor: txtColor,
+                              subTxtColor: subTxtColor,
+                            ),
+                            Divider(
+                              height: 20,
+                              color: isDark ? Colors.white12 : Colors.black12,
+                            ),
+                            _dialogInfoRow(
+                              icon: Icons.inventory_2_outlined,
+                              label: 'Productos a devolver',
+                              value: '$itemsADevolver producto(s)',
+                              iconColor: const Color(0xFFFF6B35),
+                              txtColor: txtColor,
+                              subTxtColor: subTxtColor,
+                            ),
+                            Divider(
+                              height: 20,
+                              color: isDark ? Colors.white12 : Colors.black12,
+                            ),
+                            _dialogInfoRow(
+                              icon: Icons.payments_outlined,
+                              label: 'Total a reembolsar',
+                              value: 'L. ${totalDevolucion.toStringAsFixed(2)}',
+                              iconColor: Colors.green,
+                              txtColor: txtColor,
+                              subTxtColor: subTxtColor,
+                              valueBold: true,
+                              valueColor: Colors.green,
+                            ),
+                            Divider(
+                              height: 20,
+                              color: isDark ? Colors.white12 : Colors.black12,
+                            ),
+                            _dialogInfoRow(
+                              icon: Icons.account_balance_wallet_outlined,
+                              label: 'Tipo de reembolso',
+                              value: _tipoReembolso,
+                              iconColor: Colors.purple,
+                              txtColor: txtColor,
+                              subTxtColor: subTxtColor,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ── Botones ───────────────────────────────────────
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: txtColor,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                side: BorderSide(
+                                  color: isDark
+                                      ? Colors.white24
+                                      : Colors.black26,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Text(
+                                'Cancelar',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF6B35),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.check_circle_outline, size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Confirmar',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
 
     if (confirm != true) return;
@@ -189,6 +410,7 @@ class _NuevaDevolucionViewState extends State<NuevaDevolucionView> {
 
       final prefs = await SharedPreferences.getInstance();
       String? nombreUsuario = prefs.getString('user_fullname');
+      String? userId = prefs.getString('user');
 
       final devolucion = Devolucion(
         ventaId: _ventaSeleccionada!.id,
@@ -198,6 +420,7 @@ class _NuevaDevolucionViewState extends State<NuevaDevolucionView> {
         motivo: _motivoGlobalController.text,
         totalDevuelto: totalDevolucion,
         tipoReembolso: _tipoReembolso,
+        idUsuario: userId ?? '',
         estado: 'COMPLETADA',
       );
 
@@ -214,6 +437,47 @@ class _NuevaDevolucionViewState extends State<NuevaDevolucionView> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Widget _dialogInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color iconColor,
+    required Color txtColor,
+    required Color subTxtColor,
+    bool valueBold = false,
+    Color? valueColor,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: iconColor, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(color: subTxtColor, fontSize: 11)),
+              Text(
+                value,
+                style: TextStyle(
+                  color: valueColor ?? txtColor,
+                  fontWeight: valueBold ? FontWeight.bold : FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   void _mostrarMensaje(String title, String message, ContentType contentType) {

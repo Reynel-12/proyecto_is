@@ -54,8 +54,8 @@ class RepositoryDevolucion {
         // Por simplicidad, buscamos caja 'Abierta'.
         final List<Map<String, dynamic>> cajasAbiertas = await txn.query(
           DBHelper.cajaTable,
-          where: 'estado = ?',
-          whereArgs: ['Abierta'],
+          where: 'estado = ? AND usuario_id = ?',
+          whereArgs: ['Abierta', devolucion.idUsuario],
           limit: 1,
         );
 

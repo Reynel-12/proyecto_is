@@ -44,7 +44,7 @@ class DBHelper {
 
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onConfigure: (db) async {
         // Asegura claves foráneas siempre activas
         await db.execute("PRAGMA foreign_keys = ON;");
@@ -181,7 +181,8 @@ class DBHelper {
         ingresos REAL,
         egresos REAL,
         diferencia REAL,
-        estado TEXT
+        estado TEXT,
+        usuario_id TEXT
       );
     ''');
 
@@ -305,8 +306,7 @@ class DBHelper {
     int newVersion,
   ) async {
     if (oldVersion < 2) {
-      // Migración de V1 → V2
-      // await _migrationV1toV2(db);
+      await _migrationV1toV2(db);
     }
 
     if (oldVersion < 3) {
@@ -314,6 +314,11 @@ class DBHelper {
     }
 
     // Y así sucesivamente...
+  }
+
+  Future<void> _migrationV1toV2(Database db) async {
+    // Agregar columna usuario_id a la tabla caja (cajas existentes quedan con NULL)
+    await db.execute('ALTER TABLE $cajaTable ADD COLUMN usuario_id TEXT');
   }
 
   // Future<void> _migrationV1toV2(Database db) async {

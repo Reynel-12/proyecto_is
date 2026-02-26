@@ -8,6 +8,7 @@ class Devolucion {
   final double totalDevuelto;
   final String tipoReembolso; // 'EFECTIVO', 'NOTA_CREDITO', 'CAMBIO'
   final String estado; // 'PARCIAL', 'TOTAL'
+  final String idUsuario;
 
   Devolucion({
     this.id,
@@ -19,6 +20,7 @@ class Devolucion {
     required this.totalDevuelto,
     required this.tipoReembolso,
     required this.estado,
+    this.idUsuario = '',
   });
 
   Map<String, dynamic> toMap() {

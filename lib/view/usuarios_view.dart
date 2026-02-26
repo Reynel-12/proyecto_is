@@ -244,9 +244,9 @@ class _UsuariosState extends State<Usuarios> {
               ),
             ),
       floatingActionButton: isLoading
-          ? Container()
+          ? null
           : filteredUsuarios.isEmpty
-          ? Container()
+          ? null
           : FloatingActionButton(
               backgroundColor: Colors.blueAccent,
               onPressed: () {

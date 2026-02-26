@@ -8,11 +8,11 @@ class CargandoInventario extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Provider.of<TemaProveedor>(context).esModoOscuro
+    return Container(
+      color: Provider.of<TemaProveedor>(context).esModoOscuro
           ? Colors.black
           : const Color.fromRGBO(244, 243, 243, 1),
-      body: _buildLoadingState(),
+      child: _buildLoadingState(),
     );
   }
 

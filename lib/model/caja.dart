@@ -12,6 +12,7 @@ class Caja {
   final double egresos;
   final double? diferencia;
   final String estado; // 'Abierta', 'Cerrada'
+  final String? usuarioId;
 
   Caja({
     this.id,
@@ -27,6 +28,7 @@ class Caja {
     this.egresos = 0.0,
     this.diferencia,
     this.estado = 'Abierta',
+    this.usuarioId,
   });
 
   Map<String, dynamic> toMap() {
@@ -44,6 +46,7 @@ class Caja {
       'egresos': egresos,
       'diferencia': diferencia,
       'estado': estado,
+      'usuario_id': usuarioId,
     };
   }
 
@@ -62,6 +65,7 @@ class Caja {
       egresos: map['egresos'] ?? 0.0,
       diferencia: map['diferencia'],
       estado: map['estado'],
+      usuarioId: map['usuario_id'],
     );
   }
 
@@ -79,6 +83,7 @@ class Caja {
     double? egresos,
     double? diferencia,
     String? estado,
+    String? usuarioId,
   }) {
     return Caja(
       id: id ?? this.id,
@@ -94,6 +99,7 @@ class Caja {
       egresos: egresos ?? this.egresos,
       diferencia: diferencia ?? this.diferencia,
       estado: estado ?? this.estado,
+      usuarioId: usuarioId ?? this.usuarioId,
     );
   }
 }
