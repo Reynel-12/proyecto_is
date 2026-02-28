@@ -1020,7 +1020,6 @@ class _NuevaDevolucionViewState extends State<NuevaDevolucionView> {
   }
 
   Widget _buildConditionSelector(String id, bool isDarkMode, Color textColor) {
-    final current = _condiciones[id] ?? 'BUENO';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

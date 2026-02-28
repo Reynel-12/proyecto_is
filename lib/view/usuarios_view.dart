@@ -8,8 +8,6 @@ import 'package:proyecto_is/model/user.dart';
 import 'package:proyecto_is/view/nuevo_usuario.dart';
 import 'package:proyecto_is/view/perfil_usuario.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:proyecto_is/model/permissions.dart';
 import 'package:proyecto_is/utils/permission_helper.dart';
 import 'package:proyecto_is/view/widgets/usuarios_vacios.dart';

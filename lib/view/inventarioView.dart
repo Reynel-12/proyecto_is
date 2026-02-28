@@ -15,8 +15,6 @@ import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/view/widgets/inventory_pdf_preview.dart';
 import 'dart:io' show Platform;
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:proyecto_is/model/permissions.dart';
 import 'package:proyecto_is/utils/permission_helper.dart';
 
