@@ -764,7 +764,6 @@ class _CajaScreenState extends State<CajaScreen>
                                   ),
                                 );
                               }
-                              if (context.mounted) Navigator.pop(context);
                             } catch (e) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -778,6 +777,7 @@ class _CajaScreenState extends State<CajaScreen>
                               }
                             }
                           }
+                          if (context.mounted) Navigator.pop(context);
                         }
                       } catch (e, st) {
                         _logger.log.e(

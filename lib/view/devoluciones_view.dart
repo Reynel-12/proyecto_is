@@ -108,11 +108,18 @@ class _DevolucionesViewState extends State<DevolucionesView> {
             _loadDevoluciones();
           }
         },
-        label: const Text(
+        label: Text(
           'Nueva devolución',
-          style: TextStyle(fontSize: 16, color: Colors.white),
+          style: TextStyle(
+            fontSize: isMobile ? 16.0 : 18.0,
+            color: Colors.white,
+          ),
         ),
-        icon: const Icon(Icons.add, color: Colors.white),
+        icon: Icon(
+          Icons.add,
+          color: Colors.white,
+          size: isMobile ? 20.0 : 24.0,
+        ),
         backgroundColor: Colors.blueAccent,
       ),
     );
