@@ -719,7 +719,7 @@ class _NuevaDevolucionViewState extends State<NuevaDevolucionView> {
     Color bgColor,
   ) {
     return ListView(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 20, left: 12, right: 12),
       children: [
         _buildSaleHero(isDarkMode, textColor, cardColor),
         const SizedBox(height: 20),

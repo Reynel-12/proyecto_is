@@ -486,8 +486,8 @@ class _PerfilProductoState extends State<PerfilProducto> {
                 _buildProductInfo(elevation),
                 SizedBox(height: padding),
                 _buildStatsCard(elevation, padding),
-                SizedBox(height: padding),
-                _buildActionButton(),
+                // SizedBox(height: padding),
+                // _buildActionButton(),
               ],
             ),
           ),
@@ -969,40 +969,40 @@ class _PerfilProductoState extends State<PerfilProducto> {
     );
   }
 
-  Widget _buildActionButton() {
-    final bool isMobile = MediaQuery.of(context).size.width < 600;
+  // Widget _buildActionButton() {
+  //   final bool isMobile = MediaQuery.of(context).size.width < 600;
 
-    return Center(
-      child: ElevatedButton.icon(
-        onPressed: () {
-          _showAddInventory();
-        },
-        icon: Icon(
-          Icons.add_circle_outline,
-          size: isMobile ? 20.0 : 24.0,
-          color: Colors.white,
-        ),
-        label: Text(
-          'Agregar inventario',
-          style: TextStyle(
-            fontSize: isMobile ? 16.0 : 18.0,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blueAccent,
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 24.0 : 32.0,
-            vertical: isMobile ? 12.0 : 16.0,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-        ),
-      ),
-    );
-  }
+  //   return Center(
+  //     child: ElevatedButton.icon(
+  //       onPressed: () {
+  //         _showAddInventory();
+  //       },
+  //       icon: Icon(
+  //         Icons.add_circle_outline,
+  //         size: isMobile ? 20.0 : 24.0,
+  //         color: Colors.white,
+  //       ),
+  //       label: Text(
+  //         'Agregar inventario',
+  //         style: TextStyle(
+  //           fontSize: isMobile ? 16.0 : 18.0,
+  //           fontWeight: FontWeight.bold,
+  //           color: Colors.white,
+  //         ),
+  //       ),
+  //       style: ElevatedButton.styleFrom(
+  //         backgroundColor: Colors.blueAccent,
+  //         padding: EdgeInsets.symmetric(
+  //           horizontal: isMobile ? 24.0 : 32.0,
+  //           vertical: isMobile ? 12.0 : 16.0,
+  //         ),
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(30),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Future<void> _showEditInventory() {
     final screenSize = MediaQuery.of(context).size;
