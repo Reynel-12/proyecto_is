@@ -196,7 +196,10 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
                             if (prefs.getString('user') == widget.docID) {
                               await prefs.setString('tipo', rol);
                               await prefs.setString('estado', estado);
-                              await prefs.setString('permisos', jsonEncode(permisos));
+                              await prefs.setString(
+                                'permisos',
+                                jsonEncode(permisos),
+                              );
                             }
                           }
                         });
@@ -302,7 +305,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
             SizedBox(height: isMobile ? 12.0 : 16.0),
             _infoRow('Correo', correo, infoFontSize),
             _infoRow('Teléfono', telefono, infoFontSize),
-            _infoRow('Permisos', permisos.join(', '), infoFontSize),
+            InfoRowExpandable(label:  'Permisos', value: permisos.join(', '), fontSize: infoFontSize),
             _infoRow('Rol del usuario', rol, infoFontSize),
             _infoRow('Estado', estado, infoFontSize),
             _infoRow(
@@ -341,13 +344,18 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
                   : Colors.black,
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: fontSize,
-              color: Provider.of<TemaProveedor>(context).esModoOscuro
-                  ? Colors.white
-                  : Colors.black,
+          Flexible(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: fontSize,
+                color: Provider.of<TemaProveedor>(context).esModoOscuro
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+              textAlign: TextAlign.end,
             ),
           ),
         ],
@@ -423,5 +431,70 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(snackBar);
+  }
+}
+
+class InfoRowExpandable extends StatefulWidget {
+  final String label;
+  final String value;
+  final double fontSize;
+
+  const InfoRowExpandable({
+    required this.label,
+    required this.value,
+    required this.fontSize,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  _InfoRowExpandableState createState() => _InfoRowExpandableState();
+}
+
+class _InfoRowExpandableState extends State<InfoRowExpandable> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              widget.label,
+              style: TextStyle(
+                fontSize: widget.fontSize,
+                fontWeight: FontWeight.w600,
+                color: Provider.of<TemaProveedor>(context).esModoOscuro
+                    ? Colors.white
+                    : Colors.black,
+              ),
+            ),
+            IconButton(
+              icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
+              onPressed: () {
+                setState(() {
+                  _expanded = !_expanded;
+                });
+              },
+            ),
+          ],
+        ),
+        if (_expanded)
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Text(
+              widget.value,
+              style: TextStyle(
+                fontSize: widget.fontSize,
+                color: Provider.of<TemaProveedor>(context).esModoOscuro
+                    ? Colors.white
+                    : Colors.black,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
