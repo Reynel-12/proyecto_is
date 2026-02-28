@@ -26,7 +26,9 @@ import 'package:proyecto_is/view/widgets/thermal_invoice_printer.dart';
 import 'package:proyecto_is/utils/number_to_words_spanish.dart';
 import 'package:proyecto_is/controller/sar_service.dart';
 import 'package:proyecto_is/model/sar_config.dart';
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:proyecto_is/model/permissions.dart';
 
 class Ventas extends StatefulWidget {
   const Ventas({super.key});
@@ -63,8 +65,43 @@ class _VentasState extends State<Ventas> {
   @override
   void initState() {
     super.initState();
+    _checkPermission();
     cargarDatos();
     _clienteController.addListener(_totalPagar);
+  }
+
+  Future<void> _checkPermission() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? perms = prefs.getString('permisos');
+    bool ok = false;
+    if (perms != null && perms.isNotEmpty) {
+      try {
+        List<String> list = List<String>.from(jsonDecode(perms));
+        ok = list.contains(Permission.ventas);
+      } catch (_) {}
+    }
+    if (!ok) {
+      if (!mounted) return;
+      _mostrarAccesoDenegado();
+    }
+  }
+
+  void _mostrarAccesoDenegado() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Acceso denegado'),
+        content: const Text('No tienes permiso para acceder a Ventas'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context)..pop()..maybePop();
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   void cargarDatos() {

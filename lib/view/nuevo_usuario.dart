@@ -8,6 +8,7 @@ import 'package:proyecto_is/controller/repository_user.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/model/user.dart';
+import 'package:proyecto_is/model/permissions.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:crypto/crypto.dart';
 
@@ -22,6 +23,7 @@ class NuevoUsuario extends StatefulWidget {
   String estado;
   String fechaCreacion;
   String fechaActualizacion;
+  List<String> permisos;
   NuevoUsuario({
     super.key,
     this.isEdit = false,
@@ -33,6 +35,7 @@ class NuevoUsuario extends StatefulWidget {
     this.estado = 'N/A',
     this.fechaCreacion = 'N/A',
     this.fechaActualizacion = 'N/A',
+    this.permisos = const [],
     this.isFirstRun = false,
   });
 
@@ -58,12 +61,21 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
 
   List<String> estado = ['Activo', 'Inactivo'];
   String? selectedEstado;
-  List<String> tipo = ['Vendedor', 'Administrador'];
+  List<String> tipo = [
+    Role.vendedor,
+    Role.administrador,
+    Role.cajero,
+    Role.inventarista,
+    Role.contable,
+  ];
   String? selectedTipo;
 
   final _formKey = GlobalKey<FormState>();
   bool _isProcessing = false;
   late bool isLoading = false;
+
+  // mapa temporal para mostrar/editar permisos
+  Map<String, bool> _permisosMap = {};
 
   String hashPassword(String password) {
     final bytes = utf8.encode(password);
@@ -74,12 +86,15 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
   @override
   void initState() {
     super.initState();
+    _initializePermisos();
     if (widget.isEdit) {
       _obtenerInformacion();
     }
     if (widget.isFirstRun) {
-      selectedTipo = 'Administrador';
+      selectedTipo = Role.administrador;
       selectedEstado = 'Activo';
+      // asignar permisos de administrador en primera ejecución
+      _updatePermissionsForRole(selectedTipo!);
     }
   }
 
@@ -100,6 +115,8 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
       _telefono.text = widget.telefono;
       selectedTipo = widget.tipo;
       selectedEstado = widget.estado;
+      // establecer permisos existentes
+      _updatePermissionsMap(widget.permisos);
 
       nombreOriginal = widget.nombre;
       apellidoOriginal = widget.apellido;
@@ -119,6 +136,8 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
     String nombre = _nombre.text;
     String apellido = _apellido.text;
     String telefono = _telefono.text;
+    List<String> selectedPermisos =
+        _permisosMap.entries.where((e) => e.value).map((e) => e.key).toList();
 
     try {
       Map<String, dynamic> userMap = {
@@ -127,6 +146,7 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
         'telefono': telefono,
         'tipo': selectedTipo!,
         'estado': selectedEstado!,
+        'permisos': jsonEncode(selectedPermisos),
         'fecha_actualizacion': DateTime.now().toIso8601String(),
       };
       final response = await repository.updateUser(
@@ -170,6 +190,8 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
       String correo = _correo.text;
       String telefono = _telefono.text;
       String password = hashPassword(_password.text);
+      List<String> selectedPermisos =
+          _permisosMap.entries.where((e) => e.value).map((e) => e.key).toList();
 
       final user = User(
         nombre: nombre,
@@ -179,6 +201,7 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
         contrasena: password,
         tipo: selectedTipo!,
         estado: selectedEstado!,
+        permisos: selectedPermisos,
         fechaCreacion: DateTime.now().toIso8601String(),
         fechaActualizacion: DateTime.now().toIso8601String(),
       );
@@ -211,6 +234,25 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
       _logger.log.e('Error al crear el usuario', error: e, stackTrace: st);
       Navigator.pop(context, false);
     }
+  }
+
+  // función auxiliar para iniciar el mapa de permisos
+  void _initializePermisos() {
+    _permisosMap = {
+      for (var p in Permission.allPermissions) p: false,
+    };
+  }
+
+  void _updatePermissionsMap(List<String> assigned) {
+    _initializePermisos();
+    for (var p in assigned) {
+      if (_permisosMap.containsKey(p)) _permisosMap[p] = true;
+    }
+  }
+
+  void _updatePermissionsForRole(String role) {
+    final rolePerms = Role.getPermissions(role);
+    _updatePermissionsMap(rolePerms);
   }
 
   @override
@@ -422,7 +464,7 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                         ),
                   widget.isEdit ? Container() : SizedBox(height: fieldSpacing),
                   widget.isFirstRun
-                      ? _buildReadOnlyField('Tipo', 'Administrador')
+                      ? _buildReadOnlyField('Tipo', Role.administrador)
                       : _buildDropdown(
                           value: selectedTipo,
                           items: tipo,
@@ -431,6 +473,7 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                           onChanged: (value) {
                             setState(() {
                               selectedTipo = value;
+                              if (value != null) _updatePermissionsForRole(value);
                             });
                           },
                           validator: (value) {
@@ -460,6 +503,9 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                             return null;
                           },
                         ),
+                 !widget.isFirstRun ? SizedBox(height: fieldSpacing) : Container(),
+                 !widget.isFirstRun ? _buildPermissionSection() : Container(),
+
                 ],
               ),
 
@@ -666,6 +712,38 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(snackBar);
+  }
+
+  Widget _buildPermissionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Permisos',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Provider.of<TemaProveedor>(context).esModoOscuro
+                ? Colors.white
+                : Colors.black,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...Permission.allPermissions.map((perm) {
+          return CheckboxListTile(
+            title: Text(perm[0].toUpperCase() + perm.substring(1)),
+            value: _permisosMap[perm] ?? false,
+            onChanged: (val) {
+              setState(() {
+                _permisosMap[perm] = val ?? false;
+              });
+            },
+            dense: true,
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: Colors.blueAccent,
+          );
+        }).toList(),
+      ],
+    );
   }
 
   Widget _buildDropdown({

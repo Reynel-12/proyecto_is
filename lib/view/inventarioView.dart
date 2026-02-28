@@ -15,6 +15,10 @@ import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/view/widgets/inventory_pdf_preview.dart';
 import 'dart:io' show Platform;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:proyecto_is/model/permissions.dart';
+import 'package:proyecto_is/utils/permission_helper.dart';
 
 class Inventario extends StatefulWidget {
   const Inventario({super.key});
@@ -40,7 +44,30 @@ class _InventarioState extends State<Inventario> {
   @override
   void initState() {
     super.initState();
+    _checkPermission();
     cargarDatos();
+  }
+
+  Future<void> _checkPermission() async {
+    bool ok = await PermissionHelper.hasPermission(Permission.inventario);
+    if (!ok) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Acceso denegado'),
+          content: const Text('No tienes permiso para acceder a Inventario'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context)..pop()..maybePop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   void cargarDatos() {

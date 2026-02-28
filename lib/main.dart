@@ -57,6 +57,7 @@ class _MyAppState extends State<MyApp> {
     String? tipo = prefs.getString('tipo');
     String? estado = prefs.getString('estado');
     String? fullname = prefs.getString('user_fullname');
+    String? permisos = prefs.getString('permisos');
     return {
       'email': email ?? '',
       'password': password ?? '',
@@ -64,6 +65,7 @@ class _MyAppState extends State<MyApp> {
       'tipo': tipo ?? '',
       'estado': estado ?? '',
       'user_fullname': fullname ?? '',
+      'permisos': permisos ?? '',
     };
   }
 

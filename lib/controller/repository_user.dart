@@ -1,4 +1,5 @@
 import 'package:proyecto_is/controller/database.dart';
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/user.dart';
@@ -35,6 +36,9 @@ class RepositoryUser {
           contrasena: maps[i]['contrasena'],
           tipo: maps[i]['tipo'],
           estado: maps[i]['estado'],
+          permisos: maps[i]['permisos'] != null
+              ? List<String>.from(jsonDecode(maps[i]['permisos']))
+              : [],
           fechaCreacion: maps[i]['fecha_creacion'],
           fechaActualizacion: maps[i]['fecha_actualizacion'],
         );
@@ -65,6 +69,9 @@ class RepositoryUser {
         contrasena: maps[0]['contrasena'],
         tipo: maps[0]['tipo'],
         estado: maps[0]['estado'],
+        permisos: maps[0]['permisos'] != null
+            ? List<String>.from(jsonDecode(maps[0]['permisos']))
+            : [],
         fechaCreacion: maps[0]['fecha_creacion'],
         fechaActualizacion: maps[0]['fecha_actualizacion'],
       );
@@ -157,6 +164,9 @@ class RepositoryUser {
         contrasena: maps[0]['contrasena'],
         tipo: maps[0]['tipo'],
         estado: maps[0]['estado'],
+        permisos: maps[0]['permisos'] != null
+            ? List<String>.from(jsonDecode(maps[0]['permisos']))
+            : [],
         fechaCreacion: maps[0]['fecha_creacion'],
         fechaActualizacion: maps[0]['fecha_actualizacion'],
       );
@@ -193,6 +203,9 @@ class RepositoryUser {
         contrasena: maps[0]['contrasena'],
         tipo: maps[0]['tipo'],
         estado: maps[0]['estado'],
+        permisos: maps[0]['permisos'] != null
+            ? List<String>.from(jsonDecode(maps[0]['permisos']))
+            : [],
         fechaCreacion: maps[0]['fecha_creacion'],
         fechaActualizacion: maps[0]['fecha_actualizacion'],
       );

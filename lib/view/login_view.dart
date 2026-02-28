@@ -76,6 +76,8 @@ class _LoginState extends State<Login> {
       await prefs.setString('tipo', user.tipo.toString());
       await prefs.setString('estado', user.estado.toString());
       await prefs.setString('user_fullname', fullname);
+      // guardar permisos como JSON
+      await prefs.setString('permisos', jsonEncode(user.permisos));
       Navigator.pushReplacement(
         // ignore: use_build_context_synchronously
         context,

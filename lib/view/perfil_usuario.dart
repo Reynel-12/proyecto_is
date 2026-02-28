@@ -8,6 +8,8 @@ import 'package:proyecto_is/controller/repository_user.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/view/nuevo_usuario.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
 
 // ignore: must_be_immutable
@@ -29,6 +31,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
   String fechaCreacion = '';
   String fechaActualizacion = '';
   String contrasena = '';
+  List<String> permisos = [];
   bool isLoading = true;
   bool _isProcessing = false;
 
@@ -58,6 +61,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
           contrasena = user.contrasena;
           fechaCreacion = user.fechaCreacion;
           fechaActualizacion = user.fechaActualizacion;
+          permisos = user.permisos;
           isLoading = false;
         });
       }
@@ -181,11 +185,19 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
                               telefono: telefono,
                               tipo: rol,
                               estado: estado,
+                              permisos: permisos,
                             ),
                           ),
-                        ).then((value) {
+                        ).then((value) async {
                           if (value == true) {
                             _obtenerInfoUsuario();
+                            // si el usuario editado es el que está logueado, actualizar preferencias
+                            final prefs = await SharedPreferences.getInstance();
+                            if (prefs.getString('user') == widget.docID) {
+                              await prefs.setString('tipo', rol);
+                              await prefs.setString('estado', estado);
+                              await prefs.setString('permisos', jsonEncode(permisos));
+                            }
                           }
                         });
                         break;
@@ -290,6 +302,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
             SizedBox(height: isMobile ? 12.0 : 16.0),
             _infoRow('Correo', correo, infoFontSize),
             _infoRow('Teléfono', telefono, infoFontSize),
+            _infoRow('Permisos', permisos.join(', '), infoFontSize),
             _infoRow('Rol del usuario', rol, infoFontSize),
             _infoRow('Estado', estado, infoFontSize),
             _infoRow(

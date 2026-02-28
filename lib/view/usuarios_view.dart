@@ -8,6 +8,10 @@ import 'package:proyecto_is/model/user.dart';
 import 'package:proyecto_is/view/nuevo_usuario.dart';
 import 'package:proyecto_is/view/perfil_usuario.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:proyecto_is/model/permissions.dart';
+import 'package:proyecto_is/utils/permission_helper.dart';
 import 'package:proyecto_is/view/widgets/usuarios_vacios.dart';
 
 class Usuarios extends StatefulWidget {
@@ -37,6 +41,7 @@ class _UsuariosState extends State<Usuarios> {
   @override
   void initState() {
     super.initState();
+    _checkPermission();
     _escucharDatos();
   }
 
@@ -55,6 +60,28 @@ class _UsuariosState extends State<Usuarios> {
       });
     } catch (e, st) {
       _logger.log.e('Error al escuchar datos', error: e, stackTrace: st);
+    }
+  }
+
+  Future<void> _checkPermission() async {
+    bool ok = await PermissionHelper.hasPermission(Permission.usuarios);
+    if (!ok) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Acceso denegado'),
+          content: const Text('No tienes permiso para gestionar usuarios'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context)..pop()..maybePop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
 

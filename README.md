@@ -23,7 +23,7 @@ Bienvenido a la documentación oficial del **Sistema de Inventario y Facturació
 *   **Facturación SAR**: Soporte para CAI, rangos de facturación y fechas límite, adaptado a la normativa hondureña.
 *   **Gestión de Proveedores**: Base de datos de proveedores y sus productos asociados.
 *   **Control de Caja**: Apertura y cierre de caja, registro de movimientos (ingresos/egresos) y arqueo.
-*   **Múltiples Usuarios**: Roles de usuario (Administrador, Vendedor) con permisos diferenciados.
+*   **Múltiples Usuarios y permisos**: Roles de usuario (Administrador, Vendedor, Cajero, Inventarista, Contable, etc.) y posibilidad de seleccionar permisos específicos por usuario para controlar acceso a módulos como caja, ventas, inventario, estadísticas, proveedores, categorías, configuraciones, etc.
 *   **Reportes**: Historial de ventas, gráficos de rendimiento y reportes de inventario.
 *   **Escáner de Códigos de Barra**: Integración con cámara para escaneo rápido de productos.
 *   **Soporte Multiplataforma**: Experiencia optimizada para escritorio (Windows) y dispositivos móviles (Android).

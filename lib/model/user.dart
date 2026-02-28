@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class User {
   int? id;
   final String nombre;
@@ -7,6 +9,7 @@ class User {
   final String contrasena;
   final String tipo;
   final String estado;
+  final List<String> permisos; // lista de permisos personalizados
   final String fechaCreacion;
   final String fechaActualizacion;
 
@@ -19,6 +22,7 @@ class User {
     required this.contrasena,
     required this.tipo,
     required this.estado,
+    this.permisos = const [],
     required this.fechaCreacion,
     required this.fechaActualizacion,
   });
@@ -33,12 +37,24 @@ class User {
       'contrasena': contrasena,
       'tipo': tipo,
       'estado': estado,
+      // almacenamos permisos como JSON para mayor flexibilidad
+      'permisos': jsonEncode(permisos),
       'fecha_creacion': fechaCreacion,
       'fecha_actualizacion': fechaActualizacion,
     };
   }
 
   factory User.fromMap(Map<String, dynamic> map) {
+    // decodificamos permisos; puede ser null en versiones anteriores
+    List<String> permisosList = [];
+    if (map.containsKey('permisos') && map['permisos'] != null) {
+      try {
+        final decoded = jsonDecode(map['permisos']);
+        permisosList = List<String>.from(decoded);
+      } catch (_) {
+        permisosList = [];
+      }
+    }
     return User(
       id: map['id_usuario'],
       nombre: map['nombre'],
@@ -48,6 +64,7 @@ class User {
       contrasena: map['contrasena'],
       tipo: map['tipo'],
       estado: map['estado'],
+      permisos: permisosList,
       fechaCreacion: map['fecha_creacion'],
       fechaActualizacion: map['fecha_actualizacion'],
     );

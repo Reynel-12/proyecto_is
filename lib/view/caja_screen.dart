@@ -9,7 +9,10 @@ import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/caja.dart';
 import 'package:proyecto_is/model/movimiento_caja.dart';
 import 'package:proyecto_is/model/preferences.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:proyecto_is/controller/repository_empresa.dart';
+import 'package:proyecto_is/model/permissions.dart';
 import 'package:proyecto_is/view/widgets/caja_pdf_preview.dart';
 
 class CajaScreen extends StatefulWidget {
@@ -58,12 +61,51 @@ class _CajaScreenState extends State<CajaScreen>
   double _totalEgresosTarjeta = 0.0;
   double _totalEgresosTransferencia = 0.0;
 
+  double diferencia = 0.0;
+
   String _filtroMetodoPago = 'Todo';
   @override
   void initState() {
     super.initState();
+    _checkPermission();
     _tabController = TabController(length: 2, vsync: this);
     _cargarDatos();
+  }
+
+  Future<void> _checkPermission() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? perms = prefs.getString('permisos');
+    bool ok = false;
+    if (perms != null && perms.isNotEmpty) {
+      try {
+        List<String> list = List<String>.from(jsonDecode(perms));
+        ok = list.contains(Permission.caja);
+      } catch (_) {}
+    }
+    if (!ok) {
+      if (!mounted) return;
+      _mostrarAccesoDenegado();
+    }
+  }
+
+  void _mostrarAccesoDenegado() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Acceso denegado'),
+        content: const Text('No tienes permiso para acceder a Caja'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context)
+                ..pop()
+                ..maybePop();
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _cargarDatos() async {
@@ -198,6 +240,7 @@ class _CajaScreenState extends State<CajaScreen>
 
   Future<void> _cargarHistorial() async {
     try {
+      diferencia = 0.0;
       final historial = await _cajaRepository.obtenerHistorialCajas(
         filtro: _filtroHistorial,
         fechaInicio: _fechaInicio,
@@ -205,6 +248,9 @@ class _CajaScreenState extends State<CajaScreen>
       );
       setState(() {
         _historialCajas = historial;
+        for (var h in _historialCajas) {
+          diferencia += h.diferencia ?? 0.0;
+        }
       });
     } catch (e, st) {
       _logger.log.e('Error al cargar historial', error: e, stackTrace: st);
@@ -2376,6 +2422,7 @@ class _CajaScreenState extends State<CajaScreen>
 
   Widget _buildHistorialTab() {
     final isDark = Provider.of<TemaProveedor>(context).esModoOscuro;
+    final currency = NumberFormat.currency(symbol: 'L. ');
     return Column(
       children: [
         // Filters
@@ -2417,6 +2464,56 @@ class _CajaScreenState extends State<CajaScreen>
                       _cargarHistorial();
                     }
                   },
+                ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsetsGeometry.only(
+            bottom: 8.0,
+            left: 24.00,
+            right: 24.00,
+            top: 8.0,
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            margin: const EdgeInsets.only(top: 8),
+            decoration: BoxDecoration(
+              color: diferencia == 0
+                  ? Colors.green.withOpacity(0.1)
+                  : (diferencia > 0
+                        ? Colors.blue.withOpacity(0.1)
+                        : Colors.red.withOpacity(0.1)),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: diferencia == 0
+                    ? Colors.green
+                    : (diferencia > 0 ? Colors.blue : Colors.red),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Diferencia',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: diferencia == 0
+                        ? Colors.green
+                        : (diferencia > 0 ? Colors.blue : Colors.red),
+                  ),
+                ),
+                Text(
+                  currency.format(diferencia),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: diferencia == 0
+                        ? Colors.green
+                        : (diferencia > 0 ? Colors.blue : Colors.red),
+                    fontSize: 16,
+                  ),
                 ),
               ],
             ),
