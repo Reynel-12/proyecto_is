@@ -52,6 +52,7 @@ class _ProveedoresViewState extends State<ProveedoresView> {
       _proveedoresFiltrados.clear();
       repositoryProveedor.getProveedores().then((proveedores) {
         setState(() {
+          proveedores.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
           _proveedores = proveedores;
           _proveedoresFiltrados = proveedores;
           isLoading = false;

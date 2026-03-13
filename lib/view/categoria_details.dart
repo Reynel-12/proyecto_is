@@ -49,6 +49,7 @@ class _CategoriaDetailsState extends State<CategoriaDetails> {
 
       if (mounted) {
         setState(() {
+          productos.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
           _productos = productos;
           if (updatedProveedorList.isNotEmpty) {
             _currentCategoria = updatedProveedorList.first;

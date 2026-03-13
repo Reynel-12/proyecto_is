@@ -51,8 +51,10 @@ class _UsuariosState extends State<Usuarios> {
       });
       repository.getAllUsers().then((value) {
         setState(() {
+          value.sort(
+            (a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()),
+          );
           usuarioList = value;
-          usuarioList.sort((a, b) => a.nombre.compareTo(b.nombre));
           filteredUsuarios = usuarioList;
           isLoading = false;
         });

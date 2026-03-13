@@ -93,6 +93,7 @@ class _VentasState extends State<Ventas> {
       _productosFiltrados.clear();
       repositoryProducto.getProductosActivos().then((productos) {
         setState(() {
+          productos.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
           _productos = productos;
           _productosFiltrados = productos;
           isLoading = false;

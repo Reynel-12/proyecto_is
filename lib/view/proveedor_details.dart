@@ -49,6 +49,7 @@ class _ProveedorDetailsState extends State<ProveedorDetails> {
 
       if (mounted) {
         setState(() {
+          productos.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
           _productos = productos;
           if (updatedProveedorList.isNotEmpty) {
             _currentProveedor = updatedProveedorList.first;

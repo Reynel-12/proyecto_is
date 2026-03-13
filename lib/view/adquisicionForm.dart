@@ -68,6 +68,8 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
       final productos = await _productoRepo.getProductos();
       final caja = await _movimientoRepo.obtenerCajaAbierta();
       setState(() {
+        productos.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
+        proveedores.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
         _proveedores = proveedores;
         _productos = productos;
         _cajaSeleccionada = caja;

@@ -52,6 +52,10 @@ class _CategoriasViewState extends State<CategoriasView> {
       _categoriasFiltrados.clear();
       repositoryCategoria.getCategorias().then((categorias) {
         setState(() {
+          categorias.sort(
+            (a, b) =>
+                a.nombre!.toLowerCase().compareTo(b.nombre!.toLowerCase()),
+          );
           _categorias = categorias;
           _categoriasFiltrados = categorias;
           isLoading = false;
@@ -450,7 +454,9 @@ class _CategoriasViewState extends State<CategoriasView> {
                             style: TextStyle(
                               fontSize: infoFontSize,
                               color:
-                                  Provider.of<TemaProveedor>(context).esModoOscuro
+                                  Provider.of<TemaProveedor>(
+                                    context,
+                                  ).esModoOscuro
                                   ? Colors.white70
                                   : Colors.black87,
                               overflow: TextOverflow.ellipsis,
