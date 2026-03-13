@@ -1,0 +1,1310 @@
+========================================
+MANUAL TÉCNICO DE LA APLICACIÓN
+========================================
+
+1. INFORMACIÓN GENERAL DEL SOFTWARE
+-----------------------------------
+
+1.1 Nombre del sistema
+----------------------
+- Nombre técnico del proyecto (según `pubspec.yaml`): **proyecto_is**
+- Nombre funcional sugerido (inferido): **Sistema de Ventas, Caja e Inventario para PyMEs**
+
+1.2 Descripción general
+-----------------------
+La aplicación es un **sistema de punto de venta (POS) de escritorio basado en Flutter para Windows** que integra:
+- Gestión de **ventas** con facturación fiscal (integración SAR, CAI y rangos autorizados).
+- Manejo de **caja** (apertura, cierre, movimientos, ingresos, egresos y ventas asociadas).
+- **Inventario** de productos con control de stock, stock mínimo, costos y precios de venta.
+- Gestión de **proveedores** y **categorías**.
+- Administración de **usuarios**, roles y permisos granulares.
+- Módulo de **devoluciones** de ventas con impacto en inventario y caja.
+- Módulo de **estadísticas** de ventas (por día, semana, mes, top productos y categorías).
+- Configuración **SAR** y datos de **empresa**.
+- Sistema de **notificaciones** de stock bajo.
+- **Auditoría** de operaciones críticas (productos, usuarios, movimientos de caja, etc.).
+
+Toda la lógica de negocio y persistencia se realiza **localmente** utilizando SQLite a través de `sqflite_common_ffi`, permitiendo una experiencia de escritorio nativa sobre Windows.
+
+1.3 Objetivo del sistema
+------------------------
+Proveer a pequeñas y medianas empresas de un **sistema integral de ventas e inventario**, que:
+- Controle las operaciones de venta y caja de manera segura.
+- Mantenga un inventario actualizado y auditable.
+- Cumpla con los requisitos fiscales hondureños a través de la integración con la configuración SAR (CAI, rangos de facturación, fecha límite).
+- Permita el control de acceso por roles y permisos.
+- Genere información estadística útil para la toma de decisiones.
+
+1.4 Problema que resuelve
+--------------------------
+El sistema resuelve los siguientes problemas típicos:
+- Falta de control sobre **existencias de inventario** y su valorización.
+- Manejo manual de **ventas y caja**, con riesgo de errores y falta de trazabilidad.
+- Dificultad para cumplir con **normativa fiscal (SAR)** en la emisión de facturas.
+- Ausencia de **historial auditable** de modificaciones y eliminaciones en datos críticos.
+- Carencia de **reportes y estadísticas** para evaluar el rendimiento del negocio.
+
+1.5 Público objetivo
+---------------------
+- **Cajeros y vendedores**: realizar ventas, gestionar caja, registrar devoluciones.
+- **Encargados de inventario**: administrar productos, stock y costos.
+- **Administradores y dueños**: configurar empresa y SAR, gestionar usuarios, revisar estadísticas y auditorías.
+- **Personal de soporte técnico/desarrollo**: mantener la aplicación, evolucionar funcionalidades y resolver incidencias.
+
+1.6 Alcance del software
+------------------------
+El sistema cubre:
+- Operación diaria de **punto de venta** y **caja** en un entorno de escritorio.
+- Integración con **impresión térmica de facturas** (vista `thermal_invoice_printer.dart` y `ThermalInvoicePreview`).
+- Flujo completo de productos: **compra → inventario → venta → devolución**.
+- Generación de **PDFs** de inventario y de cierres de caja (vistas `inventory_pdf_preview.dart`, `caja_pdf_preview.dart`, `pdf_generator_service.dart`).
+- Control de permisos por usuario específico y por rol (clase `Permission` y `Role`).
+
+No se evidencia en el código conexión directa a servicios remotos (APIs externas), por lo que el alcance actual es **100 % local/offline** con almacenamiento en SQLite.
+
+
+2. TECNOLOGÍAS UTILIZADAS
+-------------------------
+
+2.1 Flutter
+-----------
+- Framework principal para la construcción de la **interfaz gráfica de usuario (GUI)**.
+- Permite construcción de **aplicaciones de escritorio** para Windows.
+- Uso intensivo de:
+  - `MaterialApp`, `Scaffold`, `AppBar`, `Drawer`, `ListView`, `DataTable`, `GridView`, `Dialog`, etc.
+  - Widgets personalizados para vistas de dominio (ventas, caja, inventario, devoluciones, etc.).
+
+2.2 Dart
+--------
+- Lenguaje de programación de toda la base de código.
+- Uso de:
+  - Clases POJO (modelos) con métodos `fromMap` / `toMap` para persistencia.
+  - `async/await` para operaciones asíncronas con la base de datos.
+  - Manejo de colecciones, mapas y conversión JSON.
+
+2.3 Frameworks, librerías y dependencias (desde `pubspec.yaml`)
+----------------------------------------------------------------
+- `flutter`:
+  - SDK principal del framework.
+
+- `cupertino_icons: ^1.0.8`
+  - Íconos estilo iOS para algunos componentes.
+
+- `sqflite: ^2.4.2`
+  - Acceso a bases de datos SQLite en plataformas móviles.
+  - En este proyecto se usa principalmente la API compatible con `sqflite_common_ffi`.
+
+- `sqflite_common_ffi: ^2.4.0+1`
+  - **Soporte de SQLite para entornos de escritorio** (Windows, Linux, macOS).
+  - En `main.dart` se inicializa:
+    - `sqfliteFfiInit();`
+    - `databaseFactory = databaseFactoryFfi;`
+
+- `shared_preferences: ^2.5.4`
+  - Almacenamiento persistente clave-valor.
+  - Se usa para:
+    - Recordar sesión de usuario (email, contraseña hash, id, tipo, estado, nombre completo, permisos).
+    - Guardar preferencia de tema oscuro/claro.
+    - Guardar IDs de notificaciones descartadas.
+
+- `provider: ^6.1.5+1`
+  - Manejo de estado reactivo (patrón Provider).
+  - Usado para:
+    - `TemaProveedor` (tema oscuro/claro).
+    - `NotificationProvider` (notificaciones de stock bajo).
+
+- `shimmer: ^3.0.0`
+  - Efectos de shimmer (esqueletos de carga) para mejorar UX en estados de carga (visible en algunos widgets).
+
+- `pdf: ^3.11.3` y `printing: ^5.14.2`
+  - Generación y previsualización de documentos PDF.
+  - Usados en vistas como `inventory_pdf_preview.dart`, `caja_pdf_preview.dart`, `thermal_invoice_printer.dart`.
+
+- `intl: ^0.20.2`
+  - Formateo de fechas, números y localización.
+  - Por ejemplo, `DateFormat('dd/MM/yyyy hh:mm a')` en `devoluciones_view.dart`.
+
+- `table_calendar: ^3.2.0`
+  - Componente de calendario (posiblemente usado en historial, estadísticas o filtros por fecha).
+
+- `flutter_speed_dial: ^7.0.0`
+  - Botones flotantes con acciones múltiples (`MiFAB`).
+
+- `awesome_dialog: ^3.3.0`
+  - Diálogos enriquecidos con diferentes estilos.
+  - Usado extensivamente en `ventasView.dart`, `inventarioView.dart`, etc.
+
+- `awesome_snackbar_content: ^0.1.8`
+  - Snackbars enriquecidos de distintos tipos (`ContentType.success`, `warning`, `failure`).
+
+- `diacritic: ^0.1.6`
+  - Eliminación de acentos para búsquedas robustas (`removeDiacritics` en inventario y ventas).
+
+- `mobile_scanner: ^7.1.2`
+  - Lector de códigos de barras/códigos QR para escanear productos (vista `barcode_scanner_view.dart`).
+
+- `crypto: ^3.0.7`
+  - Funciones criptográficas (hash).
+  - Usado para **hash SHA-256 de contraseñas** en `login_view.dart`.
+
+- `logger: ^2.6.2`
+  - Logging avanzado.
+  - Integrado con `AppLogger` para logs en archivo y consola.
+
+- `path_provider: ^2.1.5`
+  - Acceso a rutas del sistema de archivos.
+  - Usado para obtener directorio de soporte de la app para guardar logs (`getApplicationSupportDirectory()` en `app_logger.dart`).
+
+- `window_manager: ^0.5.1`
+  - Control de ventana en escritorio.
+  - Se usa en `main.dart` para:
+    - Inicializar ventana en tamaño 1920x1080.
+    - Maximizar, mostrar y enfocar la ventana al inicio.
+
+2.4 Herramientas de desarrollo
+------------------------------
+- Flutter SDK (>= 3.10.1 por `environment.sdk`).
+- Dart SDK acorde a la versión de Flutter.
+- IDE sugerido: Cursor / VSCode / Android Studio.
+- SQLite embebido mediante `sqflite_common_ffi`.
+
+2.5 Sistema operativo objetivo
+------------------------------
+- Focalizado en **Windows**:
+  - `main.dart` contiene lógica específica para `Platform.isWindows`:
+    - Inicialización de `window_manager`.
+    - `sqflite_common_ffi` para base de datos.
+  - El proyecto también puede ejecutarse en Linux y macOS usando el mismo mecanismo FFI, aunque el objetivo principal indicado es Windows.
+
+
+3. ARQUITECTURA DEL SISTEMA
+---------------------------
+
+3.1 Tipo de arquitectura
+------------------------
+El sistema adopta una **arquitectura por capas** con una **separación clara entre capas de presentación, dominio/persistencia y utilidades**, combinando elementos del patrón:
+- **MVC simplificado**:
+  - Modelos en `lib/model`.
+  - Controladores/Repositorios en `lib/controller`.
+  - Vistas (Screens/Widgets) en `lib/view`.
+- **Patrón Repository**:
+  - Clases `*Repository` en `controller/` encapsulan el acceso a la base de datos `DBHelper`.
+
+3.2 Estructura general del proyecto
+-----------------------------------
+- `lib/main.dart`
+  - Punto de entrada de la aplicación.
+  - Inicializa base de datos FFI y `window_manager`.
+  - Inicializa `AppLogger`.
+  - Configura `MultiProvider` con:
+    - `TemaProveedor`
+    - `NotificationProvider`
+  - Determina pantalla inicial (`MyHomePage` si hay sesión válida, si no `Login`).
+
+- `lib/controller/`
+  - `database.dart`: clase `DBHelper` (gestión de SQLite y creación de tablas).
+  - Repositorios por entidad:
+    - `repository_producto.dart`
+    - `repository_venta.dart`
+    - `repository_caja.dart`
+    - `repository_devolucion.dart`
+    - `repository_user.dart`
+    - `repository_proveedor.dart`
+    - `repository_categoria.dart`
+    - `repository_compra.dart`
+    - `repository_empresa.dart`
+    - `repository_audit.dart`
+  - Servicios específicos:
+    - `sar_service.dart`: lógica para configuración SAR y generación de facturas.
+    - `pdf_generator_service.dart`: generación de PDFs.
+    - `notification_service.dart`: cálculo de notificaciones de stock bajo.
+
+- `lib/model/`
+  - Modelos de dominio:
+    - `producto.dart`, `proveedor.dart`, `categorias.dart`
+    - `venta.dart`, `detalle_venta.dart`
+    - `compra.dart`, `detalle_compra.dart`
+    - `caja.dart`, `movimiento_caja.dart`
+    - `devolucion.dart`, `devolucion_detalle.dart`
+    - `empresa.dart`
+    - `sar_config.dart`
+    - `user.dart`, `permissions.dart`, `notifications.dart`
+    - `audit_log.dart`
+    - `preferences.dart` (temas y notificaciones)
+    - `app_logger.dart` (logging)
+
+- `lib/view/`
+  - Vistas (pantallas) principales:
+    - `login_view.dart`
+    - `principal.dart` (`MyHomePage`, dashboard principal).
+    - `caja_screen.dart`
+    - `ventasView.dart`
+    - `inventarioView.dart`
+    - `historialView.dart`
+    - `devoluciones_view.dart`
+    - `nueva_devolucion_view.dart`
+    - `estadisticas_view.dart`
+    - `configuracion_sar_view.dart`
+    - `usuarios_view.dart`, `nuevo_usuario.dart`, `perfil_usuario.dart`
+    - `proveedoresView.dart`, `proveedorForm.dart`, `proveedor_details.dart`
+    - `categorias_view.dart`, `categorias_form.dart`, `categoria_details.dart`
+    - `audit_log_screen.dart`
+    - `adquisicionForm.dart` (compras).
+    - `caja_screen.dart` y vistas relacionadas de PDF (`caja_pdf_preview.dart`).
+  - Widgets comunes en `view/widgets/`:
+    - `loading.dart`
+    - `inventario_vacio.dart`, `categoria_vacia.dart`, `usuarios_vacios.dart`, `proveedor_vacio.dart`
+    - `notification_banner.dart`
+    - `thermal_invoice_printer.dart`
+    - `inventory_pdf_preview.dart`
+    - `modal_print_movil.dart`
+    - `discount_dialog.dart`
+    - `caja_cerrada.dart`
+
+- `lib/utils/`
+  - `number_to_words_spanish.dart`: conversión de montos numéricos a texto en español (para impresión de facturas).
+  - `permission_helper.dart`: helper para verificar permisos desde `SharedPreferences`.
+
+3.3 Patrón de diseño utilizado
+------------------------------
+- **Repository Pattern**
+  - Cada entidad de dominio cuenta con un repositorio que:
+    - Recibe un `DBHelper`.
+    - Expone operaciones CRUD y queries específicas.
+  - Ejemplos:
+    - `ProductoRepository` encapsula selects y updates sobre tabla `productos`.
+    - `VentaRepository` encapsula transacciones de venta con detalles y actualizaciones de caja.
+
+- **Separation of Concerns (SoC) / MVC ligero**
+  - Modelos en `model/`, sin depender de vistas.
+  - Repositorios y servicios en `controller/`, sin lógica de UI.
+  - Vistas en `view/` usan repositorios para orquestar la lógica.
+
+- **Provider para estado global**
+  - `TemaProveedor` para modo oscuro/claro.
+  - `NotificationProvider` para manejar notificaciones de stock bajo.
+
+3.4 Flujo general del sistema
+-----------------------------
+1. Al iniciar la aplicación (`main.dart`):
+   - Se inicializa Flutter y, en escritorio, `sqflite_common_ffi` y `window_manager`.
+   - Se inicializa `AppLogger` (instancia global).
+   - Se lanza `MyApp`.
+
+2. En `MyApp`:
+   - `MultiProvider` registra:
+     - `TemaProveedor(PreferencesService())`
+     - `NotificationProvider()`
+   - `MaterialApp` establece temas, colores, y `home` como un `FutureBuilder` que:
+     - Lee de `SharedPreferences` los datos de sesión (`email`, `password`, `user`, `tipo`, `estado`, `user_fullname`, `permisos`).
+     - Si todos los campos obligatorios están presentes, abre `MyHomePage` (principal).
+     - De lo contrario, abre la vista de `Login`.
+
+3. En `MyHomePage`:
+   - Carga tipo de usuario, nombre completo y permisos desde `SharedPreferences`.
+   - Invoca `NotificationProvider.loadNotifications()` para mostrar notificaciones de inventario.
+   - Construye un `Drawer` con **tarjetas de navegación** (caja, ventas, historial, devoluciones, estadísticas, inventario, adquisiciones, proveedores, categorías, auditoría, usuarios, configuración SAR), filtradas por permisos y rol (ver `Permission` y `Role`).
+
+4. Cada módulo (Caja, Ventas, Inventario, etc.):
+   - Tiene su propia vista en `view/*.dart`.
+   - Instancia los repositorios correspondientes en `controller/*`.
+   - Interactúa con los modelos en `model/*`.
+
+
+4. ESTRUCTURA DEL PROYECTO
+--------------------------
+
+4.1 Carpeta `lib/`
+-------------------
+- Contiene todo el código fuente de la aplicación Flutter:
+  - Entrada (`main.dart`).
+  - Capas de modelo, controlador/servicios y vista.
+
+4.2 Carpeta `lib/model/`
+------------------------
+Propósito: **definir las entidades de negocio** y clases de infraestructura auxiliar.
+
+Modelos principales (resumen):
+- `user.dart`
+  - Representa un usuario del sistema (id, nombre, apellido, teléfono, correo, contraseña hash, tipo, estado, permisos, fechas).
+  - Métodos `toMap`/`fromMap` para persistencia.
+
+- `permissions.dart`
+  - Clase `Permission` con constantes de permisos (caja, ventas, historial, devoluciones, etc.).
+  - Clase `Role` que mapea roles a listas de permisos.
+
+- `producto.dart`
+  - Modelo de producto: id, nombre, proveedorId, categoriaId, unidadMedida, precio, costo, stock, stockMinimo, isv, precioVenta, estado, etc.
+  - Atributos transitorios: `cantidad`, `descuentoProducto` (para carrito de ventas).
+
+- `venta.dart`, `detalle_venta.dart`, `venta.dart` (incluye `VentaCompleta` y `DetalleItem`)
+  - Representan la venta y su detalle, con campos fiscales (CAI, rangos, RTN, etc.).
+
+- `caja.dart`, `movimiento_caja.dart`
+  - Representan la caja diaria y los movimientos asociados:
+    - Apertura, cierre, ingresos, egresos, total efectivo, etc.
+
+- `devolucion.dart`, `devolucion_detalle.dart`
+  - Representan devoluciones de ventas, detalles de productos devueltos y su estado (bueno, defectuoso, no reingresa).
+
+- `empresa.dart`
+  - Datos de la empresa emisora: RTN, razón social, nombre comercial, dirección, teléfono, correo, moneda por defecto.
+
+- `sar_config.dart`
+  - Configuración fiscal SAR: CAI, rangos, fecha límite, número actual de factura, activo.
+
+- `audit_log.dart`
+  - Registros de auditoría (tabla, registro_id, acción, usuario, fecha, detalles).
+
+- `notifications.dart`
+  - Modelo para notificaciones (id, título, mensaje, timestamp).
+
+- `preferences.dart`
+  - `PreferencesService`: gestión de tema oscuro/claro vía `SharedPreferences`.
+  - `TemaProveedor`: `ChangeNotifier` que expone `ThemeMode` y permite cambiar entre oscuro/claro.
+  - `NotificationProvider`: gestiona notificaciones de stock bajo (obtiene datos de `NotificationService`).
+
+- `app_logger.dart`
+  - Configura una instancia global de `Logger` (consola + archivo).
+  - Guarda logs en archivo `app_logs.txt` dentro de directorio de soporte de la aplicación.
+
+4.3 Carpeta `lib/controller/`
+-----------------------------
+Propósito: **capa de acceso a datos y servicios de dominio**.
+
+- `database.dart`
+  - Clase `DBHelper`:
+    - Gestiona instancia singleton de `Database`.
+    - Define constantes con nombres de tablas:
+      - `caja`, `proveedores`, `productos`, `ventas`, `detalle_ventas`, `compras`, `detalle_compras`, `movimientos_caja`, `configuracion_sar`, `empresa`, `usuarios`, `categorias`, `devoluciones`, `devolucion_detalle`, `audit_logs`.
+    - `initDatabase()`:
+      - Crea archivo `ventas.db` en la ruta de bases de datos de la app.
+      - Configura `PRAGMA foreign_keys = ON;`.
+      - Ejecuta `_createTables(db)` con `CREATE TABLE` para todas las entidades.
+    - `_runMigrations()` previsto para futuras migraciones.
+
+- Repositorios:
+  - `repository_user.dart`:
+    - Manejo CRUD de usuarios.
+    - Login por correo/contraseña.
+    - `hasUsers()` para saber si crear usuario admin inicial.
+    - Integrado con `RepositoryAudit` para log de cambios/borrados.
+
+  - `repository_producto.dart`:
+    - CRUD de productos.
+    - Búsquedas por proveedor, categoría, productos activos.
+    - Actualización de precio, stock y auditoría.
+
+  - `repository_venta.dart`:
+    - Registro transaccional de ventas (`registrarVentaConDetalles`).
+    - Verificación de stock por producto antes de confirmar venta.
+    - Inserción en `ventas` y `detalle_ventas`, actualización de stock en `productos`.
+    - Actualización de `caja` y registro de movimiento de caja asociado (tipo Venta).
+    - Cálculos para:
+      - Historial detallado.
+      - Ventas agrupadas (`VentaCompleta`).
+      - Top productos, top categorías.
+      - Resumen de ventas (hoy, semana, mes).
+      - Recuperación de venta por ID o por número de factura (para devoluciones).
+
+  - `repository_caja.dart`:
+    - Apertura de caja para un usuario (valida que no tenga otra caja abierta).
+    - Obtención de caja abierta del usuario actual.
+    - Cierre de caja y actualización de totales.
+    - Registro, edición y eliminación de movimientos de caja, con ajustes de totales.
+    - Historial de cajas (filtros: Hoy, Semana, Mes, Rango).
+    - Desglose de caja por tipo de movimiento y método de pago.
+
+  - `repository_devolucion.dart`:
+    - Creación transaccional de devoluciones:
+      - Inserta registro en `devoluciones`.
+      - Inserta detalles en `devolucion_detalle`.
+      - Si producto en estado BUENO, incrementa stock.
+      - Crea movimiento de caja de tipo `Devolucion` (salida) si hay reembolso.
+      - Actualiza totales de caja (egresos, total_efectivo, etc.).
+    - Consultas:
+      - Devoluciones por venta.
+      - Cantidad devuelta por producto y factura.
+      - Todas las devoluciones con información de venta.
+      - Detalles de devoluciones (JOIN con productos).
+
+  - `repository_proveedor.dart`, `repository_categoria.dart`, `repository_compra.dart`, `repository_empresa.dart`, `repository_audit.dart`:
+    - Gestión CRUD de proveedores, categorías, compras, datos de empresa, y auditorías.
+
+- Servicios:
+  - `sar_service.dart`:
+    - Obtención y guardado de configuración SAR activa.
+    - Generación correlativa de número de factura.
+    - Validación de RTN y reglas de obligatoriedad de RTN según monto.
+  - `notification_service.dart`:
+    - Cálculo de notificaciones de stock bajo a partir de `ProductoRepository` y `stockMinimo`.
+  - `pdf_generator_service.dart`:
+    - Lógica utilitaria para creación de PDFs (por ejemplo, inventarios y cierres de caja).
+  - `notification_service.dart` y `NotificationProvider` trabajan en conjunto para mostrar banners de notificación.
+
+4.4 Carpeta `lib/view/`
+-----------------------
+Propósito: **interfaz de usuario**.
+
+Pantallas principales:
+- `login_view.dart`:
+  - Formulario de login con validaciones.
+  - Hash de contraseña con SHA-256 (`crypto`).
+  - Uso de `RepositoryUser` para autenticación.
+  - Si no hay usuarios, redirige a `NuevoUsuario` para crear administrador inicial.
+  - Guarda datos en `SharedPreferences` y redirige a `MyHomePage`.
+
+- `principal.dart`:
+  - Clase `MyHomePage` (dashboard principal).
+  - `Drawer` con opciones según permisos:
+    - Caja, Ventas, Historial, Devoluciones, Estadísticas, Inventario, Adquisiciones, Proveedores, Categorías, Auditoría, Usuarios, Configuración SAR, Cerrar sesión.
+  - Muestra `NotificationBanner` y un `DashboardGrid` con tarjetas (`DashboardCardData`).
+
+- `caja_screen.dart`:
+  - Gestión de apertura/cierre de caja.
+  - Visualización de movimientos y totales.
+  - Acceso a previsualización de PDF de caja (`caja_pdf_preview.dart`).
+
+- `ventasView.dart`:
+  - Pantalla principal de punto de venta.
+  - Permite:
+    - Buscar y seleccionar productos (por nombre o código).
+    - Usar lector de código de barras (en plataformas móviles).
+    - Aplicar descuentos por producto.
+    - Calcular totales, mostrar subtotal, descuentos, total a pagar.
+    - Abrir diálogo de finalización de venta (selección de método de pago, monto recibido, cambio, datos del cliente y RTN).
+  - Registra la venta usando `VentaRepository` y `SarService`.
+  - Genera previsualización de factura térmica (`ThermalInvoicePreview`).
+
+- `inventarioView.dart`:
+  - Listado y búsqueda de productos del inventario.
+  - Filtros por nombre y por código (con soporte de lector de código de barras).
+  - Acceso a:
+    - Vista de perfil de producto (`perfilProductoView.dart`).
+    - Creación de nuevo producto (`productoForm.dart`).
+    - Cálculo de valor total del inventario.
+    - Exportación del inventario a PDF (`InventoryPdfPreview`).
+
+- `devoluciones_view.dart`:
+  - Lista todas las devoluciones de ventas.
+  - Muestra información: factura, cliente, monto devuelto, tipo de reembolso, usuario, motivo.
+  - Expansión por devolución para ver detalles de productos devueltos.
+  - Acceso a `NuevaDevolucionView` para crear devoluciones nuevas (flujo que se apoya en `VentaRepository` y `RepositoryDevolucion`).
+
+- `estadisticas_view.dart`:
+  - Muestra:
+    - Ventas del día, semana y mes.
+    - Top productos vendidos (por cantidad e ingresos).
+    - Top categorías.
+  - Usa `VentaRepository.getResumenVentas()`, `getTopProductosVendidos()`, `getTopCategoriasVendidas()`.
+
+- `configuracion_sar_view.dart`:
+  - Pantalla en pestañas:
+    - SAR: configuración CAI, rango inicial/final, fecha límite y correlativo actual.
+    - Empresa: datos de la empresa emisora (RTN, razón social, dirección, etc.).
+  - Valida formatos de RTN, rangos y fecha.
+
+- Otras:
+  - `usuarios_view.dart`, `nuevo_usuario.dart`, `perfil_usuario.dart`: administración de usuarios, creación y edición.
+  - `proveedoresView.dart`, `proveedorForm.dart`, `proveedor_details.dart`: CRUD de proveedores.
+  - `categorias_view.dart`, `categorias_form.dart`, `categoria_details.dart`: CRUD de categorías.
+  - `audit_log_screen.dart`: visualización de auditoría de cambios.
+  - `historialView.dart`: listado histórico de ventas.
+  - `caja_screen.dart`: historial y detalle de cajas, con filtros temporales.
+
+4.5 Carpeta `lib/view/widgets/`
+-------------------------------
+Widgets reutilizables:
+- `loading.dart`:
+  - Indicadores de carga para diferentes contextos.
+- `inventario_vacio.dart`, `categoria_vacia.dart`, `usuarios_vacios.dart`, `proveedor_vacio.dart`:
+  - Vistas de estado vacío con mensajes e íconos.
+- `notification_banner.dart`:
+  - Banner superior que muestra notificaciones activas de `NotificationProvider`.
+- `thermal_invoice_printer.dart`:
+  - Vista de previsualización e impresión de factura en formato térmico.
+- `inventory_pdf_preview.dart`, `caja_pdf_preview.dart`:
+  - Previsualización de PDFs generados.
+- `modal_print_movil.dart`, `discount_dialog.dart`:
+  - Diálogo de confirmación de impresión.
+  - Diálogo para aplicar descuentos a productos.
+
+4.6 Carpeta `lib/utils/`
+------------------------
+- `number_to_words_spanish.dart`
+  - Conversión de montos numéricos a palabras en español, útil para facturas.
+- `permission_helper.dart`
+  - Wrapper simple sobre `SharedPreferences` para comprobar si el usuario actual tiene un permiso específico.
+
+
+5. DESCRIPCIÓN DE LOS MÓDULOS
+-----------------------------
+
+5.1 Módulo de Autenticación (Login)
+-----------------------------------
+- **Nombre**: Autenticación de usuarios.
+- **Clase principal**: `Login` (`login_view.dart`).
+- **Función**:
+  - Validar credenciales de usuario (correo y contraseña).
+  - Crear usuario administrador inicial si la base de usuarios está vacía.
+  - Persistir sesión en `SharedPreferences`.
+- **Componentes involucrados**:
+  - `RepositoryUser` (validación de credenciales, consulta de usuarios).
+  - `User` (modelo de usuario).
+  - `AppLogger` (registro de errores).
+  - `SharedPreferences` (persistencia de sesión).
+- **Lógica principal**:
+  - En `initState`:
+    - Llama a `_checkFirstRun()`: si no hay usuarios, navega a `NuevoUsuario(isFirstRun: true)`.
+  - En `signInWithEmailAndPassword()`:
+    - Calcula el hash SHA-256 de la contraseña (`hashPassword`).
+    - Llama a `repositoryUser.signInWithEmailAndPassword(correo, hash)`.
+    - Si usuario existe y estado es `Activo`, delega en `_login()`.
+  - En `_login()`:
+    - Obtiene usuario por email y guarda en `SharedPreferences`:
+      - `email`, `password` (hash), `user` (ID), `tipo`, `estado`, `user_fullname`, `permisos` (como JSON).
+    - Navega a `MyHomePage`.
+
+5.2 Módulo Principal / Dashboard
+--------------------------------
+- **Nombre**: Panel principal (Dashboard).
+- **Clase principal**: `MyHomePage` (`principal.dart`).
+- **Función**:
+  - Servir como **punto central de navegación**.
+  - Mostrar opciones según permisos y rol del usuario.
+  - Mostrar notificaciones de inventario bajo.
+- **Componentes**:
+  - `DashboardCardData`, `DashboardGrid`.
+  - `NotificationProvider`, `NotificationBanner`.
+  - Clases de vista asociadas (Caja, Ventas, Inventario, etc.).
+- **Lógica principal**:
+  - En `initState`:
+    - Obtiene tipo, nombre completo y permisos desde `SharedPreferences`.
+    - Llama a `Provider.of<NotificationProvider>(context, listen: false).loadNotifications();`.
+  - Genera lista de `DashboardCardData` condicionalmente según:
+    - `permisos.contains(Permission.X)` o `isAdmin`.
+  - El `Drawer` y el cuerpo muestran tarjetas para cada módulo disponible.
+
+5.3 Módulo de Caja
+-------------------
+- **Nombre**: Gestión de caja.
+- **Clases principales**:
+  - `CajaRepository` (`repository_caja.dart`).
+  - `CajaScreen` (`caja_screen.dart`).
+- **Función**:
+  - Apertura y cierre de caja por usuario.
+  - Registro de movimientos (Ingresos, Egresos, Ventas, Devoluciones).
+  - Historial y desglose por método de pago.
+- **Componentes**:
+  - Modelos: `Caja`, `MovimientoCaja`.
+  - Tablas en DB: `caja`, `movimientos_caja`.
+  - `RepositoryAudit` para registrar cambios importantes en movimientos de caja.
+- **Lógica principal**:
+  - `abrirCaja(montoInicial)`:
+    - Verifica en DB si el usuario ya tiene caja abierta.
+    - Si no, crea una nueva caja con estado `Abierta`.
+  - `obtenerCajaAbierta()`:
+    - Retorna la caja abierta para el usuario actual (`SharedPreferences['user']`).
+  - `cerrarCaja()`:
+    - Actualiza campos (`fechaCierre`, `montoCierre`, `diferencia`, `estado`).
+  - `registrarMovimiento()`:
+    - Inserta en `movimientos_caja`.
+    - Recalcula ingresos, egresos, total efectivo y total ventas según tipo y método de pago.
+
+5.4 Módulo de Ventas
+--------------------
+- **Nombre**: Gestión de ventas / Punto de venta.
+- **Clases principales**:
+  - `Ventas` (`ventasView.dart`).
+  - `VentaRepository` (`repository_venta.dart`).
+- **Función**:
+  - Permitir registrar ventas de productos.
+  - Aplicar descuentos, validar stock, gestionar pagos y cambios.
+  - Emitir facturas con datos SAR y empresa.
+- **Componentes**:
+  - Repositorios: `ProductoRepository`, `VentaRepository`, `CajaRepository`, `RepositoryEmpresa`.
+  - Servicios: `SarService`, `NumberToWordsSpanish`.
+  - Modelos: `Producto`, `Venta`, `DetalleVenta`, `Empresa`, `SarConfig`, `Caja`.
+  - UI: `MiFAB` (para escaneo en móvil), `ModalPrintMovil`, `ThermalInvoicePreview`.
+- **Lógica principal**:
+  - Carga inicial:
+    - Obtiene lista de productos activos.
+    - Obtiene caja abierta actual.
+    - Obtiene configuración SAR activa.
+    - Obtiene datos de empresa.
+  - Selección de productos:
+    - Añade productos al carrito (`_productosSeleccionados`) verificando stock.
+    - Permite búsqueda por texto, por código, o escáner (en Android/iOS).
+  - Cálculo de totales:
+    - Suma de cantidades y precios, considerando descuentos por producto (`descuentoProducto`).
+  - Finalización de venta:
+    - Muestra diálogo de métodos de pago y datos del cliente/RTN.
+    - Valida reglas SAR:
+      - RTN válido (14 dígitos).
+      - Obligatoriedad de RTN para montos altos.
+    - Pide a `SarService` el siguiente número de factura.
+    - Construye instancia de `Venta` con datos fiscales.
+    - Construye lista de `DetalleVenta`.
+    - Llama a `VentaRepository.registrarVentaConDetalles()`:
+      - Verifica stock.
+      - Inserta venta y detalles.
+      - Descuenta stock de `productos`.
+      - Registra movimiento en caja.
+    - Actualiza correlativo SAR.
+    - Ofrece generar factura para impresión térmica (`ThermalInvoicePreview`).
+    - Limpia campos, recarga inventario y notificaciones de stock bajo.
+
+5.5 Módulo de Inventario
+------------------------
+- **Nombre**: Gestión de inventario.
+- **Clases principales**:
+  - `Inventario` (`inventarioView.dart`).
+  - `ProductoRepository`.
+- **Función**:
+  - Administrar catálogo de productos, sus costos, precios y stock.
+  - Permitir búsqueda avanzada (por nombre/código) y escaneo de códigos.
+  - Calcular valor total del inventario.
+  - Exportar inventario a PDF.
+- **Componentes**:
+  - Modelos: `Producto`, `Proveedor`, `Empresa`.
+  - Servicios: `RepositoryEmpresa`, `InventoryPdfPreview`.
+  - Utilidad: `PermissionHelper` para validar acceso.
+- **Lógica principal**:
+  - Carga de productos desde DB.
+  - Filtrado por texto con eliminación de acentos (`diacritic`).
+  - Filtrado por código mediante escáner (`BarcodeScannerView`) en plataformas móviles.
+  - Card de producto muestra:
+    - Nombre, tipo/unidad, precio, costo, stock y estado visual (color según nivel de stock).
+  - Menú de acciones:
+    - Agregar producto.
+    - Ver valor total del inventario (suma de `costo * stock`).
+    - Exportar a PDF (usando `InventoryPdfPreview`).
+
+5.6 Módulo de Devoluciones
+--------------------------
+- **Nombre**: Gestión de devoluciones de ventas.
+- **Clases principales**:
+  - `DevolucionesView` (`devoluciones_view.dart`).
+  - `RepositoryDevolucion`.
+  - `VentaRepository` (para obtener venta original).
+- **Función**:
+  - Registrar devoluciones de productos asociados a una venta.
+  - Ajustar inventario y caja según tipo de devolución (efectivo, nota de crédito, cambio).
+  - Visualizar historial de devoluciones.
+- **Componentes**:
+  - Modelos: `Devolucion`, `DevolucionDetalle`, `VentaCompleta`.
+  - Tablas: `devoluciones`, `devolucion_detalle`, `ventas`, `productos`, `movimientos_caja`.
+- **Lógica principal**:
+  - `DevolucionesView`:
+    - Carga lista de devoluciones con detalles mínimos (factura, monto, tipo, cliente, usuario).
+    - Cada devolución se muestra en `DevolucionCard` expandible con:
+      - Motivo.
+      - Detalle de productos devueltos (cantidad, estado y monto).
+  - `RepositoryDevolucion.createDevolucion()`:
+    - Inserta devolución.
+    - Inserta detalles.
+    - Si estado del producto es BUENO, incrementa stock en `productos`.
+    - Si total devuelto > 0:
+      - Busca caja abierta del usuario.
+      - Inserta `MovimientoCaja` tipo `Devolucion`.
+      - Ajusta campos de `caja` (egresos, total efectivo).
+
+5.7 Módulo de Estadísticas
+--------------------------
+- **Nombre**: Estadísticas del negocio.
+- **Clase principal**: `EstadisticasView` (`estadisticas_view.dart`).
+- **Función**:
+  - Resumir métricas clave de ventas:
+    - Total hoy.
+    - Total semana.
+    - Total mes.
+    - Top productos.
+    - Categorías populares.
+- **Componentes**:
+  - `VentaRepository` (métodos de agregación).
+  - UI de tarjetas y barras de progreso.
+- **Lógica principal**:
+  - `_cargarDatos()`:
+    - Llama a `getResumenVentas()`, `getTopProductosVendidos()`, `getTopCategoriasVendidas()`.
+  - Presenta tarjetas de resumen.
+  - Listas con barras de progreso basadas en el porcentaje relativo al máximo.
+
+5.8 Módulo de Configuración SAR y Empresa
+-----------------------------------------
+- **Nombre**: Configuración fiscal y datos de empresa.
+- **Clase principal**: `ConfiguracionSarView`.
+- **Función**:
+  - Mantener la configuración SAR (CAI, rangos, fecha límite, correlativo).
+  - Mantener datos generales de la empresa.
+- **Componentes**:
+  - Modelos: `SarConfig`, `Empresa`.
+  - Repositorios: `SarService`, `RepositoryEmpresa`.
+- **Lógica principal**:
+  - Carga inicial:
+    - Configuración SAR activa.
+    - Datos de empresa (si existen).
+  - Validaciones:
+    - Formatos de rango: se permiten solo dígitos y guiones.
+    - RTN de 14 dígitos.
+  - Guardado:
+    - `SarService.guardarConfiguracion(config)` con `SarConfig`.
+    - `RepositoryEmpresa.insertEmpresa` / `updateEmpresa`.
+
+5.9 Módulo de Usuarios y Permisos
+---------------------------------
+- **Nombre**: Administración de usuarios.
+- **Clases**:
+  - `usuarios_view.dart`, `nuevo_usuario.dart`, `perfil_usuario.dart`.
+  - `RepositoryUser`, `User`, `Permission`, `Role`.
+- **Función**:
+  - Crear, listar, actualizar y eliminar usuarios.
+  - Asignar roles y permisos personalizados.
+  - Controlar el acceso a módulos a través de `SharedPreferences` (permisos guardados en JSON).
+- **Lógica principal**:
+  - `RepositoryUser`:
+    - `insertUser`, `getAllUsers`, `updateUser`, `deleteUser`, `getUserByEmail`, `signInWithEmailAndPassword`, `resetPassword`.
+  - `permissions.dart`:
+    - Definición de permisos por módulo.
+    - `Role.getPermissions(role)` devuelve lista predeterminada de permisos por rol.
+
+5.10 Módulo de Auditoría
+------------------------
+- **Nombre**: Auditoría del sistema.
+- **Clases**:
+  - `RepositoryAudit`.
+  - `audit_log.dart`.
+  - `audit_log_screen.dart`.
+- **Función**:
+  - Registrar cambios críticos (update/delete de usuarios, productos, movimientos de caja, etc.).
+  - Proveer un historial detallado de acciones realizadas en el sistema.
+- **Lógica principal (inferida)**:
+  - Cada repositorio crítico (`ProductoRepository`, `RepositoryUser`, `CajaRepository`) llama a:
+    - `logUpdate(tabla, registroId, oldData, newData, [txn])`.
+    - `logDelete(tabla, registroId, oldData, [txn])`.
+  - Se guarda información como:
+    - Tabla afectada, ID, acción, usuario responsable (si se dispone), fecha y detalles JSON de datos previos/nuevos.
+
+
+6. FLUJO DE FUNCIONAMIENTO
+--------------------------
+
+6.1 Inicio de la aplicación
+---------------------------
+1. Usuario ejecuta la aplicación en Windows.
+2. `main.dart`:
+   - Inicializa `sqflite_common_ffi` y `databaseFactoryFfi`.
+   - En Windows:
+     - Llama a `windowManager.ensureInitialized()`.
+     - Configura ventana (tamaño 1920x1080, centrada, maximizada).
+   - Llama a `await AppLogger.init()` (prepara log en archivo).
+   - Ejecuta `runApp(MyApp())`.
+
+6.2 Determinación de pantalla inicial
+-------------------------------------
+1. `MyApp` construye un `FutureBuilder` que llama a `loadData()`:
+   - Lee desde `SharedPreferences`:
+     - `email`, `password`, `user`, `tipo`, `estado`, `user_fullname`, `permisos`.
+2. Si todos estos campos están presentes y no vacíos:
+   - Home es `MyHomePage` (principal).
+3. Si faltan:
+   - Home es `Login`.
+
+6.3 Inicio de sesión
+--------------------
+1. En `Login`:
+   - Usuario ingresa correo y contraseña.
+   - Se valida formato (email, longitud de contraseña).
+   - Se calcula hash SHA-256 de la contraseña.
+   - Se consulta `RepositoryUser.signInWithEmailAndPassword(email, hash)`.
+2. Si credenciales correctas y usuario activo:
+   - Se ejecuta `_login()`:
+     - Guarda datos de sesión y permisos en `SharedPreferences`.
+     - Navega a `MyHomePage` usando `Navigator.pushReplacement`.
+
+6.4 Navegación en el sistema
+----------------------------
+- En `MyHomePage`:
+  - `Drawer` de navegación muestra opcionalmente:
+    - Caja, Ventas, Historial de ventas, Devoluciones, Estadísticas, Inventario, Adquisiciones, Proveedores, Categorías, Auditoría, Usuarios, Configuración SAR, Cerrar sesión.
+  - Cada opción abre la vista correspondiente con `Navigator.push`.
+
+6.5 Flujo de venta típico
+-------------------------
+1. Usuario abre módulo `Ventas` desde el panel principal.
+2. La vista `Ventas`:
+   - Carga productos activos.
+   - Carga caja abierta (`CajaRepository.obtenerCajaAbierta()`).
+   - Carga configuración SAR y datos de empresa.
+3. Usuario busca productos por nombre o escanea código de barras.
+4. Añade productos al carrito (`_productosSeleccionados`), establece cantidades y descuentos.
+5. El sistema calcula totales (subtotal, descuento, total a pagar).
+6. Usuario pulsa “Finalizar venta”:
+   - Se abre un diálogo donde:
+     - Se selecciona método de pago.
+     - Se indica monto recibido y se calcula cambio.
+     - Opcionalmente se ingresan nombre del cliente y RTN.
+7. El sistema valida:
+   - Montos positivos.
+   - RTN, si aplica.
+   - Que exista configuración SAR activa.
+8. Se genera número de factura desde `SarService`.
+9. Se construye `Venta` y lista de `DetalleVenta`.
+10. Se llama `VentaRepository.registrarVentaConDetalles`:
+    - Verifica stock por producto.
+    - Inserta venta y detalles en transacción.
+    - Actualiza stock en `productos`.
+    - Actualiza caja y registra `MovimientoCaja` tipo `Venta`.
+11. Tras éxito:
+    - Se incrementa correlativo SAR.
+    - Se ofrece generar factura térmica (previa confirmación).
+    - Se limpia el carrito y se refrescan notificaciones de stock bajo.
+
+6.6 Flujo de devolución
+-----------------------
+1. Usuario abre `Devoluciones` desde panel.
+2. Puede:
+   - Ver lista de devoluciones existentes.
+   - Crear una nueva devolución (`NuevaDevolucionView`).
+3. Para una nueva devolución (inferido por uso de `VentaRepository.getVentaCompletaByFactura`):
+   - Usuario proporciona número de factura o selecciona una venta.
+   - El sistema muestra detalle de productos.
+   - Usuario marca cantidades a devolver y estado (BUENO/DEFECTUOSO/NO_REINGRESA).
+   - Calcula total devuelto y tipo de reembolso (EFECTIVO/NOTA_CREDITO/CAMBIO).
+4. `RepositoryDevolucion.createDevolucion`:
+   - Inserta devolución y detalles.
+   - Si estado BUENO, incrementa stock en `productos`.
+   - Si hay dinero a devolver, registra movimiento de caja (Devolución) y ajusta totales.
+
+6.7 Flujo de caja
+-----------------
+1. Al inicio del día:
+   - Usuario abre `Caja` y ejecuta `abrirCaja(montoInicial)`.
+2. Durante el día:
+   - Cada venta genera movimientos de tipo `Venta`.
+   - Se pueden registrar ingresos/egresos manuales.
+3. Al cerrar caja:
+   - Usuario indica monto final y diferencia.
+   - `cerrarCaja` actualiza estado y permite generar reporte/PDF de cierre.
+
+
+7. DISEÑO DE INTERFAZ
+---------------------
+
+7.1 Estructura de las pantallas
+-------------------------------
+- Uso intensivo de `Scaffold + AppBar + Drawer/Body`.
+- Estilo **responsivo**:
+  - Muchas vistas ajustan tipografías, paddings y layouts según ancho:
+    - `isMobile`, `isTablet`, `isDesktop`.
+  - Por ejemplo, `ventasView.dart`, `inventarioView.dart`, `login_view.dart`.
+
+7.2 Navegación entre vistas
+---------------------------
+- Basada en:
+  - `Navigator.push` / `Navigator.pushReplacement`.
+  - Uso de `MaterialPageRoute`.
+- No se observan rutas nombradas globales, sino navegación explícita por pantalla.
+
+7.3 Widgets principales
+-----------------------
+- `DashboardGrid` y `DashboardCardData`:
+  - Tarjetas de acceso rápido a módulos desde `MyHomePage`.
+- `NotificationBanner`:
+  - Widget que se monta en la parte superior del body del `Scaffold`, mostrando notificaciones de stock bajo.
+- Tarjetas y listas:
+  - `Card` + `ListTile` para productos, devoluciones, usuarios, proveedores, etc.
+  - `DataTable` para algunos listados detallados (por ejemplo en devoluciones).
+- Formularios:
+  - Uso de `Form + GlobalKey<FormState>` y `TextFormField` con validaciones personalizadas.
+- Diálogos:
+  - `AwesomeDialog` y `Dialog` personalizados para confirmaciones y formularios modales.
+
+7.4 Experiencia de usuario
+--------------------------
+- Características:
+  - Soporte de **tema oscuro** y claro.
+  - Componentes responsivos para diferentes tamaños de ventana.
+  - Mensajes de error y validación amigables (`AwesomeSnackbarContent`).
+  - Estados vacíos con íconos y textos explicativos.
+  - Indicadores de carga (`CircularProgressIndicator`, `CargandoInventario`).
+  - Uso de íconos semánticos (ventas, caja, inventario, estadísticas).
+
+
+8. MANEJO DE DATOS
+------------------
+
+8.1 Almacenamiento de datos
+---------------------------
+- Base de datos local SQLite utilizando `sqflite_common_ffi` en escritorio.
+- La base de datos `ventas.db` se crea en el directorio de bases de datos de la app.
+- Estructura con tablas:
+  - `proveedores`
+  - `productos`
+  - `ventas`
+  - `detalle_ventas`
+  - `compras`
+  - `detalle_compras`
+  - `caja`
+  - `movimientos_caja`
+  - `configuracion_sar`
+  - `empresa`
+  - `usuarios`
+  - `categorias`
+  - `devoluciones`
+  - `devolucion_detalle`
+  - `audit_logs`
+
+8.2 Modelos de datos
+--------------------
+- Cada modelo refleja de forma casi directa la estructura de tabla, con métodos `toMap()` y `fromMap()` para conversiones.
+- Las relaciones se manejan via `id` y `FOREIGN KEY` en la BD:
+  - Por ejemplo, `detalle_ventas.venta_id` referencia `ventas.id_venta`.
+  - `productos.proveedor_id` referencia `proveedores.id_proveedor`.
+  - `productos.categoria_id` referencia `categorias.id_categoria`.
+
+8.3 Persistencia
+----------------
+- Persistencia via:
+  - `db.insert`, `db.update`, `db.delete`, `db.query`, `db.rawQuery`, `db.rawUpdate`.
+- Uso de **transacciones** (`db.transaction`) para operaciones críticas:
+  - Registro de venta con detalles.
+  - Creación de devoluciones con sus detalles.
+  - Movimientos de caja y su reflejo en totales.
+
+8.4 Conexión a APIs o bases de datos externas
+---------------------------------------------
+- No hay integración con APIs remotas en el código visible.
+- Todo el manejo es contra la base de datos local SQLite.
+
+8.5 Uso de `SharedPreferences`
+------------------------------
+- Se utiliza para:
+  - Sesión de usuario (credenciales y datos básicos).
+  - Preferencias de tema.
+  - Lista de notificaciones descartadas.
+
+
+9. DEPENDENCIAS DEL PROYECTO (DETALLADAS)
+-----------------------------------------
+
+- **flutter**:
+  - Framework base.
+
+- **cupertino_icons**:
+  - Íconos adicionales; puramente visual.
+
+- **sqflite**:
+  - ORM simple para SQLite, necesario para compatibilidad con `sqflite_common_ffi`.
+
+- **sqflite_common_ffi**:
+  - Implementación de SQLite basada en FFI para escritorio.
+
+- **shared_preferences**:
+  - Clave-valor persistente para:
+    - Tema.
+    - Sesión.
+    - Permisos.
+    - Notificaciones descartadas.
+
+- **provider**:
+  - Inyección de dependencias y estado reactivo (`ChangeNotifierProvider`).
+
+- **shimmer**:
+  - Efectos de shimmer al cargar listas (UI/UX).
+
+- **pdf** y **printing**:
+  - Generación y previsualización/impresión de documentos PDF.
+
+- **intl**:
+  - Formateo de fechas y números en español/latino.
+
+- **table_calendar**:
+  - Calendar UI para filtros basados en fecha (inferido).
+
+- **flutter_speed_dial**:
+  - Botón flotante con múltiples acciones (escaneo, agregar, etc.).
+
+- **awesome_dialog**:
+  - Diálogos enriquecidos para confirmaciones y advertencias.
+
+- **awesome_snackbar_content**:
+  - Snackbars visualmente enriquecidos para mostrar resultados de operaciones.
+
+- **diacritic**:
+  - Eliminación de acentos para realizar búsquedas robustas.
+
+- **mobile_scanner**:
+  - Lector de códigos de barra/QR en plataformas móviles.
+
+- **crypto**:
+  - Hash SHA-256 para contraseñas.
+
+- **logger**:
+  - Logger avanzado para depuración y registro persistente.
+
+- **path_provider**:
+  - Obtención de directorios de sistema para almacenar logs.
+
+- **window_manager**:
+  - Control avanzado de ventana en aplicaciones de escritorio (tamaño, enfoque, etc.).
+
+
+10. CONFIGURACIÓN DEL ENTORNO
+-----------------------------
+
+10.1 Requisitos previos
+-----------------------
+- **SO**: Windows 10 o superior.
+- **Flutter SDK**: versión compatible con `sdk: ^3.10.1` (Dart 3).
+- **Dart SDK**: incluido con Flutter.
+
+10.2 Instalación de Flutter
+---------------------------
+1. Descargar Flutter desde la página oficial (`https://flutter.dev`).
+2. Configurar la variable de entorno `PATH` con la ruta a `flutter/bin`.
+3. Ejecutar `flutter doctor` en PowerShell para verificar dependencias.
+4. Asegurarse de tener el soporte para Windows Desktop habilitado:
+   - `flutter config --enable-windows-desktop`.
+
+10.3 Instalación de dependencias del proyecto
+---------------------------------------------
+1. Abrir una terminal en la carpeta del proyecto:
+   - `cd C:\Proyectos\Flutter\proyecto_is`
+2. Ejecutar:
+   - `flutter pub get`
+     - Descarga todas las dependencias definidas en `pubspec.yaml`.
+
+10.4 Configuración específica (inferida)
+----------------------------------------
+- No se requieren archivos adicionales de configuración más allá de:
+  - `pubspec.yaml`.
+  - `analysis_options.yaml` (para lints).
+  - Generación automática de código no parece necesaria (no hay `build_runner`).
+
+
+11. COMPILACIÓN PARA WINDOWS
+----------------------------
+
+11.1 Ejecutar el proyecto en modo debug
+---------------------------------------
+Desde la carpeta raíz:
+- `flutter run -d windows`
+  - Compila y ejecuta la aplicación en una ventana de Windows.
+
+11.2 Compilación en modo release
+--------------------------------
+Para generar la versión de producción:
+- `flutter build windows`
+  - Genera un ejecutable y archivos asociados en:
+    - `build/windows/runner/Release/` (por defecto).
+
+11.3 Estructura del build generado (típica)
+-------------------------------------------
+En `build/windows/runner/Release/` se obtienen:
+- Ejecutable principal (p. ej. `proyecto_is.exe`).
+- Bibliotecas de Flutter y dependencias.
+- Recursos de la aplicación (assets, iconos, etc., si se definen).
+
+11.4 Distribución
+-----------------
+- El contenido de la carpeta `Release` puede:
+  - Comprimirse (ZIP) y distribuirse.
+  - Instalarse en equipos de la empresa junto con accesos directos al `.exe`.
+
+
+12. SEGURIDAD DEL SISTEMA
+-------------------------
+
+12.1 Manejo de datos sensibles
+------------------------------
+- **Contraseñas de usuario**:
+  - Se manejan con **hash SHA-256** (`crypto`) antes de guardarse en `usuarios.contrasena`.
+  - En el login, la contraseña ingresada se hashea y se compara contra la base.
+  - No se almacena la contraseña original en texto plano.
+  - Mejora posible: uso de sal y algoritmos como bcrypt/argon2 (actualmente no implementado).
+
+- **Sesión**:
+  - El hash de la contraseña se guarda en `SharedPreferences` junto con otros datos de sesión.
+  - Esto facilita el autologin pero implica que el hash está accesible en disco local del usuario (riesgo aceptable en entorno controlado, pero se debe documentar).
+
+12.2 Validaciones
+-----------------
+- Formularios:
+  - Email con regex simple.
+  - Longitud mínima de contraseña (8 caracteres).
+  - RTN con longitud obligatoria de 14 caracteres en configuraciones y ventas cuando aplica.
+  - Validaciones de campos requeridos en SAR, empresa, ventas, cajas.
+
+- Inventario y ventas:
+  - `VentaRepository` verifica stock suficiente antes de registrar venta.
+  - Si no hay stock, retorna código de error para mostrar mensaje al usuario.
+
+12.3 Control de errores
+-----------------------
+- Uso de `try/catch` extensivo en repositorios y vistas.
+- `AppLogger` registra errores con trazas (`stackTrace`) en archivo de logs:
+  - Facilita diagnóstico de problemas en producción.
+- En UI:
+  - Errores se muestran con `AwesomeSnackbarContent` o `SnackBar`, con mensajes amigables.
+
+12.4 Permisos y roles
+---------------------
+- Se utiliza el modelo `Permission` + `Role`:
+  - Cada rol tiene una lista de permisos por defecto.
+  - Los permisos del usuario se guardan como JSON en `usuarios.permisos` y también en `SharedPreferences`.
+  - Las vistas verifican permisos antes de permitir acceso:
+    - Por ejemplo, `Inventario` usa `PermissionHelper.hasPermission(Permission.inventario)`.
+    - `Ventas` verifica `Permission.ventas` en `_checkPermission()`.
+
+
+13. POSIBLES MEJORAS
+--------------------
+
+13.1 Seguridad
+--------------
+- **Contraseñas**:
+  - Incorporar algoritmos de hashing más robustos (p.ej. bcrypt, argon2) con sal por usuario.
+  - Evitar almacenar el hash de la contraseña en `SharedPreferences` (limitarlo a ID de usuario y token de sesión si se implementa backend).
+
+- **Cifrado**:
+  - Cifrar datos sensibles en BD (por ejemplo, RTN, correos de clientes, etc.) si el riesgo lo justifica.
+
+13.2 Arquitectura
+-----------------
+- Introducir una capa de **servicios de dominio** más explícita para separar aún más lógica de UI y repositorios.
+- Implementar un esquema más formal de **Clean Architecture** con:
+  - Domain (casos de uso).
+  - Data (repositorios, DB).
+  - Presentation (views + providers).
+
+13.3 Sincronización y respaldo
+------------------------------
+- Incorporar:
+  - Sincronización con un backend (API REST) para respaldo de datos y multi-sucursal.
+  - Exportación e importación de la BD o de datos clave.
+
+13.4 Reportes adicionales
+-------------------------
+- Añadir:
+  - Reportes de utilidades por producto/categoría.
+  - Reportes de caja por usuario.
+  - Exportación de auditoría a CSV/PDF.
+
+13.5 Usabilidad
+---------------
+- Soporte para:
+  - Atajos de teclado para operaciones frecuentes (ventas, apertura de caja, etc.).
+  - Personalización de columnas mostradas en tablas.
+  - Multi-idioma (internacionalización usando `intl` e `arb`).
+
+13.6 Pruebas automatizadas
+--------------------------
+- Añadir:
+  - **Pruebas unitarias** a repositorios (`flutter_test` ya está en `dev_dependencies`).
+  - **Pruebas de integración** simulando flujos completos (venta, devoluciones, caja).
+
+
+14. MANTENIMIENTO DEL SOFTWARE
+------------------------------
+
+14.1 Cómo agregar nuevas funciones
+----------------------------------
+Recomendación de pasos:
+1. **Definir modelo de datos** (si se necesita persistencia):
+   - Crear/editar modelo en `lib/model/`.
+   - Actualizar `DBHelper._createTables` (y posibles migraciones).
+2. **Crear repositorio**:
+   - Añadir `*_repository.dart` en `lib/controller/` para encapsular lógica de datos.
+3. **Crear vista**:
+   - Añadir nueva pantalla en `lib/view/` (reutilizando widgets existentes).
+4. **Conectar con permisos**:
+   - Añadir nuevo permiso en `permissions.dart` si la funcionalidad debe restringirse.
+   - Actualizar `Role.getPermissions` para incluir en roles necesarios.
+   - Integrar en `MyHomePage` como nueva tarjeta/entrada de menú.
+5. **Auditoría** (opcional pero recomendable):
+   - Integrar `RepositoryAudit.logUpdate` / `logDelete` en operaciones críticas.
+
+14.2 Buenas prácticas para modificar el código
+----------------------------------------------
+- Mantener consistencia con:
+  - Patrón `toMap` / `fromMap` en modelos.
+  - Uso de `Repository` para todo acceso a BD (evitar SQL directo en vistas).
+  - Manejo de errores con `try/catch` y logging con `AppLogger`.
+- Cuando se cambian estructuras de tablas:
+  - Añadir migración en `_runMigrations()` de `DBHelper`.
+  - Mantener compatibilidad con datos existentes.
+- Respetar patrones de UI:
+  - Usar `TemaProveedor` y `NotificationProvider` vía `Provider`.
+  - Seguir esquemas responsivos (detectar `isMobile`, `isTablet`, `isDesktop`).
+
+14.3 Depuración
+----------------
+- Utilizar:
+  - `AppLogger.instance.log` para trazas detalladas en problemas complejos.
+  - Inspeccionar el archivo de logs (`app_logs.txt`) en el directorio de soporte de la app.
+  - `flutter run -d windows` para ver logs en tiempo real en consola.
+
+
+15. GLOSARIO TÉCNICO
+--------------------
+
+- **CAI**:
+  - Código de Autorización de Impresión, emitido por la administración tributaria (SAR) para la emisión de documentos fiscales.
+
+- **SAR**:
+  - Sistema de Administración de Rentas (Honduras). Define reglas fiscales para emisión de facturas, rangos de numeración y fechas límite.
+
+- **RTN**:
+  - Registro Tributario Nacional. Identificador fiscal de contribuyentes.
+
+- **Caja**:
+  - Registro de las operaciones monetarias del día (apertura, ingresos, egresos, ventas, devoluciones, cierre).
+
+- **Movimiento de caja**:
+  - Registro individual de un evento monetario (Ingreso, Egreso, Venta, Devolución) asociado a una caja.
+
+- **Inventario**:
+  - Conjunto de productos disponibles para la venta, con sus cantidades y costos.
+
+- **Stock mínimo**:
+  - Cantidad mínima deseada en inventario para un producto. Cuando el stock actual es menor o igual, se generan notificaciones de stock bajo.
+
+- **Venta**:
+  - Transacción de salida de productos desde el inventario hacia el cliente, con importe económico.
+
+- **Detalle de venta**:
+  - Línea dentro de una venta, asociada a un producto específico (cantidad, precio unitario, subtotal, descuentos, impuestos).
+
+- **Devolución**:
+  - Operación por la que un cliente retorna productos previamente vendidos, generando:
+    - Reingreso total/parcial a inventario (según estado).
+    - Ajuste en caja (reintegro de dinero o nota de crédito).
+
+- **Repository (Repositorio)**:
+  - Clase que encapsula la lógica de acceso a datos y operaciones sobre una entidad (producto, venta, caja, etc.), aislando a las vistas del detalle de la base de datos.
+
+- **SharedPreferences**:
+  - Almacenamiento de pares clave-valor simple, útil para preferencias de usuario y pequeños datos de sesión.
+
+- **Provider**:
+  - Paquete para manejo de estado global y dependencias, muy usado en Flutter.
+
+- **ThemeMode / Tema oscuro**:
+  - Modo visual donde fondos son oscuros y texto claro, útil para reducir cansancio visual; se controla con `TemaProveedor` y se guarda en `SharedPreferences`.
+
+- **Widget**:
+  - Unidad básica de composición de interfaz en Flutter. Puede ser un componente visual simple (botón, texto) o complejo (pantalla completa).
+
+- **SnackBar**:
+  - Notificación temporal que aparece en la parte inferior de la pantalla para mostrar mensajes de éxito, error o advertencia.
+
+- **Dialog**:
+  - Ventana modal que se muestra sobre el contenido principal para solicitar datos o confirmar acciones.
+
+- **FFI (Foreign Function Interface)**:
+  - Mecanismo que permite a Dart comunicarse con código nativo (C/C++). En este sistema se usa indirectamente a través de `sqflite_common_ffi` para acceder a SQLite en escritorio.
+
+========================================
+FIN DEL MANUAL TÉCNICO
+========================================
+

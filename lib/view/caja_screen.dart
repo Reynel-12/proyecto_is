@@ -9,11 +9,11 @@ import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/caja.dart';
 import 'package:proyecto_is/model/movimiento_caja.dart';
 import 'package:proyecto_is/model/preferences.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:proyecto_is/controller/repository_empresa.dart';
 import 'package:proyecto_is/model/permissions.dart';
 import 'package:proyecto_is/view/widgets/caja_pdf_preview.dart';
+import 'package:proyecto_is/view/widgets/access_denied_dialog.dart';
+import 'package:proyecto_is/utils/permission_helper.dart';
 
 class CajaScreen extends StatefulWidget {
   const CajaScreen({super.key});
@@ -73,39 +73,17 @@ class _CajaScreenState extends State<CajaScreen>
   }
 
   Future<void> _checkPermission() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? perms = prefs.getString('permisos');
-    bool ok = false;
-    if (perms != null && perms.isNotEmpty) {
-      try {
-        List<String> list = List<String>.from(jsonDecode(perms));
-        ok = list.contains(Permission.caja);
-      } catch (_) {}
-    }
+    bool ok = await PermissionHelper.hasPermission(Permission.caja);
     if (!ok) {
       if (!mounted) return;
-      _mostrarAccesoDenegado();
+      showAccessDeniedDialog(
+        context,
+        moduleName: 'Caja',
+        customMessage:
+            'No tienes permiso para acceder al Caja. '
+            'Solicita acceso al administrador si lo consideras necesario.',
+      );
     }
-  }
-
-  void _mostrarAccesoDenegado() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Acceso denegado'),
-        content: const Text('No tienes permiso para acceder a Caja'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context)
-                ..pop()
-                ..maybePop();
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _cargarDatos() async {

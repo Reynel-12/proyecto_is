@@ -1,0 +1,1273 @@
+1. INTRODUCCIÓN
+
+Nombre de la aplicación
+La aplicación se denomina, de forma genérica en este documento, como "Sistema de Punto de Venta e Inventario para Empresa". En la propia aplicación puede mostrarse el nombre comercial de tu empresa en la barra superior.
+
+Qué hace la aplicación
+La aplicación permite gestionar las operaciones básicas de un negocio: control de inventario de productos, registro de compras (adquisiciones), registro de ventas, manejo de caja, gestión de devoluciones, administración de proveedores, categorías de productos, usuarios, estadísticas e historial de ventas, así como la configuración de parámetros fiscales (SAR).
+
+Para qué sirve
+Sirve para llevar un control ordenado y centralizado de:
+- Los productos que vende la empresa.
+- Las existencias (stock) en inventario.
+- Las compras a proveedores.
+- Las ventas realizadas a clientes y los comprobantes de venta.
+- Los movimientos de caja.
+- Las devoluciones de productos.
+- Los usuarios autorizados y sus permisos.
+- Las estadísticas de las operaciones.
+
+A quién está dirigida
+Está dirigida a personal administrativo y operativo de la empresa, por ejemplo:
+- Cajeros(as).
+- Encargados(as) de inventario.
+- Encargados(as) de compras.
+- Supervisores y administradores.
+No se requiere conocimiento de programación; sólo conocimientos básicos de uso de computadora y del funcionamiento del negocio.
+
+-------------------------------------------------------------
+
+2. REQUISITOS DEL SISTEMA
+
+Sistema operativo compatible
+- Windows 10 o superior (recomendado Windows 10, 11 o posterior).
+
+Requisitos mínimos recomendados
+- Procesador: Intel i3 o equivalente.
+- Memoria RAM: 4 GB como mínimo (8 GB recomendado).
+- Espacio en disco: al menos 500 MB libres para la aplicación y la base de datos.
+- Resolución de pantalla: 1366 x 768 o superior (la aplicación está optimizada también para resoluciones mayores, como 1920 x 1080).
+- Permisos para instalar y ejecutar aplicaciones en Windows.
+
+-------------------------------------------------------------
+
+3. INSTALACIÓN Y EJECUCIÓN
+
+Según cómo se haya entregado la aplicación en tu empresa, podrás encontrarla de una de estas formas:
+- Como ejecutable instalado en Windows (acceso directo en el Escritorio o en el menú Inicio).
+- Como carpeta de aplicación portátil (no requiere instalación, sólo ejecutar el archivo principal).
+
+Pasos generales para ejecutar la aplicación en Windows:
+1. Localiza el acceso directo de la aplicación en el Escritorio o en el menú Inicio. Si la aplicación es portátil, busca la carpeta que te proporcionó el área de sistemas y dentro de ella el archivo ejecutable (por ejemplo, "Empresa.exe" o similar).
+2. Haz doble clic sobre el icono del programa.
+3. Espera unos segundos mientras se abre la ventana principal. Por defecto, la aplicación se abre en modo de pantalla grande (maximizada) para un mejor aprovechamiento del espacio.
+4. Una vez abierta, aparecerá la pantalla de inicio de sesión.
+
+Si la aplicación no abre:
+- Verifica que tu usuario de Windows tenga permisos para ejecutar aplicaciones.
+- Verifica con el área de sistemas que el archivo no haya sido bloqueado por el antivirus.
+
+-------------------------------------------------------------
+
+4. DESCRIPCIÓN GENERAL DE LA INTERFAZ
+
+A continuación se describe cada pantalla principal de la aplicación, qué muestra y qué puede hacer el usuario en cada una.
+
+4.1 Pantalla de inicio de sesión (Login)
+
+Nombre de la vista o pantalla
+- Inicio de sesión.
+
+Descripción de su función
+- Permite que los usuarios registrados ingresen al sistema mediante su correo y contraseña.
+- En el primer uso, si no existen usuarios, guía la creación del usuario administrador inicial.
+
+Qué información muestra
+- Título "Inicio de sesión".
+- Campos de:
+  - Correo electrónico.
+  - Contraseña.
+- Botón para iniciar sesión.
+- Enlace para recuperar o restablecer contraseña.
+
+Qué botones tiene y qué hace cada uno
+- Botón "Iniciar sesión": valida las credenciales; si son correctas y el usuario está activo, entra al menú principal.
+- Icono de "ojo" en el campo de contraseña: muestra u oculta la contraseña para verificar lo tecleado.
+- Enlace "¿Olvidaste tu contraseña?": abre la pantalla de restablecimiento de contraseña.
+- (Sólo la primera vez, si no hay usuarios) Navega a una pantalla para crear el primer usuario administrador.
+
+Qué puede hacer el usuario en esta pantalla
+- Escribir su correo electrónico y contraseña.
+- Cambiar la visibilidad de la contraseña.
+- Iniciar sesión.
+- Ir al proceso de recuperación de contraseña en caso de olvido.
+
+---
+
+CAPTURA DE PANTALLA: Pantalla de inicio de sesión
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.2 Menú principal / Panel de inicio (Principal)
+
+Nombre de la vista o pantalla
+- Menú principal o panel de inicio.
+
+Descripción de su función
+- Es la pantalla principal que se muestra después de iniciar sesión.
+- Presenta las distintas secciones del sistema en forma de tarjetas en un panel y también accesibles desde un menú lateral (panel izquierdo).
+
+Qué información muestra
+- Barra superior con el nombre de la empresa y un botón para cambiar entre modo claro y modo oscuro.
+- Menú lateral (Drawer) con:
+  - Datos del usuario en sesión (nombre completo y tipo de usuario/rol).
+  - Lista de secciones disponibles según los permisos del usuario:
+    - Caja.
+    - Ventas.
+    - Historial de ventas.
+    - Devoluciones.
+    - Estadísticas.
+    - Inventario.
+    - Adquisiciones.
+    - Proveedores.
+    - Categorías.
+    - Auditoría.
+    - Usuarios.
+    - Configuración SAR.
+    - Cerrar sesión.
+  - Opción "Modo noche" (interruptor para cambiar tema).
+- Área central con tarjetas (cards) de acceso rápido a las mismas secciones.
+- Versión de la aplicación (por ejemplo "v1.0.0") en la parte inferior.
+
+Qué botones tiene y qué hace cada uno
+- Botón de menú (icono de tres líneas, si está disponible): abre o cierra el menú lateral.
+- Tarjetas de cada sección (Caja, Ventas, Inventario, etc.): al hacer clic, abre la pantalla correspondiente.
+- Opción "Cerrar sesión": cierra la sesión, borra las credenciales guardadas y vuelve a la pantalla de inicio de sesión.
+- Interruptor "Modo noche": cambia entre tema claro y tema oscuro de toda la aplicación.
+
+Qué puede hacer el usuario en esta pantalla
+- Navegar a cualquier módulo del sistema al que tenga permiso (Caja, Ventas, Inventario, etc.).
+- Consultar su nombre y rol de usuario.
+- Activar o desactivar el modo oscuro.
+- Cerrar sesión.
+
+---
+
+CAPTURA DE PANTALLA: Menú principal / Panel de inicio
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.3 Pantalla Caja
+
+Nombre de la vista o pantalla
+- Caja.
+
+Descripción de su función
+- Gestiona la caja del día: apertura, cierre y movimientos de efectivo relacionados con las ventas.
+
+Qué información muestra (según implementación)
+- Datos de la caja actual (fecha, monto inicial, estado).
+- Lista de movimientos o resumen de ventas asociadas a la caja.
+
+Qué botones tiene (típicamente)
+- Botones para abrir caja y cerrar caja.
+- Botones o enlaces para ver detalle de movimientos.
+
+Qué puede hacer el usuario en esta pantalla
+- Abrir la caja al inicio de la jornada.
+- Consultar los movimientos y el estado de la caja.
+- Cerrar la caja al final del día (según permisos).
+
+---
+
+CAPTURA DE PANTALLA: Pantalla Caja
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.4 Pantalla Inventario
+
+Nombre de la vista o pantalla
+- Inventario.
+
+Descripción de su función
+- Permite consultar, buscar, filtrar y administrar los productos registrados en el sistema.
+- Permite agregar nuevos productos y generar reportes en PDF del inventario.
+
+Qué información muestra
+- Título "Inventario".
+- Barra de búsqueda de productos por nombre o por código.
+- Lista o cuadrícula de productos, mostrando por cada uno:
+  - Nombre del producto.
+  - Unidad de medida.
+  - Precio de venta.
+  - Costo.
+  - Stock (cantidad disponible).
+  - Estado (activo/inactivo, según se muestre).
+- Opciones adicionales para:
+  - Agregar producto.
+  - Ver valor total del inventario.
+  - Exportar el inventario a PDF.
+- Vista especial de "Inventario vacío" cuando no hay productos.
+
+Qué botones tiene y qué hace cada uno
+- Campo de búsqueda con icono de lupa:
+  - Al escribir, filtra los productos por nombre o código.
+- Icono de lector de código de barras (en dispositivos móviles):
+  - Abre la cámara para escanear el código de barras de un producto y buscarlo automáticamente.
+- Menú de opciones (icono de tres puntos) cuando hay productos:
+  - "Agregar producto": abre el formulario de nuevo producto.
+  - "Valor del inventario": muestra un cuadro de diálogo con el valor total del inventario.
+  - "Exportar inventario PDF": genera un documento PDF con el listado de productos.
+- Cuando no hay productos:
+  - Botón con icono "+" para agregar el primer producto.
+- Al hacer clic en un producto:
+  - Abre la pantalla de perfil/detalle del producto, donde se puede ver más información y realizar acciones (editar, etc.).
+
+Qué puede hacer el usuario en esta pantalla
+- Buscar productos por nombre o código.
+- Escanear códigos de barras (en Android/iOS).
+- Revisar el stock y precios de los productos.
+- Ver el valor total del inventario.
+- Exportar el inventario a un PDF.
+- Abrir el detalle de un producto para ver más información o editarlo (según permisos).
+- Agregar nuevos productos.
+
+---
+
+CAPTURA DE PANTALLA: Pantalla Inventario
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.5 Pantalla Detalle de Producto (Perfil de producto)
+
+Nombre de la vista o pantalla
+- Perfil de producto.
+
+Descripción de su función
+- Muestra la información detallada de un producto específico.
+- Permite editar datos del producto, cambiar su estado o ver información relacionada (según permisos).
+
+Qué información muestra
+- Código del producto.
+- Nombre.
+- Unidad de medida.
+- Precio de venta.
+- Costo.
+- Stock disponible.
+- Proveedor asociado.
+- Categoría.
+- Estado del producto (activo/inactivo).
+- Posiblemente otros datos específicos del negocio.
+
+Qué botones tiene (según implementación habitual)
+- Botón para editar el producto.
+- Botón para eliminar o desactivar el producto (si existiera).
+- Botón para volver al inventario.
+
+Qué puede hacer el usuario en esta pantalla
+- Revisar en detalle la información de un producto.
+- Aplicar cambios a sus datos (nombre, precio, etc.), si tiene autorización.
+- Volver a la lista de inventario.
+
+---
+
+CAPTURA DE PANTALLA: Perfil de producto
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.6 Pantalla Formulario de Producto (Nuevo/Edición)
+
+Nombre de la vista o pantalla
+- Formulario de producto (nuevo producto / editar producto).
+
+Descripción de su función
+- Permite registrar un nuevo producto o editar uno existente.
+
+Qué información muestra
+- Campos para:
+  - Código del producto.
+  - Nombre.
+  - Unidad de medida.
+  - Precio de venta.
+  - Costo.
+  - Stock inicial.
+  - Selección de proveedor.
+  - Selección de categoría.
+  - Estado.
+
+Qué botones tiene y qué hace cada uno
+- Botón "Guardar" o similar:
+  - Guarda la información del producto.
+- Botón "Cancelar" o icono de regresar:
+  - Vuelve a la pantalla anterior sin guardar cambios.
+
+Qué puede hacer el usuario en esta pantalla
+- Registrar nuevos productos.
+- Actualizar la información de productos existentes.
+
+---
+
+CAPTURA DE PANTALLA: Formulario de producto
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.7 Pantalla Ventas
+
+Nombre de la vista o pantalla
+- Ventas.
+
+Descripción de su función
+- Permite registrar ventas a clientes.
+- Permite seleccionar productos, cantidades, aplicar descuentos y generar la factura o comprobante.
+
+Qué información muestra
+- Título "Ventas".
+- Si no hay una caja abierta, muestra una pantalla de "Caja cerrada" que indica que es necesario abrir una caja antes de vender.
+- Cuando hay caja abierta, muestra:
+  - Lista de productos seleccionados para la venta (carrito).
+  - Para cada producto:
+    - Nombre.
+    - Unidad de medida.
+    - ISV.
+    - Precio, descuento aplicado (si lo hay) y subtotal.
+    - Cantidad seleccionada.
+  - Resumen de venta:
+    - Total de productos.
+    - Subtotal.
+    - Descuento total.
+    - Total a pagar.
+  - Campos para completar la venta:
+    - Método de pago (efectivo, tarjeta, transferencia).
+    - Total.
+    - Nombre del cliente (opcional).
+    - RTN del cliente (opcional u obligatorio según el monto).
+    - Monto recibido.
+    - Cambio.
+
+Qué botones tiene y qué hace cada uno
+- Botón flotante (en móviles) para escanear código de barras y agregar productos:
+  - Usa la cámara para escanear el código de productos y agregarlos a la venta.
+- Buscador de productos (en escritorio):
+  - Permite filtrar productos por nombre para agregarlos al carrito.
+- Botón "+" y "-" en cada producto del carrito:
+  - Aumentan o disminuyen la cantidad del producto en la venta.
+- Botón de descuento (icono de etiqueta) en cada producto:
+  - Abre un cuadro para aplicar un descuento porcentual al producto.
+- Botón de papelera en cada producto:
+  - Permite eliminar el producto del carrito, previa confirmación.
+- Botón "Finalizar venta":
+  - Abre un formulario de confirmación donde se llenan los datos de pago.
+  - Valida que haya al menos un producto.
+- En el formulario de finalizar venta:
+  - Botón "Cancelar": cierra el formulario sin registrar la venta.
+  - Botón "Confirmar": registra la venta, genera el número de factura y actualiza el inventario y la caja.
+- Después de registrar la venta:
+  - Se muestra un mensaje de éxito.
+  - Puede mostrarse un cuadro preguntando si se desea generar la factura para impresión.
+
+Qué puede hacer el usuario en esta pantalla
+- Seleccionar productos para vender.
+- Ajustar cantidades y aplicar descuentos.
+- Ver el resumen del total a pagar.
+- Ingresar datos del cliente (cuando sea necesario).
+- Elegir el método de pago.
+- Registrar la venta y, si corresponde, imprimir o generar la factura.
+
+---
+
+CAPTURA DE PANTALLA: Pantalla Ventas
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.8 Pantalla Historial de Ventas
+
+Nombre de la vista o pantalla
+- Historial de ventas.
+
+Descripción de su función
+- Permite consultar las ventas realizadas anteriormente.
+
+Qué información muestra
+- Lista de ventas con datos como:
+  - Fecha y hora.
+  - Número de factura.
+  - Total de la venta.
+  - Estado de la venta (por ejemplo, emitida).
+
+Qué botones tiene (típicamente)
+- Filtros por fecha o rango (según implementación).
+- Opciones para ver detalle de una venta específica.
+
+Qué puede hacer el usuario en esta pantalla
+- Revisar ventas pasadas.
+- Consultar detalles de ventas específicas, por ejemplo para reimpresión o verificación.
+
+---
+
+CAPTURA DE PANTALLA: Historial de ventas
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.9 Pantalla Devoluciones
+
+Nombre de la vista o pantalla
+- Devoluciones.
+
+Descripción de su función
+- Permite registrar devoluciones de productos sobre ventas ya realizadas.
+- Actualiza el inventario y el historial de movimientos.
+
+Qué información muestra
+- Listado de devoluciones registradas.
+- Detalle de cada devolución (venta relacionada, productos devueltos, cantidades, fecha).
+- Opciones para crear una nueva devolución.
+
+Qué botones tiene y qué hace cada uno
+- Botón para crear "Nueva devolución":
+  - Lleva a la pantalla de nueva devolución, donde se selecciona la venta y los productos a devolver.
+- Botones para ver detalle de devoluciones existentes.
+
+Qué puede hacer el usuario en esta pantalla
+- Registrar devoluciones.
+- Consultar devoluciones existentes.
+
+---
+
+CAPTURA DE PANTALLA: Pantalla Devoluciones
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.10 Pantalla Nueva Devolución
+
+Nombre de la vista o pantalla
+- Nueva devolución.
+
+Descripción de su función
+- Permite seleccionar una venta previa y registrar los productos y cantidades que se devuelven.
+
+Qué información muestra
+- Venta de origen (número de factura, fecha, cliente).
+- Lista de productos vendidos con sus cantidades.
+- Campos para indicar qué producto se devuelve y en qué cantidad.
+
+Qué botones tiene
+- Botón para confirmar la devolución:
+  - Registra la devolución y ajusta el inventario.
+- Botón para cancelar:
+  - Regresa sin guardar cambios.
+
+Qué puede hacer el usuario en esta pantalla
+- Seleccionar la venta de la que se hará la devolución.
+- Marcar uno o varios productos y sus cantidades a devolver.
+- Confirmar la devolución.
+
+---
+
+CAPTURA DE PANTALLA: Nueva devolución
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.11 Pantalla Estadísticas
+
+Nombre de la vista o pantalla
+- Estadísticas.
+
+Descripción de su función
+- Muestra información gráfica o resumida sobre las operaciones del sistema, como ventas, productos más vendidos, etc.
+
+Qué información muestra (ejemplos)
+- Gráficos de barras o líneas de ventas por día/mes.
+- Totales de ventas en un período.
+- Indicadores clave según la configuración del sistema.
+
+Qué botones tiene
+- Filtros por rango de fechas u otros criterios (según implementación).
+
+Qué puede hacer el usuario en esta pantalla
+- Consultar el desempeño del negocio de forma visual.
+- Analizar tendencias de ventas u otras métricas.
+
+---
+
+CAPTURA DE PANTALLA: Pantalla Estadísticas
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.12 Pantalla Proveedores
+
+Nombre de la vista o pantalla
+- Proveedores.
+
+Descripción de su función
+- Permite administrar la información de los proveedores.
+
+Qué información muestra
+- Lista de proveedores.
+- Información básica de cada proveedor (nombre, contacto, etc.).
+- Mensaje o pantalla especial cuando no hay proveedores registrados.
+
+Qué botones tiene
+- Botón para agregar un nuevo proveedor:
+  - Abre el formulario de proveedor.
+- Botones para ver el detalle de un proveedor.
+
+Qué puede hacer el usuario en esta pantalla
+- Consultar la lista de proveedores.
+- Registrar nuevos proveedores.
+- Entrar al detalle de un proveedor concreto.
+
+---
+
+CAPTURA DE PANTALLA: Pantalla Proveedores
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.13 Pantalla Detalle de Proveedor (Perfil de proveedor)
+
+Nombre de la vista o pantalla
+- Detalle de proveedor o perfil de proveedor.
+
+Descripción de su función
+- Muestra la información completa de un proveedor seleccionado desde la lista de proveedores.
+- Permite editar los datos del proveedor o eliminarlo, según los permisos del usuario.
+- Muestra también los productos asociados a ese proveedor.
+
+Qué información muestra
+- Nombre del proveedor de forma destacada.
+- Estado del proveedor (por ejemplo, Activo o Inactivo).
+- Datos de contacto:
+  - Dirección.
+  - Teléfono.
+  - Correo electrónico.
+- Fechas de registro y de última actualización.
+- Lista de productos asociados al proveedor, incluyendo:
+  - Nombre del producto.
+  - Stock disponible y unidad de medida.
+  - Precio (de venta o relacionado, según configuración).
+
+Qué botones tiene y qué hace cada uno
+- Botón o icono de "Atrás" (flecha):
+  - Regresa a la pantalla de Proveedores.
+- Menú de opciones (icono de tres puntos en la parte superior derecha):
+  - "Editar proveedor": abre el formulario de proveedor con los datos cargados para modificarlos.
+  - "Eliminar proveedor": muestra un mensaje de confirmación antes de eliminarlo de forma definitiva.
+
+Qué puede hacer el usuario en esta pantalla
+- Revisar todos los datos registrados del proveedor.
+- Ver rápidamente qué productos están asociados a ese proveedor y su stock.
+- Editar la información del proveedor (nombre, dirección, teléfono, correo, estado, etc.).
+- Eliminar al proveedor (si tiene permisos para hacerlo).
+- Volver a la lista de proveedores.
+
+---
+
+CAPTURA DE PANTALLA: Detalle de proveedor
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.14 Pantalla Formulario de Proveedor
+
+Nombre de la vista o pantalla
+- Formulario de proveedor.
+
+Descripción de su función
+- Permite registrar o actualizar los datos de un proveedor.
+
+Qué información muestra
+- Campos para el nombre del proveedor, datos de contacto y otros datos relevantes.
+
+Qué botones tiene
+- Botón para guardar el proveedor.
+- Botón para cancelar o volver atrás.
+
+Qué puede hacer el usuario en esta pantalla
+- Registrar nuevos proveedores.
+- Actualizar la información de proveedores existentes.
+
+---
+
+CAPTURA DE PANTALLA: Formulario de proveedor
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.15 Pantalla Categorías
+
+Nombre de la vista o pantalla
+- Categorías.
+
+Descripción de su función
+- Permite administrar las categorías a las que pertenecen los productos.
+
+Qué información muestra
+- Lista de categorías registradas.
+- Para cada categoría, nombre y, en algunos casos, descripción.
+- Mensaje si no hay categorías.
+
+Qué botones tiene
+- Botón para agregar una nueva categoría:
+  - Abre el formulario de categoría.
+- Botones para ver o editar detalles de cada categoría.
+
+Qué puede hacer el usuario en esta pantalla
+- Crear nuevas categorías para organizar mejor los productos.
+- Ver y editar categorías existentes.
+
+---
+
+CAPTURA DE PANTALLA: Pantalla Categorías
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.16 Pantalla Detalle de Categoría (Perfil de categoría)
+
+Nombre de la vista o pantalla
+- Detalle de categoría o perfil de categoría.
+
+Descripción de su función
+- Muestra la información completa de una categoría seleccionada desde la lista de categorías.
+- Permite editar o eliminar la categoría, según los permisos del usuario.
+- Muestra también los productos asociados a esa categoría.
+
+Qué información muestra
+- Nombre de la categoría de forma destacada.
+- Estado de la categoría (por ejemplo, Activa o Inactiva).
+- Descripción de la categoría.
+- Fechas de creación y de última actualización.
+- Lista de productos asociados a la categoría, incluyendo:
+  - Nombre del producto.
+  - Stock disponible y unidad de medida.
+  - Precio (según lo configurado en el sistema).
+
+Qué botones tiene y qué hace cada uno
+- Botón o icono de "Atrás" (flecha):
+  - Regresa a la pantalla de Categorías.
+- Menú de opciones (icono de tres puntos en la parte superior derecha):
+  - "Editar categoría": abre el formulario de categoría con los datos cargados para modificarlos.
+  - "Eliminar categoría": muestra un mensaje de confirmación antes de eliminarla de forma definitiva.
+
+Qué puede hacer el usuario en esta pantalla
+- Consultar todos los datos registrados de una categoría.
+- Ver qué productos pertenecen a esa categoría.
+- Editar la información de la categoría (nombre, descripción, estado, etc.).
+- Eliminar la categoría (si tiene permisos para hacerlo).
+- Volver a la lista de categorías.
+
+---
+
+CAPTURA DE PANTALLA: Detalle de categoría
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.17 Pantalla Formulario de Categoría
+
+Nombre de la vista o pantalla
+- Formulario de categoría.
+
+Descripción de su función
+- Permite registrar o modificar una categoría.
+
+Qué información muestra
+- Campos con el nombre de la categoría y posibles datos adicionales.
+
+Qué botones tiene
+- Botón para guardar.
+- Botón para cancelar.
+
+Qué puede hacer el usuario en esta pantalla
+- Crear o modificar categorías.
+
+---
+
+CAPTURA DE PANTALLA: Formulario de categoría
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.18 Pantalla Usuarios
+
+Nombre de la vista o pantalla
+- Usuarios.
+
+Descripción de su función
+- Permite administrar los usuarios que pueden iniciar sesión en el sistema y sus permisos.
+
+Qué información muestra
+- Lista de usuarios con datos básicos (nombre, correo, rol, estado).
+- Mensaje cuando no hay usuarios (usuarios vacíos).
+
+Qué botones tiene
+- Botón para crear un nuevo usuario:
+  - Abre el formulario de nuevo usuario.
+- Botones para ver o editar cada usuario.
+
+Qué puede hacer el usuario en esta pantalla
+- Consultar los usuarios registrados.
+- Crear nuevos usuarios.
+- Administrar estados y roles, según permisos del administrador.
+
+---
+
+CAPTURA DE PANTALLA: Pantalla Usuarios
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.19 Pantalla Perfil de Usuario
+
+Nombre de la vista o pantalla
+- Perfil de usuario o detalle de usuario.
+
+Descripción de su función
+- Muestra la información completa de un usuario específico seleccionado desde la lista de usuarios.
+- Permite editar los datos del usuario o eliminarlo, según los permisos y las políticas de la empresa.
+
+Qué información muestra
+- Nombre y apellido del usuario de forma destacada.
+- Correo electrónico.
+- Teléfono.
+- Rol o tipo de usuario (por ejemplo, administrador, cajero, etc.).
+- Estado del usuario (activo/inactivo).
+- Lista de permisos asignados (por ejemplo, acceso a ventas, inventario, caja, etc.).
+- Fecha de creación de la cuenta.
+- Fecha de última actualización.
+
+Qué botones tiene y qué hace cada uno
+- Botón o icono de "Atrás" (flecha):
+  - Regresa a la pantalla de Usuarios.
+- Menú de opciones (icono de tres puntos en la parte superior derecha):
+  - "Editar usuario": abre la pantalla de nuevo usuario en modo edición, con los datos del usuario cargados para modificarlos (nombre, rol, permisos, etc.).
+  - "Eliminar usuario": muestra un cuadro de confirmación antes de eliminar al usuario del sistema.
+
+Qué puede hacer el usuario en esta pantalla
+- Consultar todos los datos del usuario seleccionado.
+- Ver qué permisos tiene asignados.
+- Modificar la información del usuario (según permisos).
+- Eliminar un usuario (si tiene autorización).
+- Volver a la lista de usuarios.
+
+---
+
+CAPTURA DE PANTALLA: Perfil de usuario
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.20 Pantalla Nuevo Usuario
+
+Descripción de su función
+- Permite registrar un nuevo usuario en el sistema, asignándole un rol y permisos.
+
+Qué información muestra
+- Campos para:
+  - Nombre y apellido.
+  - Correo.
+  - Contraseña.
+  - Tipo de usuario (rol).
+  - Permisos específicos (como acceso a ventas, inventario, etc.).
+
+Qué botones tiene
+- Botón para guardar el nuevo usuario.
+- Botón para cancelar.
+
+Qué puede hacer el usuario en esta pantalla
+- Registrar nuevos usuarios que podrán iniciar sesión posteriormente.
+
+---
+
+CAPTURA DE PANTALLA: Nuevo usuario
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.21 Pantalla Restablecer Contraseña
+
+Nombre de la vista o pantalla
+- Restablecer contraseña.
+
+Descripción de su función
+- Permite que un usuario recupere o cambie su contraseña si la ha olvidado o necesita actualizarla.
+
+Qué información muestra
+- Campos necesarios para identificar al usuario y establecer una nueva contraseña (por ejemplo, correo y nueva contraseña).
+
+Qué botones tiene
+- Botón para confirmar el restablecimiento de contraseña.
+- Botón para cancelar y volver al inicio de sesión.
+
+Qué puede hacer el usuario en esta pantalla
+- Establecer una nueva contraseña para su cuenta.
+
+---
+
+CAPTURA DE PANTALLA: Restablecer contraseña
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.22 Pantalla Configuración SAR
+
+Nombre de la vista o pantalla
+- Configuración SAR.
+
+Descripción de su función
+- Permite administrar los datos de la configuración fiscal SAR, como:
+  - CAI.
+  - Rango de facturas.
+  - Fecha límite.
+  - Otros parámetros requeridos por la normativa.
+
+Qué información muestra
+- Configuración actual activa del SAR.
+- Campos para editar y actualizar parámetros.
+
+Qué botones tiene
+- Botón para guardar o actualizar la configuración.
+
+Qué puede hacer el usuario en esta pantalla
+- Configurar los rangos de facturación y datos fiscales obligatorios.
+- Asegurarse de que la numeración de facturas sea válida y autorizada.
+
+---
+
+CAPTURA DE PANTALLA: Configuración SAR
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.23 Pantalla Auditoría (Audit Log)
+
+Nombre de la vista o pantalla
+- Auditoría.
+
+Descripción de su función
+- Muestra el registro de acciones importantes en el sistema (bitácora), para control y seguimiento.
+
+Qué información muestra
+- Lista de eventos de auditoría:
+  - Fecha y hora.
+  - Usuario que realizó la acción.
+  - Tipo de acción (por ejemplo, inicio de sesión, registro de venta, cambio de configuración, etc.).
+
+Qué botones tiene
+- Filtros por fecha o tipo de acción (según implementación).
+
+Qué puede hacer el usuario en esta pantalla
+- Revisar el historial de acciones para control interno y seguridad.
+
+---
+
+CAPTURA DE PANTALLA: Pantalla Auditoría
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.24 Pantalla Adquisiciones (Compras)
+
+Nombre de la vista o pantalla
+- Adquisiciones o Compras.
+
+Descripción de su función
+- Permite registrar las compras a proveedores (ingreso de mercancía al inventario).
+
+Qué información muestra
+- Formulario o lista relacionada con:
+  - Proveedor.
+  - Productos adquiridos.
+  - Cantidades.
+  - Precios de compra.
+
+Qué botones tiene
+- Botón para guardar la compra.
+- Botón para cancelar.
+
+Qué puede hacer el usuario en esta pantalla
+- Registrar compras que aumentan el stock de los productos.
+
+---
+
+CAPTURA DE PANTALLA: Pantalla Adquisiciones
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.25 Pantalla Código de Barras (Escáner)
+
+Nombre de la vista o pantalla
+- Escáner de código de barras.
+
+Descripción de su función
+- Usa la cámara del dispositivo (en Android/iOS) para leer códigos de barras de productos.
+
+Qué información muestra
+- Vista de cámara con un cuadro de enfoque.
+- Al detectar un código válido, vuelve a la pantalla anterior con el código escaneado.
+
+Qué botones tiene
+- Botón para cerrar/cancelar el escaneo.
+
+Qué puede hacer el usuario en esta pantalla
+- Escanear códigos de barras de productos para buscarlos en inventario o agregar a una venta.
+
+---
+
+CAPTURA DE PANTALLA: Escáner de código de barras
+(Aquí se insertará la imagen)
+-----------------------------
+
+4.26 Pantallas de impresión y reportes (PDF / ticket)
+
+Nombre de las vistas o pantallas
+- Vista previa de PDF de inventario.
+- Vista previa de PDF de caja.
+- Vista de impresión de factura (ticket térmico).
+
+Descripción de su función
+- Permiten visualizar e imprimir reportes como:
+  - Listado de inventario.
+  - Detalle de caja.
+  - Facturas de ventas en formato de ticket.
+
+Qué información muestran
+- Documento generado con:
+  - Datos de la empresa (nombre, RTN, dirección).
+  - Información específica del reporte (productos, valores, totales, etc.).
+
+Qué botones tienen
+- Botón para imprimir o guardar el PDF.
+- Botón para cerrar la vista previa.
+
+Qué puede hacer el usuario en estas pantallas
+- Revisar cómo quedará el reporte o factura.
+- Enviar a impresión o guardar el archivo.
+
+---
+
+CAPTURA DE PANTALLA: Vista previa de factura / inventario
+(Aquí se insertará la imagen)
+-----------------------------
+
+-------------------------------------------------------------
+
+5. GUÍA DE USO PASO A PASO
+
+En esta sección se explica cómo utilizar la aplicación desde que se abre hasta completar las funciones principales.
+
+5.1 Iniciar la aplicación y acceder al sistema
+1. Abre la aplicación desde el acceso directo o ejecutable en Windows.
+2. Espera a que aparezca la pantalla de inicio de sesión.
+3. Ingresa tu correo electrónico y contraseña.
+4. Haz clic en "Iniciar sesión".
+5. Si los datos son correctos, accederás al menú principal.
+6. Si olvidas tu contraseña, haz clic en "¿Olvidaste tu contraseña?" y sigue las instrucciones en la pantalla de restablecimiento.
+
+5.2 Navegar por el menú principal
+1. Una vez dentro, verás el panel principal con tarjetas de acceso rápido a los módulos.
+2. Abre el menú lateral (si está cerrado) para ver todas las opciones disponibles según tus permisos.
+3. Haz clic en la sección que desees usar: por ejemplo, "Inventario", "Ventas", "Caja", etc.
+4. Si lo deseas, activa el "Modo noche" para cambiar la apariencia a tema oscuro.
+
+5.3 Gestionar inventario (alta y consulta de productos)
+
+Consultar y buscar productos:
+1. Desde el menú principal, selecciona "Inventario".
+2. En la parte superior, usa la barra de búsqueda para escribir el nombre o el código del producto que deseas encontrar.
+3. En dispositivos móviles compatibles, también puedes usar el icono de código de barras para escanear el producto.
+4. Revisa la lista de resultados, donde verás nombre, unidad de medida, stock, precio y costo de cada producto.
+5. Haz clic en un producto para ver su detalle completo.
+
+Agregar un nuevo producto:
+1. En la pantalla de Inventario, abre el menú de opciones (icono de tres puntos) o, si no hay productos, usa el botón "+".
+2. Selecciona "Agregar producto".
+3. Se abrirá el formulario de producto.
+4. Completa los campos obligatorios (código, nombre, unidad, precio, costo, proveedor, categoría, etc.).
+5. Revisa que los datos sean correctos.
+6. Haz clic en "Guardar".
+7. El nuevo producto aparecerá en la lista de inventario.
+
+Ver valor total del inventario:
+1. En la pantalla de Inventario, abre el menú de opciones.
+2. Selecciona "Valor del inventario".
+3. Se mostrará un cuadro de diálogo con el valor total de todos los productos en Lempiras.
+4. Haz clic en "Aceptar" para cerrar.
+
+Exportar el inventario a PDF:
+1. En Inventario, abre el menú de opciones.
+2. Selecciona "Exportar inventario PDF".
+3. Se abrirá una vista previa del documento con la información del inventario.
+4. Desde esa pantalla podrás enviarlo a impresión o guardarlo, según las opciones disponibles en el sistema.
+
+5.4 Registrar adquisiciones (compras)
+1. Desde el menú principal, selecciona "Adquisiciones" o "Compras".
+2. Elige el proveedor correspondiente.
+3. Agrega los productos que se están comprando, indicando cantidades y precios de compra.
+4. Revisa el resumen de la compra.
+5. Haz clic en "Guardar" para registrar la compra y actualizar el inventario.
+
+5.5 Registrar una venta
+
+Preparación:
+1. Asegúrate de que la caja esté abierta. Si no lo está, ve a la pantalla "Caja" y realiza el procedimiento de apertura según la política interna de la empresa.
+
+Registrar la venta:
+1. Desde el menú principal, selecciona "Ventas".
+2. Si la caja está cerrada, se mostrará un mensaje correspondiente; debes abrirla antes de continuar.
+3. Para agregar productos a la venta:
+   - En escritorio: utiliza el buscador de productos para encontrarlos por nombre y haz clic para agregarlos al carrito.
+   - En dispositivos móviles: utiliza el botón flotante para escanear códigos de barras o buscar por nombre.
+4. Ajusta la cantidad de cada producto con los botones "+" y "-".
+5. Si corresponde, aplica descuentos a productos individuales mediante el botón de descuento (icono de etiqueta).
+6. Verifica en el resumen:
+   - Total de productos.
+   - Subtotal.
+   - Descuento total.
+   - Total a pagar.
+7. Haz clic en "Finalizar venta".
+
+Completar los datos de pago:
+1. En el formulario de finalizar venta:
+   - Selecciona el método de pago (efectivo, tarjeta, transferencia).
+   - Verifica el campo "Total".
+   - (Opcional) Ingresa el nombre del cliente.
+   - (Opcional u obligatorio según el monto) Ingresa el RTN del cliente.
+   - Ingresa el monto recibido del cliente.
+2. El sistema calculará automáticamente el cambio.
+3. Revisa toda la información.
+4. Haz clic en "Confirmar" para registrar la venta.
+5. La aplicación mostrará un mensaje indicando que la venta se registró con éxito.
+
+Impresión de factura (si aplica):
+1. Después de guardar la venta, la aplicación puede preguntar si deseas generar la factura.
+2. Si aceptas, se mostrará una vista de impresión con el detalle de la venta, lista para imprimir en impresora térmica o en PDF.
+
+5.6 Registrar una devolución
+1. Desde el menú principal, selecciona "Devoluciones".
+2. Haz clic en "Nueva devolución".
+3. Selecciona la venta original de la cual se hará la devolución (por número de factura o mediante búsqueda).
+4. Marca los productos y las cantidades a devolver.
+5. Revisa el resumen de la devolución.
+6. Confirma la operación para que el sistema:
+   - Registre la devolución.
+   - Actualice el inventario.
+
+5.7 Consultar historial de ventas
+1. En el menú principal, selecciona "Historial de ventas".
+2. Recorre la lista para ver ventas pasadas.
+3. Aplica filtros por fecha si están disponibles.
+4. Haz clic en alguna venta para ver su detalle o reimprimir, según las opciones de la pantalla.
+
+5.8 Gestionar usuarios
+1. Desde el menú principal, selecciona "Usuarios".
+2. Para crear un nuevo usuario:
+   - Haz clic en el botón de nuevo usuario.
+   - Completa los datos (nombre, correo, contraseña, tipo de usuario y permisos).
+   - Guarda los cambios.
+3. Para editar un usuario:
+   - Selecciónalo de la lista.
+   - Modifica la información necesaria.
+   - Guarda los cambios.
+
+5.9 Configuración SAR
+1. Desde el menú principal, selecciona "Configuración SAR".
+2. Revisa la configuración actual (CAI, rango de facturas, fecha límite, etc.).
+3. Si necesitas actualizar algún dato, edítalo con cuidado según los documentos de autorización.
+4. Haz clic en guardar.
+5. Asegúrate de que los rangos de facturación coincidan con los autorizados oficialmente.
+
+-------------------------------------------------------------
+
+6. FUNCIONES PRINCIPALES
+
+A continuación se resumen las funciones más importantes de la aplicación:
+
+6.1 Inicio de sesión y seguridad
+- Permite que sólo usuarios registrados y activos tengan acceso al sistema.
+- Cada usuario puede tener diferentes permisos (ventas, inventario, cajas, etc.).
+
+6.2 Gestión de productos (Inventario)
+- Alta, consulta y edición de productos.
+- Búsqueda rápida por nombre o código.
+- Soporte para escaneo de código de barras en dispositivos móviles.
+- Cálculo del valor total del inventario.
+- Exportación de inventario a PDF.
+
+6.3 Gestión de proveedores
+- Registro y actualización de proveedores.
+- Relación de productos con proveedores para una mejor organización de compras.
+
+6.4 Gestión de categorías
+- Creación y edición de categorías de productos.
+- Organización del inventario por tipo de producto.
+
+6.5 Gestión de usuarios y permisos
+- Creación de usuarios.
+- Asignación de roles y permisos de acceso por módulo.
+- Posibilidad de desactivar usuarios.
+
+6.6 Ventas
+- Selección de productos para venta.
+- Aplicación de descuentos por producto.
+- Cálculo automático de totales y cambio.
+- Registro de método de pago (efectivo, tarjeta, transferencia).
+- Generación de facturas con datos SAR.
+
+6.7 Caja
+- Gestión de caja abierta/cerrada.
+- Asociación de ventas a una caja específica.
+- Control de movimientos de dinero durante la jornada.
+
+6.8 Devoluciones
+- Registro de devoluciones de productos, vinculadas a ventas existentes.
+- Actualización automática del inventario.
+
+6.9 Estadísticas
+- Visualización de datos resumidos de la operación (ventas, etc.).
+- Ayuda al análisis del desempeño del negocio.
+
+6.10 Auditoría
+- Registro de eventos importantes para control interno.
+- Permite saber qué usuario realizó determinadas acciones.
+
+6.11 Configuración SAR
+- Administración de los parámetros fiscales necesarios para la emisión de facturas válidas.
+- Control del rango de facturas y fechas límites.
+
+-------------------------------------------------------------
+
+7. MENSAJES DEL SISTEMA
+
+La aplicación muestra mensajes informativos, de advertencia y de error para guiar al usuario. Algunos ejemplos habituales:
+
+7.1 Mensajes de éxito
+- "Usuario administrador creado exitosamente. Inicie sesión."
+  - Indica que se completó la configuración inicial del usuario administrador.
+- "Venta registrada con éxito."
+  - La venta se guardó correctamente.
+- "Producto agregado" o mensajes similares:
+  - Confirman que una acción se realizó satisfactoriamente.
+
+7.2 Mensajes de advertencia
+- "Credenciales incorrectas."
+  - El correo o la contraseña no son válidos.
+- "El usuario no se encuentra activo."
+  - El usuario existe, pero está deshabilitado; debe contactar al administrador.
+- "No tienes permiso para acceder a Inventario / Ventas / etc."
+  - Indica que el usuario actual no tiene permisos para ese módulo.
+- "Producto con código X no encontrado."
+  - No se encontró el producto buscado en inventario.
+- "Debe seleccionar al menos un producto."
+  - Se intenta finalizar una venta sin productos seleccionados.
+- "El RTN es obligatorio para montos mayores a L. XXXXX."
+  - Es necesario ingresar el RTN del cliente para ventas de importe alto, según normativa.
+
+7.3 Mensajes de error
+- "Error al iniciar sesión."
+  - Ocurrió un problema general al validar credenciales.
+- "No hay configuración SAR activa."
+  - Falta la configuración fiscal necesaria para generar facturas; debe configurarse en "Configuración SAR".
+- "No se pudo generar el número de factura. Verifique rangos SAR."
+  - El rango de facturas se agotó o está mal configurado.
+- "Error al registrar la venta."
+  - Fallo en el proceso de guardado de la venta; se recomienda contactar al área de sistemas.
+- "Stock insuficiente para el producto X."
+  - No hay suficiente inventario para completar la venta o acción.
+
+7.4 Cómo interpretar los tipos de mensajes
+- Mensajes de éxito: indican que todo salió bien; generalmente tienen un estilo visual en color verde.
+- Mensajes de advertencia: indican una situación que requiere atención, pero que se puede corregir (color amarillo/naranja).
+- Mensajes de error: indican un problema que impide completar la acción (color rojo).
+
+-------------------------------------------------------------
+
+8. SOLUCIÓN DE PROBLEMAS
+
+A continuación se presentan algunos problemas frecuentes y cómo resolverlos:
+
+Problema 1: No puedo iniciar sesión.
+Posibles causas:
+- El correo o la contraseña son incorrectos.
+- El usuario está inactivo.
+Solución:
+1. Verifica que estés escribiendo correctamente el correo (sin espacios y con el dominio correcto).
+2. Verifica que la contraseña esté bien escrita; utiliza el icono de "ojo" para verla si es necesario.
+3. Si el problema persiste, usa la opción "¿Olvidaste tu contraseña?" para restablecerla, o contacta al administrador para verificar tu estado de usuario.
+
+Problema 2: Aparece el mensaje "No tienes permiso para acceder a..." al entrar a un módulo.
+Posibles causas:
+- Tu usuario no tiene asignado el permiso necesario.
+Solución:
+1. Comunícate con el administrador del sistema para que revise y actualice tus permisos en la pantalla de "Usuarios".
+
+Problema 3: No puedo registrar una venta porque dice que la caja está cerrada.
+Posibles causas:
+- No se ha abierto la caja del día.
+Solución:
+1. Ve a la pantalla "Caja".
+2. Realiza el procedimiento de apertura de caja (según las políticas internas).
+3. Regresa a la pantalla de "Ventas" y vuelve a intentar.
+
+Problema 4: El sistema indica "No hay configuración SAR activa" o "No se pudo generar el número de factura".
+Posibles causas:
+- No se ha configurado el SAR.
+- El rango de facturas autorizado se agotó.
+Solución:
+1. Inicia sesión con un usuario administrador.
+2. Entra a "Configuración SAR".
+3. Revisa y actualiza la información (CAI, rangos, fechas) según la documentación oficial otorgada por la autoridad fiscal.
+4. Guarda los cambios y vuelve a intentar registrar la venta.
+
+Problema 5: Me aparece "Stock insuficiente" al intentar vender un producto.
+Posibles causas:
+- La cantidad solicitada supera el stock disponible.
+Solución:
+1. Revisa la cantidad de productos en el carrito.
+2. Reduce la cantidad o selecciona otro producto alternativo.
+3. Si el stock es realmente bajo, revisa en Inventario si se requiere una nueva adquisición/compra.
+
+Problema 6: No veo mis productos en el inventario.
+Posibles causas:
+- Los filtros de búsqueda están aplicados.
+- El inventario está vacío.
+Solución:
+1. Borra el texto del campo de búsqueda para ver la lista completa.
+2. Si el inventario sigue vacío, usa la opción "Agregar producto" para registrar nuevos productos.
+
+Problema 7: La aplicación no abre en Windows.
+Posibles causas:
+- Falta de permisos.
+- Bloqueo por antivirus.
+- Archivo dañado.
+Solución:
+1. Asegúrate de ejecutar la aplicación con un usuario de Windows con permisos adecuados.
+2. Revisa si el antivirus está bloqueando el programa; si es así, pide al área de sistemas que lo marque como seguro.
+3. Si se sospecha de archivo dañado, solicita una nueva copia de la aplicación al área de sistemas.
+
+-------------------------------------------------------------
+
+9. PREGUNTAS FRECUENTES (FAQ)
+
+Pregunta 1: ¿Puedo usar la aplicación en más de una computadora?
+Respuesta:
+Sí, es posible, siempre que el área de sistemas lo haya configurado así (por ejemplo, con base de datos compartida o copias sincronizadas). Consulta con tu administrador de sistemas antes de instalar la aplicación en otra máquina.
+
+Pregunta 2: ¿Qué debo hacer cuando cambio de cajero?
+Respuesta:
+El cajero saliente debe cerrar sesión desde el menú principal (opción "Cerrar sesión"). Luego, el nuevo cajero debe iniciar sesión con su propio usuario y, si corresponde, abrir una nueva caja o continuar con la caja existente, según las políticas internas.
+
+Pregunta 3: ¿Cómo sé si estoy usando el modo noche (oscuro)?
+Respuesta:
+En el menú lateral hay una opción llamada "Modo noche". Si el interruptor está activado, la aplicación se muestra con fondo oscuro. Si prefieres fondo claro, desactiva el interruptor.
+
+Pregunta 4: ¿Puedo modificar una venta ya registrada?
+Respuesta:
+La forma recomendada de corregir una venta es a través del módulo de "Devoluciones", registrando la devolución correspondiente. Para cambios más avanzados, deberá consultarse con el administrador del sistema, ya que puede implicar ajustes contables y de facturación.
+
+Pregunta 5: ¿Qué sucede si se agota el rango de facturas?
+Respuesta:
+El sistema mostrará mensajes de error al intentar generar nuevas facturas. En ese caso, el administrador debe actualizar la configuración en "Configuración SAR" con un nuevo rango autorizado por la autoridad fiscal.
+
+Pregunta 6: ¿Cómo puedo ver un resumen de las ventas realizadas?
+Respuesta:
+Usa la pantalla de "Historial de ventas" para ver las operaciones pasadas y la pantalla de "Estadísticas" para ver un resumen gráfico del desempeño del negocio.
+
+Pregunta 7: ¿Es posible reimprimir una factura?
+Respuesta:
+Si la funcionalidad está habilitada, podrás seleccionar la venta correspondiente en "Historial de ventas" y utilizar la opción de reimpresión o generación de factura. Si no ves esta opción, consulta con el administrador del sistema.
+
+Pregunta 8: ¿Qué hago si olvido mi contraseña?
+Respuesta:
+En la pantalla de inicio de sesión, haz clic en "¿Olvidaste tu contraseña?" y sigue los pasos indicados. Si no puedes completarlos, solicita ayuda al administrador para que restablezca tu contraseña desde el módulo de "Usuarios".
+
+Pregunta 9: ¿Quién puede cambiar la configuración SAR y de la empresa?
+Respuesta:
+Sólo los usuarios con permisos de administrador pueden acceder y modificar la configuración SAR y los datos de la empresa. Si necesitas un cambio, comunícalo al administrador del sistema.
+
+Pregunta 10: ¿Qué pasa si cierro la aplicación mientras estoy trabajando?
+Respuesta:
+Al volver a abrirla, deberás iniciar sesión nuevamente. Las operaciones que ya se guardaron (ventas, inventario, etc.) se mantienen en la base de datos. Si estabas a mitad de una operación no guardada (por ejemplo, llenando un formulario), es posible que tengas que repetirla.
+
+-------------------------------------------------------------
+
+Este manual está diseñado para servir como guía general para usuarios finales. Si tu empresa tiene procesos internos específicos (por ejemplo, políticas especiales de devoluciones, horarios de apertura de caja, etc.), se recomienda complementar este documento con instructivos internos propios de la organización.
+

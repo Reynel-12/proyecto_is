@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/controller/repository_audit.dart';
 import 'package:proyecto_is/model/audit_log.dart';
+import 'package:proyecto_is/utils/permission_helper.dart';
+import 'package:proyecto_is/model/permissions.dart';
+import 'package:proyecto_is/view/widgets/access_denied_dialog.dart';
 
 class AuditLogScreen extends StatefulWidget {
   const AuditLogScreen({super.key});
@@ -29,6 +32,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   void initState() {
     super.initState();
     _loadLogs();
+    _checkPermission();
   }
 
   Future<void> _loadLogs() async {
@@ -44,6 +48,20 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       _tables = ['Todas', ...uniqueTables];
       _isLoading = false;
     });
+  }
+
+  Future<void> _checkPermission() async {
+    bool ok = await PermissionHelper.hasPermission(Permission.auditoria);
+    if (!ok) {
+      if (!mounted) return;
+      showAccessDeniedDialog(
+        context,
+        moduleName: 'Auditoria',
+        customMessage:
+            'No tienes permiso para acceder al Auditoria. '
+            'Solicita acceso al administrador si lo consideras necesario.',
+      );
+    }
   }
 
   void _applyFilters() {

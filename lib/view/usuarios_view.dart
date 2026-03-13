@@ -11,6 +11,7 @@ import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:proyecto_is/model/permissions.dart';
 import 'package:proyecto_is/utils/permission_helper.dart';
 import 'package:proyecto_is/view/widgets/usuarios_vacios.dart';
+import 'package:proyecto_is/view/widgets/access_denied_dialog.dart';
 
 class Usuarios extends StatefulWidget {
   const Usuarios({super.key});
@@ -65,20 +66,12 @@ class _UsuariosState extends State<Usuarios> {
     bool ok = await PermissionHelper.hasPermission(Permission.usuarios);
     if (!ok) {
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Acceso denegado'),
-          content: const Text('No tienes permiso para gestionar usuarios'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context)..pop()..maybePop();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+      showAccessDeniedDialog(
+        context,
+        moduleName: 'Usuarios',
+        customMessage:
+            'No tienes permiso para gestionar usuarios en el sistema. '
+            'Ponte en contacto con el administrador para solicitar acceso.',
       );
     }
   }

@@ -17,6 +17,7 @@ import 'package:proyecto_is/view/widgets/inventory_pdf_preview.dart';
 import 'dart:io' show Platform;
 import 'package:proyecto_is/model/permissions.dart';
 import 'package:proyecto_is/utils/permission_helper.dart';
+import 'package:proyecto_is/view/widgets/access_denied_dialog.dart';
 
 class Inventario extends StatefulWidget {
   const Inventario({super.key});
@@ -50,20 +51,12 @@ class _InventarioState extends State<Inventario> {
     bool ok = await PermissionHelper.hasPermission(Permission.inventario);
     if (!ok) {
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Acceso denegado'),
-          content: const Text('No tienes permiso para acceder a Inventario'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context)..pop()..maybePop();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+      showAccessDeniedDialog(
+        context,
+        moduleName: 'Inventario',
+        customMessage:
+            'No tienes permiso para acceder al Inventario. '
+            'Solicita acceso al administrador si lo consideras necesario.',
       );
     }
   }

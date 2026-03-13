@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_is/controller/repository_venta.dart';
 import 'package:proyecto_is/model/preferences.dart';
+import 'package:proyecto_is/model/permissions.dart';
+import 'package:proyecto_is/view/widgets/access_denied_dialog.dart';
+import 'package:proyecto_is/utils/permission_helper.dart';
 
 class EstadisticasView extends StatefulWidget {
   const EstadisticasView({super.key});
@@ -21,6 +24,7 @@ class _EstadisticasViewState extends State<EstadisticasView> {
   void initState() {
     super.initState();
     _cargarDatos();
+    _checkPermission();
   }
 
   Future<void> _cargarDatos() async {
@@ -45,6 +49,20 @@ class _EstadisticasViewState extends State<EstadisticasView> {
           SnackBar(content: Text('Error al cargar estadísticas: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _checkPermission() async {
+    bool ok = await PermissionHelper.hasPermission(Permission.estadisticas);
+    if (!ok) {
+      if (!mounted) return;
+      showAccessDeniedDialog(
+        context,
+        moduleName: 'Estadisticas',
+        customMessage:
+            'No tienes permiso para acceder al Estadisticas. '
+            'Solicita acceso al administrador si lo consideras necesario.',
+      );
     }
   }
 

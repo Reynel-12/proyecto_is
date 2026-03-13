@@ -15,6 +15,9 @@ import 'package:proyecto_is/model/preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:proyecto_is/view/widgets/caja_cerrada.dart';
+import 'package:proyecto_is/utils/permission_helper.dart';
+import 'package:proyecto_is/model/permissions.dart';
+import 'package:proyecto_is/view/widgets/access_denied_dialog.dart';
 
 class AdquisicionForm extends StatefulWidget {
   const AdquisicionForm({super.key});
@@ -48,6 +51,7 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
   void initState() {
     super.initState();
     _cargarDatos();
+    _checkPermission();
   }
 
   void clearForm() {
@@ -72,6 +76,20 @@ class _AdquisicionFormState extends State<AdquisicionForm> {
       });
     } catch (e, st) {
       _logger.log.e('Error al cargar datos', error: e, stackTrace: st);
+    }
+  }
+
+  Future<void> _checkPermission() async {
+    bool ok = await PermissionHelper.hasPermission(Permission.adquisiciones);
+    if (!ok) {
+      if (!mounted) return;
+      showAccessDeniedDialog(
+        context,
+        moduleName: 'Adquisiciones',
+        customMessage:
+            'No tienes permiso para acceder al Adquisiciones. '
+            'Solicita acceso al administrador si lo consideras necesario.',
+      );
     }
   }
 

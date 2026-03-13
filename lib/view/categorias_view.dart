@@ -9,6 +9,9 @@ import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:provider/provider.dart';
+import 'package:proyecto_is/utils/permission_helper.dart';
+import 'package:proyecto_is/model/permissions.dart';
+import 'package:proyecto_is/view/widgets/access_denied_dialog.dart';
 
 class CategoriasView extends StatefulWidget {
   const CategoriasView({super.key});
@@ -37,6 +40,7 @@ class _CategoriasViewState extends State<CategoriasView> {
   void initState() {
     super.initState();
     cargarDatos();
+    _checkPermission();
   }
 
   void cargarDatos() {
@@ -58,6 +62,20 @@ class _CategoriasViewState extends State<CategoriasView> {
         'Error al obtener categorias',
         error: e,
         stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _checkPermission() async {
+    bool ok = await PermissionHelper.hasPermission(Permission.categorias);
+    if (!ok) {
+      if (!mounted) return;
+      showAccessDeniedDialog(
+        context,
+        moduleName: 'Categorias',
+        customMessage:
+            'No tienes permiso para acceder al Categorias. '
+            'Solicita acceso al administrador si lo consideras necesario.',
       );
     }
   }

@@ -4,6 +4,9 @@ import 'package:proyecto_is/model/preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:proyecto_is/model/permissions.dart';
+import 'package:proyecto_is/view/widgets/access_denied_dialog.dart';
+import 'package:proyecto_is/utils/permission_helper.dart';
 
 class DevolucionesView extends StatefulWidget {
   const DevolucionesView({super.key});
@@ -21,6 +24,7 @@ class _DevolucionesViewState extends State<DevolucionesView> {
   void initState() {
     super.initState();
     _loadDevoluciones();
+    _checkPermission();
   }
 
   Future<void> _loadDevoluciones() async {
@@ -34,6 +38,20 @@ class _DevolucionesViewState extends State<DevolucionesView> {
       debugPrint("Error loading devoluciones: $e");
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _checkPermission() async {
+    bool ok = await PermissionHelper.hasPermission(Permission.devoluciones);
+    if (!ok) {
+      if (!mounted) return;
+      showAccessDeniedDialog(
+        context,
+        moduleName: 'Devoluciones',
+        customMessage:
+            'No tienes permiso para acceder al Devoluciones. '
+            'Solicita acceso al administrador si lo consideras necesario.',
+      );
     }
   }
 

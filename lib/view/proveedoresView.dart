@@ -9,6 +9,9 @@ import 'package:proyecto_is/view/proveedor_details.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:proyecto_is/view/widgets/proveedor_vacio.dart';
 import 'package:provider/provider.dart';
+import 'package:proyecto_is/utils/permission_helper.dart';
+import 'package:proyecto_is/model/permissions.dart';
+import 'package:proyecto_is/view/widgets/access_denied_dialog.dart';
 
 class ProveedoresView extends StatefulWidget {
   const ProveedoresView({super.key});
@@ -37,6 +40,7 @@ class _ProveedoresViewState extends State<ProveedoresView> {
   void initState() {
     super.initState();
     cargarDatos();
+    _checkPermission();
   }
 
   void cargarDatos() {
@@ -58,6 +62,20 @@ class _ProveedoresViewState extends State<ProveedoresView> {
         'Error al obtener proveedores',
         error: e,
         stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _checkPermission() async {
+    bool ok = await PermissionHelper.hasPermission(Permission.proveedores);
+    if (!ok) {
+      if (!mounted) return;
+      showAccessDeniedDialog(
+        context,
+        moduleName: 'Proveedores',
+        customMessage:
+            'No tienes permiso para acceder al Proveedores. '
+            'Solicita acceso al administrador si lo consideras necesario.',
       );
     }
   }

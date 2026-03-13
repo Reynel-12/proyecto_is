@@ -9,6 +9,9 @@ import 'package:proyecto_is/model/sar_config.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/controller/repository_empresa.dart';
 import 'package:proyecto_is/model/empresa.dart';
+import 'package:proyecto_is/utils/permission_helper.dart';
+import 'package:proyecto_is/model/permissions.dart';
+import 'package:proyecto_is/view/widgets/access_denied_dialog.dart';
 
 class ConfiguracionSarView extends StatefulWidget {
   const ConfiguracionSarView({super.key});
@@ -47,6 +50,7 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
   void initState() {
     super.initState();
     _cargarDatos();
+    _checkPermission();
   }
 
   Future<void> _cargarDatos() async {
@@ -89,6 +93,20 @@ class _ConfiguracionSarViewState extends State<ConfiguracionSarView> {
       }
     } catch (e) {
       _logger.log.e('Error cargando empresa', error: e);
+    }
+  }
+
+  Future<void> _checkPermission() async {
+    bool ok = await PermissionHelper.hasPermission(Permission.configuracionSar);
+    if (!ok) {
+      if (!mounted) return;
+      showAccessDeniedDialog(
+        context,
+        moduleName: 'Configuracion SAR',
+        customMessage:
+            'No tienes permiso para acceder al Configuracion SAR. '
+            'Solicita acceso al administrador si lo consideras necesario.',
+      );
     }
   }
 

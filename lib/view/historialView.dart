@@ -12,6 +12,9 @@ import 'package:proyecto_is/model/venta.dart';
 import 'package:proyecto_is/utils/number_to_words_spanish.dart';
 import 'package:proyecto_is/view/widgets/thermal_invoice_printer.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:proyecto_is/model/permissions.dart';
+import 'package:proyecto_is/view/widgets/access_denied_dialog.dart';
+import 'package:proyecto_is/utils/permission_helper.dart';
 
 class Historial extends StatefulWidget {
   const Historial({super.key});
@@ -33,6 +36,7 @@ class _HistorialState extends State<Historial> {
   void initState() {
     super.initState();
     _cargarVentas();
+    _checkPermission();
   }
 
   void _cargarVentas() async {
@@ -71,6 +75,20 @@ class _HistorialState extends State<Historial> {
     // Cancelar la suscripción cuando el widget se destruye
     _ventasSubscription?.cancel();
     super.dispose();
+  }
+
+  Future<void> _checkPermission() async {
+    bool ok = await PermissionHelper.hasPermission(Permission.historial);
+    if (!ok) {
+      if (!mounted) return;
+      showAccessDeniedDialog(
+        context,
+        moduleName: 'Historial',
+        customMessage:
+            'No tienes permiso para acceder al Historial. '
+            'Solicita acceso al administrador si lo consideras necesario.',
+      );
+    }
   }
 
   @override
