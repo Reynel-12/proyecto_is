@@ -18,7 +18,7 @@ class AccessDeniedDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDarkMode = Provider.of<TemaProveedor>(context).esModoOscuro;
     final theme = Theme.of(context);
-    final primaryColor = theme.colorScheme.primary;
+    final primaryColor = Colors.blueAccent;
     final backgroundColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black87;
 

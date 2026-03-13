@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:proyecto_is/controller/notification_service.dart';
@@ -131,5 +132,36 @@ class NotificationProvider extends ChangeNotifier {
     }
     _saveDismissedIds();
     loadNotifications();
+  }
+}
+
+/// Proveedor de sesión del usuario actual (tipo, nombre, permisos).
+/// Permite que la pantalla principal y el resto de la app reaccionen
+/// cuando se actualizan los permisos sin cerrar sesión.
+class UserSessionProvider extends ChangeNotifier {
+  String _tipo = '';
+  String _userFullname = 'Usuario';
+  List<String> _permisos = [];
+
+  String get tipo => _tipo;
+  String get userFullname => _userFullname;
+  List<String> get permisos => List.unmodifiable(_permisos);
+
+  /// Carga tipo, userFullname y permisos desde SharedPreferences y notifica.
+  Future<void> loadFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    _tipo = prefs.getString('tipo') ?? '';
+    _userFullname = prefs.getString('user_fullname') ?? 'Usuario';
+    final permisosJson = prefs.getString('permisos');
+    if (permisosJson != null && permisosJson.isNotEmpty) {
+      try {
+        _permisos = List<String>.from(jsonDecode(permisosJson));
+      } catch (_) {
+        _permisos = [];
+      }
+    } else {
+      _permisos = [];
+    }
+    notifyListeners();
   }
 }

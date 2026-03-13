@@ -10,7 +10,6 @@ import 'package:proyecto_is/view/historialView.dart';
 import 'package:proyecto_is/view/inventarioView.dart';
 import 'package:proyecto_is/view/login_view.dart';
 import 'package:proyecto_is/view/proveedoresView.dart';
-import 'dart:convert';
 import 'package:proyecto_is/view/usuarios_view.dart';
 import 'package:proyecto_is/model/permissions.dart';
 import 'package:proyecto_is/view/ventasView.dart';
@@ -33,18 +32,14 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    obtenerTipo();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<UserSessionProvider>(context, listen: false).loadFromPrefs();
       Provider.of<NotificationProvider>(
         context,
         listen: false,
       ).loadNotifications();
     });
   }
-
-  String tipo = '';
-  String userFullname = '';
-  List<String> permisos = [];
 
   void deletePreferences() async {
     final prefs = await SharedPreferences.getInstance();
@@ -53,28 +48,26 @@ class _MyHomePageState extends State<MyHomePage> {
     prefs.remove('user');
     prefs.remove('tipo');
     prefs.remove('estado');
-  }
-
-  Future<void> obtenerTipo() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? tipo = prefs.getString('tipo');
-    String? fullname = prefs.getString('user_fullname');
-    String? permisosJson = prefs.getString('permisos');
-    setState(() {
-      this.tipo = tipo ?? '';
-      userFullname = fullname ?? 'Usuario';
-      if (permisosJson != null && permisosJson.isNotEmpty) {
-        try {
-          permisos = List<String>.from(jsonDecode(permisosJson));
-        } catch (_) {
-          permisos = [];
-        }
-      }
-    });
+    prefs.remove('permisos');
+    prefs.remove('user_fullname');
   }
 
   @override
   Widget build(BuildContext context) {
+    return Consumer<UserSessionProvider>(
+      builder: (context, session, _) => _buildContent(
+        tipo: session.tipo,
+        userFullname: session.userFullname,
+        permisos: session.permisos,
+      ),
+    );
+  }
+
+  Widget _buildContent({
+    required String tipo,
+    required String userFullname,
+    required List<String> permisos,
+  }) {
     // Obtenemos el tamaño de la pantalla
     final screenSize = MediaQuery.of(context).size;
     final bool isMobile = screenSize.width < 600;
@@ -85,6 +78,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // la bandera isAdmin se mantiene para compatibilidadLegacy
     bool isAdmin = tipo == Role.administrador;
+
+    print('permisos: $permisos');
 
     final List<DashboardCardData> cards = [
       if (permisos.contains(Permission.caja) || isAdmin)

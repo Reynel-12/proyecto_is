@@ -79,6 +79,9 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(
           create: (context) => NotificationProvider(),
         ),
+        ChangeNotifierProvider(
+          create: (context) => UserSessionProvider()..loadFromPrefs(),
+        ),
       ],
       child: Consumer<TemaProveedor>(
         builder: (context, temaProveedor, child) {

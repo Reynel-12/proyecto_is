@@ -8,8 +8,7 @@ import 'package:proyecto_is/controller/repository_user.dart';
 import 'package:proyecto_is/model/app_logger.dart';
 import 'package:proyecto_is/model/preferences.dart';
 import 'package:proyecto_is/view/nuevo_usuario.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:proyecto_is/view/widgets/loading.dart';
 
 // ignore: must_be_immutable
@@ -188,19 +187,9 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
                               permisos: permisos,
                             ),
                           ),
-                        ).then((value) async {
+                        ).then((value) {
                           if (value == true) {
                             _obtenerInfoUsuario();
-                            // si el usuario editado es el que está logueado, actualizar preferencias
-                            final prefs = await SharedPreferences.getInstance();
-                            if (prefs.getString('user') == widget.docID) {
-                              await prefs.setString('tipo', rol);
-                              await prefs.setString('estado', estado);
-                              await prefs.setString(
-                                'permisos',
-                                jsonEncode(permisos),
-                              );
-                            }
                           }
                         });
                         break;

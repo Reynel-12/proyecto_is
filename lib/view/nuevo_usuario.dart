@@ -11,6 +11,7 @@ import 'package:proyecto_is/model/user.dart';
 import 'package:proyecto_is/model/permissions.dart';
 import 'package:proyecto_is/view/widgets/loading.dart';
 import 'package:crypto/crypto.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ignore: must_be_immutable
 class NuevoUsuario extends StatefulWidget {
@@ -136,10 +137,13 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
     String nombre = _nombre.text;
     String apellido = _apellido.text;
     String telefono = _telefono.text;
-    List<String> selectedPermisos =
-        _permisosMap.entries.where((e) => e.value).map((e) => e.key).toList();
+    List<String> selectedPermisos = _permisosMap.entries
+        .where((e) => e.value)
+        .map((e) => e.key)
+        .toList();
 
     try {
+      final prefs = await SharedPreferences.getInstance();
       Map<String, dynamic> userMap = {
         'nombre': nombre,
         'apellido': apellido,
@@ -155,6 +159,23 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
       );
 
       if (response != -1) {
+        // Solo actualizar SharedPreferences y la sesión si se está editando
+        // al mismo usuario que está actualmente logueado
+        final loggedUserId = prefs.getString('user');
+        if (loggedUserId != null && loggedUserId == widget.uid) {
+          await prefs.remove('permisos');
+          await prefs.setString('permisos', jsonEncode(selectedPermisos));
+          if (selectedTipo != null) {
+            await prefs.setString('tipo', selectedTipo!);
+          }
+          if (mounted) {
+            await Provider.of<UserSessionProvider>(
+              context,
+              listen: false,
+            ).loadFromPrefs();
+          }
+          print(prefs.getString('permisos'));
+        }
         _mostrarMensaje(
           'Éxito',
           'Usuario actualizado correctamente',
@@ -190,8 +211,10 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
       String correo = _correo.text;
       String telefono = _telefono.text;
       String password = hashPassword(_password.text);
-      List<String> selectedPermisos =
-          _permisosMap.entries.where((e) => e.value).map((e) => e.key).toList();
+      List<String> selectedPermisos = _permisosMap.entries
+          .where((e) => e.value)
+          .map((e) => e.key)
+          .toList();
 
       final user = User(
         nombre: nombre,
@@ -238,9 +261,7 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
 
   // función auxiliar para iniciar el mapa de permisos
   void _initializePermisos() {
-    _permisosMap = {
-      for (var p in Permission.allPermissions) p: false,
-    };
+    _permisosMap = {for (var p in Permission.allPermissions) p: false};
   }
 
   void _updatePermissionsMap(List<String> assigned) {
@@ -473,7 +494,8 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                           onChanged: (value) {
                             setState(() {
                               selectedTipo = value;
-                              if (value != null) _updatePermissionsForRole(value);
+                              if (value != null)
+                                _updatePermissionsForRole(value);
                             });
                           },
                           validator: (value) {
@@ -503,9 +525,10 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
                             return null;
                           },
                         ),
-                 !widget.isFirstRun ? SizedBox(height: fieldSpacing) : Container(),
-                 !widget.isFirstRun ? _buildPermissionSection() : Container(),
-
+                  !widget.isFirstRun
+                      ? SizedBox(height: fieldSpacing)
+                      : Container(),
+                  !widget.isFirstRun ? _buildPermissionSection() : Container(),
                 ],
               ),
 
@@ -601,7 +624,9 @@ class _NuevoUsuarioState extends State<NuevoUsuario> {
           ? TextInputType.number
           : isEmail
           ? TextInputType.emailAddress
-          : isTelefono ? TextInputType.phone : TextInputType.text,
+          : isTelefono
+          ? TextInputType.phone
+          : TextInputType.text,
       inputFormatters: isNumber
           ? <TextInputFormatter>[
               FilteringTextInputFormatter.digitsOnly, // Permite solo dígitos
